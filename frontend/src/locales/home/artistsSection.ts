@@ -1,0 +1,26 @@
+export const artistsSectionText = {
+    vi: {
+        label: "Nghệ sĩ",
+        heading: "Nghệ sĩ",
+        highlight: "nổi bật",
+        all: "Tất cả",
+        viewAll: "Xem tất cả →",
+        noArtists: "Không có nghệ sĩ nào trong thể loại này",
+        retry: "Thử lại",
+        viewArtist: "▶ Xem nghệ sĩ",
+        verifiedTitle: "Nghệ sĩ xác minh",
+        error: "Không thể tải danh sách nghệ sĩ",
+    },
+    en: {
+        label: "Artists",
+        heading: "Featured",
+        highlight: "Artists",
+        all: "All",
+        viewAll: "View all →",
+        noArtists: "No artists in this genre",
+        retry: "Try again",
+        viewArtist: "▶ View artist",
+        verifiedTitle: "Verified artist",
+        error: "Failed to load artists",
+    },
+} as const;

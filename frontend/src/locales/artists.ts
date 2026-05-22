@@ -1,0 +1,24 @@
+export const artistsText = {
+    vi: {
+        label: "Won Music · Nghệ sĩ",
+        heading: "Nghệ sĩ",
+        highlight: "nổi bật",
+        subtitle: "Khám phá những nghệ sĩ tài năng đang tạo nên làn sóng âm nhạc mới tại Việt Nam.",
+        searchPlaceholder: "Tìm nghệ sĩ...",
+        all: "Tất cả",
+        artistCount: "nghệ sĩ",
+        viewArtist: "▶ Xem nghệ sĩ",
+        noArtists: "Không tìm thấy nghệ sĩ nào",
+    },
+    en: {
+        label: "Won Music · Artists",
+        heading: "Featured",
+        highlight: "Artists",
+        subtitle: "Discover talented artists creating new music waves in Vietnam.",
+        searchPlaceholder: "Search artists...",
+        all: "All",
+        artistCount: "artists",
+        viewArtist: "▶ View Artist",
+        noArtists: "No artists found",
+    },
+};
