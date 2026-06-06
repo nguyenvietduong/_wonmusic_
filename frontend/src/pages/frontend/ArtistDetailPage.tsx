@@ -7,6 +7,7 @@ import { artistService, type Artist, type Track } from "@/services/artistService
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { FaFacebookF, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa";
 import SEO from "@/components/frontend/SEO";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const fmt = {
@@ -37,6 +38,7 @@ const AVATAR_GRADIENTS = [
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 export default function ArtistDetailPage() {
+    const isMobile = useIsMobile();
     const params = useParams();
     const id = params?.id as string | undefined;
 
@@ -578,7 +580,7 @@ export default function ArtistDetailPage() {
                                         <div style={{ width:28 }} />
                                         <div style={{ width:40 }} />
                                         <div style={{ flex:1, fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Tên bài</div>
-                                        <div style={{ width:72, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Plays</div>
+                                        {!isMobile && <div style={{ width:72, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Plays</div>}
                                         <div style={{ width:44, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>TG</div>
                                     </div>
 
@@ -645,9 +647,11 @@ export default function ArtistDetailPage() {
                                                     </div>
 
                                                     {/* Plays */}
+                                                    {!isMobile && (
                                                     <div style={{ width:72, textAlign:"right", flexShrink:0 }}>
                                                         <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.45)", fontWeight:600 }}>{fmt.plays(track.plays)}</p>
                                                     </div>
+                                                    )}
 
                                                     {/* Duration */}
                                                     <div style={{ width:44, textAlign:"right", flexShrink:0 }}>
@@ -667,7 +671,7 @@ export default function ArtistDetailPage() {
                     TAB: ABOUT — two-column layout
                 ───────────────────────────────────── */}
                 {activeTab === "about" && (
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:24, alignItems:"start", animation:"adpFadeUp .4s both" }}>
+                    <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap:24, alignItems:"start", animation:"adpFadeUp .4s both" }}>
 
                         {/* Left column: bio + social */}
                         <div style={{ display:"flex", flexDirection:"column", gap:20 }}>

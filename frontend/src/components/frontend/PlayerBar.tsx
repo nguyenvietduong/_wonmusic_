@@ -2,6 +2,7 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { trackService } from "@/services/trackService";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
     FaPlay, FaPause, FaStepForward, FaStepBackward,
@@ -21,6 +22,7 @@ const getRatio = (el: HTMLDivElement, clientX: number) =>
 const EQ_H = [38, 72, 52, 88, 44, 78];
 
 const PlayerBar = () => {
+    const isMobile = useIsMobile();
     const audioRef       = useRef<HTMLAudioElement>(null);
     const progressRef    = useRef<HTMLDivElement>(null);
     const volumeRef      = useRef<HTMLDivElement>(null);
@@ -303,11 +305,11 @@ const PlayerBar = () => {
                             borderTop:"1px solid rgba(0,169,143,.15)",
                             boxShadow:"0 -8px 40px rgba(0,0,0,.08)",
                             display:"flex", alignItems:"center",
-                            padding:"0 24px", gap:16,
+                            padding: isMobile ? "0 12px" : "0 24px", gap: isMobile ? 10 : 16,
                         }}>
 
                             {/* ── LEFT: track info ── */}
-                            <div style={{ display:"flex", alignItems:"center", gap:12, width:260, flexShrink:0, minWidth:0 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:12, width: isMobile ? "auto" : 260, flex: isMobile ? 1 : undefined, flexShrink:0, minWidth:0 }}>
 
                                 {/* Cover with EQ overlay */}
                                 <div style={{ position:"relative", flexShrink:0 }}>
@@ -355,17 +357,24 @@ const PlayerBar = () => {
                                 </div>
                             </div>
 
+                            {/* Mobile minimize button */}
+                            {isMobile && (
+                                <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)", flexShrink:0 }} title="Thu nhỏ">
+                                    <FaChevronDown style={{ fontSize:11 }} />
+                                </button>
+                            )}
+
                             {/* ── CENTER: controls + mini progress ── */}
-                            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:0 }}>
+                            <div style={{ flex: isMobile ? undefined : 1, display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:0, flexShrink: isMobile ? 0 : undefined }}>
 
                                 {/* Buttons */}
                                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                                    <button onClick={toggleShuffle} className="pb-btn" style={{ width:32, height:32, color: isShuffle ? "#34D4B8" : "rgba(0,0,0,.45)", background: isShuffle ? "rgba(0,169,143,.12)" : "transparent" }}>
+                                    {!isMobile && <button onClick={toggleShuffle} className="pb-btn" style={{ width:32, height:32, color: isShuffle ? "#34D4B8" : "rgba(0,0,0,.45)", background: isShuffle ? "rgba(0,169,143,.12)" : "transparent" }}>
                                         <FaRandom style={{ fontSize:11 }} />
-                                    </button>
-                                    <button onClick={handlePrev} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
+                                    </button>}
+                                    {!isMobile && <button onClick={handlePrev} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
                                         <FaStepBackward style={{ fontSize:14 }} />
-                                    </button>
+                                    </button>}
 
                                     {/* Play/Pause — gradient circle */}
                                     <button
@@ -389,29 +398,29 @@ const PlayerBar = () => {
                                         }
                                     </button>
 
-                                    <button onClick={next} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
+                                    {!isMobile && <button onClick={next} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
                                         <FaStepForward style={{ fontSize:14 }} />
-                                    </button>
-                                    <button onClick={cycleRepeat} className="pb-btn" style={{ width:32, height:32, color: repeatMode !== "off" ? "#34D4B8" : "rgba(0,0,0,.45)", background: repeatMode !== "off" ? "rgba(0,169,143,.12)" : "transparent", position:"relative" }}>
+                                    </button>}
+                                    {!isMobile && <button onClick={cycleRepeat} className="pb-btn" style={{ width:32, height:32, color: repeatMode !== "off" ? "#34D4B8" : "rgba(0,0,0,.45)", background: repeatMode !== "off" ? "rgba(0,169,143,.12)" : "transparent", position:"relative" }}>
                                         <FaRedo style={{ fontSize:11 }} />
                                         {repeatMode === "one" && (
                                             <span style={{ position:"absolute", top:2, right:2, fontSize:7, fontWeight:700, lineHeight:1, color:"#34D4B8", fontFamily:"'Space Grotesk',sans-serif" }}>1</span>
                                         )}
-                                    </button>
+                                    </button>}
                                 </div>
 
-                                {/* Mini progress + time */}
-                                <div style={{ display:"flex", alignItems:"center", gap:8, width:"100%", maxWidth:380 }}>
+                                {/* Mini progress + time — hidden on mobile */}
+                                {!isMobile && <div style={{ display:"flex", alignItems:"center", gap:8, width:"100%", maxWidth:380 }}>
                                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:32, textAlign:"right" }}>{fmt(currentTime)}</span>
                                     <div style={{ flex:1, height:3, borderRadius:100, background:"rgba(0,0,0,.08)", overflow:"hidden" }}>
                                         <div style={{ height:"100%", borderRadius:100, background:"linear-gradient(90deg,#00A98F,#34D4B8)", width:`${pct}%`, transition:"width .15s linear" }} />
                                     </div>
                                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:32 }}>{fmt(duration)}</span>
-                                </div>
+                                </div>}
                             </div>
 
-                            {/* ── RIGHT: queue + volume + minimize ── */}
-                            <div style={{ display:"flex", alignItems:"center", gap:8, width:260, flexShrink:0, justifyContent:"flex-end" }}>
+                            {/* ── RIGHT: queue + volume + minimize — hidden on mobile ── */}
+                            {!isMobile && <div style={{ display:"flex", alignItems:"center", gap:8, width:260, flexShrink:0, justifyContent:"flex-end" }}>
 
                                 {/* Queue */}
                                 <div style={{ position:"relative" }}>
@@ -459,7 +468,7 @@ const PlayerBar = () => {
                                 <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)" }} title="Thu nhỏ">
                                     <FaChevronDown style={{ fontSize:11 }} />
                                 </button>
-                            </div>
+                            </div>}
                         </div>
                     </div>
                 )}

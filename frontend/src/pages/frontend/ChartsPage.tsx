@@ -6,6 +6,7 @@ import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { chartsText } from "@/locales/charts";
 import SEO from "@/components/frontend/SEO";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const formatPlays = (num: number) => {
     if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
@@ -37,6 +38,7 @@ const SkeletonRow = ({ idx }: { idx: number }) => (
 );
 
 const ChartsPage = () => {
+    const isMobile = useIsMobile();
     const { lang } = useLanguageStore();
     const t = chartsText[lang];
 
@@ -210,7 +212,7 @@ const ChartsPage = () => {
 
                 <canvas ref={canvasRef} style={{ position:"absolute", bottom:0, left:0, width:"100%", height:100, opacity:.5, pointerEvents:"none" }} />
 
-                <div style={{ position:"relative", zIndex:2, maxWidth:1200, margin:"0 auto", padding:"0 48px", height:"100%", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                <div style={{ position:"relative", zIndex:2, maxWidth:1200, margin:"0 auto", padding: isMobile ? "0 16px" : "0 48px", height:"100%", display:"flex", flexDirection:"column", justifyContent:"center" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
                         <span style={{ width:6, height:6, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"dotPulse 1.5s ease-in-out infinite" }} />
                         <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, color:"#34D4B8", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:700 }}>
@@ -232,7 +234,7 @@ const ChartsPage = () => {
             </div>
 
             {/* ══ Content ══ */}
-            <div style={{ maxWidth:1200, margin:"0 auto", padding:"40px 48px 80px" }}>
+            <div style={{ maxWidth:1200, margin:"0 auto", padding: isMobile ? "24px 16px 60px" : "40px 48px 80px" }}>
 
                 {/* Period tabs + heading */}
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28, flexWrap:"wrap", gap:14 }}>
@@ -256,11 +258,11 @@ const ChartsPage = () => {
                 {/* Table header */}
                 {!loading && tracks.length > 0 && (
                     <div style={{ display:"flex", alignItems:"center", gap:16, padding:"0 20px 10px", borderBottom:"1px solid rgba(0,0,0,0.07)", marginBottom:6 }}>
-                        <div className="cp-th" style={{ width:56 }}>#</div>
-                        <div style={{ width:48 }} />
+                        <div className="cp-th" style={{ width: isMobile ? 36 : 56 }}>#</div>
+                        <div style={{ width: isMobile ? 40 : 48 }} />
                         <div className="cp-th" style={{ flex:1 }}>{t.colTrack}</div>
-                        <div className="cp-th" style={{ width:120 }}>{t.colArtist}</div>
-                        <div className="cp-th" style={{ width:180 }}>{t.colPlays}</div>
+                        {!isMobile && <div className="cp-th" style={{ width:120 }}>{t.colArtist}</div>}
+                        {!isMobile && <div className="cp-th" style={{ width:180 }}>{t.colPlays}</div>}
                         <div className="cp-th" style={{ width:50, textAlign:"right" }}>{t.colDuration}</div>
                     </div>
                 )}
@@ -285,7 +287,7 @@ const ChartsPage = () => {
                                     onClick={() => handlePlay(track)}
                                 >
                                     {/* Rank */}
-                                    <div className="cp-rank" style={{ width:56, flexShrink:0, animationDelay:`${idx*.05}s` }}>
+                                    <div className="cp-rank" style={{ width: isMobile ? 36 : 56, flexShrink:0, animationDelay:`${idx*.05}s` }}>
                                         {isThisPlaying ? (
                                             <div style={{ display:"flex", alignItems:"flex-end", gap:2, height:20, justifyContent:"center" }}>
                                                 {[40,70,55,90,45,75].map((h,i) => (
@@ -313,7 +315,7 @@ const ChartsPage = () => {
 
                                     {/* Cover */}
                                     <div style={{
-                                        width:48, height:48, borderRadius:10, overflow:"hidden",
+                                        width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius:10, overflow:"hidden",
                                         background:"linear-gradient(135deg,#E8ECF8,#D8DFF0)",
                                         flexShrink:0, position:"relative",
                                         boxShadow: isThisPlaying ? "0 4px 16px rgba(0,169,143,.3)" : isTop3 ? "0 4px 12px rgba(0,0,0,.1)" : "none",
@@ -351,7 +353,7 @@ const ChartsPage = () => {
                                     </div>
 
                                     {/* Artist */}
-                                    <div style={{ width:120, flexShrink:0 }}>
+                                    {!isMobile && <div style={{ width:120, flexShrink:0 }}>
                                         <Link
                                             href={`/artists/${track.artistId._id}`}
                                             onClick={e => e.stopPropagation()}
@@ -365,10 +367,10 @@ const ChartsPage = () => {
                                             <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{track.artistId.name}</span>
                                             {track.artistId.verified && <span style={{ color:"#34D4B8", fontSize:10, flexShrink:0 }}>✓</span>}
                                         </Link>
-                                    </div>
+                                    </div>}
 
                                     {/* Bar + plays */}
-                                    <div style={{ width:180, flexShrink:0 }}>
+                                    {!isMobile && <div style={{ width:180, flexShrink:0 }}>
                                         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                                             <div style={{ flex:1, height:4, background:"rgba(0,0,0,0.07)", borderRadius:3, overflow:"hidden" }}>
                                                 <div className="cp-bar-fill" style={{ "--w":`${pct}%` } as React.CSSProperties} />
@@ -377,7 +379,7 @@ const ChartsPage = () => {
                                                 {formatPlays(track.plays)}
                                             </span>
                                         </div>
-                                    </div>
+                                    </div>}
 
                                     {/* Duration */}
                                     <div style={{ width:50, textAlign:"right", flexShrink:0 }}>

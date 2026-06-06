@@ -5,6 +5,7 @@ import { artistService, type Artist } from "@/services/artistService";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { artistsText } from "@/locales/artists";
 import SEO from "@/components/frontend/SEO";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const GENRE_KEYS = ["Pop", "Indie", "R&B", "Hip-hop", "Ballad", "EDM", "Folk"];
 
@@ -43,6 +44,7 @@ const SkeletonCard = ({ idx }: { idx: number }) => (
 );
 
 const ArtistsPage = () => {
+    const isMobile = useIsMobile();
     const { lang } = useLanguageStore();
     const t = artistsText[lang];
     const GENRES = [t.all, ...GENRE_KEYS];
@@ -313,9 +315,9 @@ const ArtistsPage = () => {
                 borderBottom:"1px solid rgba(0,169,143,.1)",
                 padding:"10px 0",
             }}>
-                <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px", display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+                <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "0 16px" : "0 32px", display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
                     {/* Search */}
-                    <div style={{ position:"relative", flex:"0 0 220px" }}>
+                    <div style={{ position:"relative", flex: isMobile ? "1 1 auto" : "0 0 220px", minWidth: isMobile ? 0 : undefined }}>
                         <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"rgba(0,0,0,.35)", fontSize:12 }}>🔍</span>
                         <input className="ap-search" placeholder={t.searchPlaceholder} value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
@@ -336,7 +338,7 @@ const ArtistsPage = () => {
             </div>
 
             {/* ══════════ GRID ══════════ */}
-            <div style={{ maxWidth:1440, margin:"0 auto", padding:"44px 32px 80px" }}>
+            <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "24px 16px 60px" : "44px 32px 80px" }}>
                 {loading ? (
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16 }}>
                         {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} idx={i} />)}

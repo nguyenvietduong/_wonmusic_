@@ -6,6 +6,7 @@ import SEO from "@/components/frontend/SEO";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { aboutPageText } from "@/locales/aboutPage";
 import { useSettingsStore } from "@/stores/useSettingsStore";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const NOTES = ["♩","♪","♫","♬","𝄞","𝄢","♭","♮","♯"];
 
@@ -18,6 +19,7 @@ const TEAM_COLORS = [
 
 
 export default function AboutPage() {
+    const isMobile = useIsMobile();
     const { lang } = useLanguageStore();
     const t = aboutPageText[lang];
 
@@ -350,7 +352,7 @@ export default function AboutPage() {
                 </div>
 
                 {/* ══════════ MISSION ══════════ */}
-                <div style={{ padding:"100px 0", background:"#F0F0F8", position:"relative", overflow:"hidden" }}>
+                <div style={{ padding: isMobile ? "60px 0" : "100px 0", background:"#F0F0F8", position:"relative", overflow:"hidden" }}>
                     {/* Decorative vinyl */}
                     <div style={{ position:"absolute", left:-120, top:"50%", transform:"translateY(-50%)", opacity:.08, pointerEvents:"none" }}>
                         <div style={{ width:400, height:400, borderRadius:"50%", background:"conic-gradient(from 0deg,#D8DCF0,#00A98F,#C8CEE8,#D8DCF0)", animation:"abSpin 15s linear infinite", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -360,8 +362,8 @@ export default function AboutPage() {
                         </div>
                     </div>
 
-                    <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px", position:"relative", zIndex:1 }}>
-                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:80, alignItems:"center" }}>
+                    <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "0 16px" : "0 32px", position:"relative", zIndex:1 }}>
+                        <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 40 : 80, alignItems:"center" }}>
                             <div>
                                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
                                     <span style={{ width:32, height:1, background:"#00A98F", display:"inline-block" }} />
@@ -405,7 +407,7 @@ export default function AboutPage() {
 
                             {/* Vinyl visual */}
                             <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                <div style={{ position:"relative", width:320, height:320 }}>
+                                <div style={{ position:"relative", width: isMobile ? 220 : 320, height: isMobile ? 220 : 320 }}>
                                     {/* Outer ring */}
                                     <div style={{
                                         position:"absolute", inset:-20,
@@ -508,9 +510,9 @@ export default function AboutPage() {
                 </div>
 
                 {/* ══════════ TIMELINE ══════════ */}
-                <div style={{ padding:"100px 0", background:"#F0F0F8" }}>
-                    <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px" }}>
-                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:80, alignItems:"start" }}>
+                <div style={{ padding: isMobile ? "60px 0" : "100px 0", background:"#F0F0F8" }}>
+                    <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "0 16px" : "0 32px" }}>
+                        <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 32 : 80, alignItems:"start" }}>
                             <div>
                                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
                                     <span style={{ width:24, height:1, background:"#00A98F" }} />

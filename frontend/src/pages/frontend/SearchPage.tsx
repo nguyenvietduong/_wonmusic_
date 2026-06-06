@@ -8,6 +8,7 @@ import { artistService, type Artist } from "@/services/artistService";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { searchText } from "@/locales/search";
+import { useIsMobile } from "@/hooks/use-mobile";
 import SEO from "@/components/frontend/SEO";
 
 const formatPlays = (num: number) => {
@@ -66,6 +67,7 @@ const SkeletonArtist = ({ idx }: { idx: number }) => (
 );
 
 export default function SearchPage() {
+    const isMobile = useIsMobile();
     const { lang } = useLanguageStore();
     const t = searchText[lang];
     const router = useRouter();
@@ -394,10 +396,10 @@ export default function SearchPage() {
                                         {/* Column headers */}
                                         <div style={{ display:"flex", alignItems:"center", gap:16, padding:"0 16px 8px", borderBottom:"1px solid rgba(0,0,0,.07)", marginBottom:4 }}>
                                             <div style={{ width:32 }} />
-                                            <div style={{ width:46 }} />
+                                            <div style={{ width: isMobile ? 40 : 46 }} />
                                             <div style={{ flex:1, fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Bài hát</div>
-                                            <div style={{ width:80, fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Thể loại</div>
-                                            <div style={{ width:52, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Plays</div>
+                                            {!isMobile && <div style={{ width:80, fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Thể loại</div>}
+                                            {!isMobile && <div style={{ width:52, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Plays</div>}
                                             <div style={{ width:42, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>TG</div>
                                         </div>
 
@@ -431,7 +433,7 @@ export default function SearchPage() {
 
                                                         {/* Cover */}
                                                         <div style={{
-                                                            width:46, height:46, borderRadius:10,
+                                                            width: isMobile ? 40 : 46, height: isMobile ? 40 : 46, borderRadius:10,
                                                             overflow:"hidden", flexShrink:0,
                                                             background:"linear-gradient(135deg,#E8ECF8,#D8DFF0)",
                                                             border:`1px solid ${isThisPlaying ? "rgba(0,169,143,.4)" : "rgba(0,0,0,.07)"}`,
@@ -466,6 +468,7 @@ export default function SearchPage() {
                                                         </div>
 
                                                         {/* Genre */}
+                                                        {!isMobile && (
                                                         <div style={{ width:80, flexShrink:0 }}>
                                                             {track.genre && (
                                                                 <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:9, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"#34D4B8", background:"rgba(0,169,143,.09)", padding:"3px 9px", borderRadius:100, border:"1px solid rgba(0,169,143,.22)", whiteSpace:"nowrap" }}>
@@ -473,11 +476,14 @@ export default function SearchPage() {
                                                                 </span>
                                                             )}
                                                         </div>
+                                                        )}
 
                                                         {/* Plays */}
+                                                        {!isMobile && (
                                                         <div style={{ width:52, textAlign:"right", flexShrink:0 }}>
                                                             <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:"rgba(0,0,0,.45)", fontWeight:600 }}>{formatPlays(track.plays)}</span>
                                                         </div>
+                                                        )}
 
                                                         {/* Duration */}
                                                         <div style={{ width:42, textAlign:"right", flexShrink:0 }}>
