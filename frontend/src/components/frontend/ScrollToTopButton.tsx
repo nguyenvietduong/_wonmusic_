@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ArrowUp } from "lucide-react";
 
 export default function ScrollToTopButton() {
     const [visible, setVisible] = useState(false);
@@ -27,7 +28,7 @@ export default function ScrollToTopButton() {
                 pointerEvents: visible ? "auto" : "none",
             }}
         >
-            <i className="fa-solid fa-arrow-up" style={{ fontSize: 14 }} />
+            <ArrowUp size={18} strokeWidth={2.5} />
         </div>
     );
 }
