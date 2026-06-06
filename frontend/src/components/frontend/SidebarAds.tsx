@@ -6,7 +6,7 @@ const SidebarAds = () => {
     const t = blogTranslations[lang].sidebar.ads;
 
     return (
-        <div className="bg-green-700 rounded-3xl p-8 text-white relative overflow-hidden group shadow-xl shadow-green-900/20">
+        <div className="rounded-3xl p-8 text-white relative overflow-hidden group shadow-xl" style={{ background:"linear-gradient(135deg,#00A98F,#007D69)", boxShadow:"0 20px 48px rgba(0,169,143,0.3)" }}>
             {/* Hiệu ứng Decor phía sau */}
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700"></div>
             <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-black/10 rounded-full blur-xl group-hover:bg-black/20 transition-all duration-700"></div>
@@ -18,13 +18,13 @@ const SidebarAds = () => {
                     dangerouslySetInnerHTML={{ __html: t.title }}
                 />
 
-                <p className="text-green-100 text-sm mb-6 leading-relaxed opacity-90">
+                <p className="text-white/80 text-sm mb-6 leading-relaxed">
                     {t.description}
                 </p>
 
                 <a
                     href={t.link}
-                    className="inline-block bg-white text-green-700 px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-[0.1em] hover:bg-green-50 hover:scale-105 active:scale-95 transition-all shadow-lg"
+                    className="inline-block bg-white text-[#007D69] px-6 py-3 rounded-xl font-black text-[11px] uppercase tracking-[0.1em] hover:bg-[#f0faf8] hover:scale-105 active:scale-95 transition-all shadow-lg"
                 >
                     {t.buttonText}
                 </a>

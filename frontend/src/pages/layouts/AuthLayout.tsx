@@ -1,8 +1,9 @@
+'use client';
 // layouts/AuthLayout.tsx
-import { Outlet } from "react-router";
+import React from "react";
 
-export default function AuthLayout() {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
     return (
-        <Outlet />
+        <>{children}</>
     );
 }

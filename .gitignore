@@ -6,6 +6,13 @@ backend/node_modules/
 # ==== Build output ====
 frontend/dist/
 frontend/.vite/
+frontend/.next/
+frontend/out/
+frontend/tsconfig.tsbuildinfo
+
+# ==== Runtime uploads (audio, covers, logos) ====
+frontend/public/audio/
+frontend/public/covers/
 
 # ==== Environment & secrets ====
 .env

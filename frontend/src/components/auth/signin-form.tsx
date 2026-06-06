@@ -1,12 +1,13 @@
+'use client'
 import { cn } from "@/lib/utils";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useNavigate } from "react-router";
-import { Link } from "react-router-dom";
-import { useEffect, useRef } from "react";
-import "@/styles/signin.css";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import { User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 
 const signInSchema = z.object({
     username: z.string().min(3, "Tên đăng nhập phải có ít nhất 3 ký tự"),
@@ -15,13 +16,17 @@ const signInSchema = z.object({
 
 type SignInFormValues = z.infer<typeof signInSchema>;
 
+const EQ_HEIGHTS = [22, 34, 28, 40, 18, 36, 25, 42, 20, 32, 38, 26, 44, 22, 30, 35, 24, 40, 28, 20, 36, 32, 26, 42, 18, 34, 28, 22];
+const VP_EQ = [35, 60, 45, 75, 30, 65, 50, 80, 40, 60];
+
 export function SigninForm({
     className,
     ...props
 }: React.ComponentProps<"div">) {
     const { signIn } = useAuthStore();
-    const navigate = useNavigate();
+    const router = useRouter();
     const barsRef = useRef<HTMLDivElement>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignInFormValues>({
         resolver: zodResolver(signInSchema),
@@ -29,79 +34,80 @@ export function SigninForm({
 
     const onSubmit = async (data: SignInFormValues) => {
         await signIn(data.username, data.password);
-        navigate("/admin");
+        router.push("/admin");
     };
 
-    // Generate random bar heights for the waveform
+    // Set waveform bar heights
     useEffect(() => {
         if (!barsRef.current) return;
         const bars = barsRef.current.querySelectorAll<HTMLSpanElement>(".wv-bar");
         bars.forEach((bar, i) => {
-            bar.style.setProperty("--h", `${18 + Math.sin(i * 0.55) * 12 + Math.random() * 22}px`);
-            bar.style.animationDelay = `${(i * 0.07).toFixed(2)}s`;
+            bar.style.setProperty("--h", `${EQ_HEIGHTS[i] ?? 18}px`);
+            bar.style.animationDelay = `${(i * 0.06).toFixed(2)}s`;
         });
     }, []);
 
-    const logoPath = `/logoBlack.png`;
-
     return (
         <div className={cn("signin-music-root", className)} {...props}>
-            {/* ── Background decorations ── */}
+            {/* Background */}
             <div className="signin-bg">
                 <div className="signin-ring r1" />
                 <div className="signin-ring r2" />
                 <div className="signin-ring r3" />
-                {Array.from({ length: 10 }).map((_, i) => (
+                {Array.from({ length: 12 }).map((_, i) => (
                     <div
                         key={i}
                         className="signin-particle"
                         style={{
-                            left: `${10 + Math.random() * 80}%`,
-                            top: `${10 + Math.random() * 80}%`,
-                            animationDelay: `${Math.random() * 5}s`,
-                            animationDuration: `${4 + Math.random() * 4}s`,
+                            left:  `${8 + (i * 7.5) % 84}%`,
+                            top:   `${5 + (i * 11) % 88}%`,
+                            animationDelay:    `${(i * 0.6) % 5}s`,
+                            animationDuration: `${5 + (i * 0.7) % 4}s`,
                         }}
                     />
                 ))}
             </div>
 
-            {/* ── Card ── */}
+            {/* Card */}
             <div className="signin-card">
-                {/* Left — form panel */}
+
+                {/* ── Left: form panel ── */}
                 <div className="signin-form-panel">
                     {/* Logo */}
-                    <Link to="/" className="signin-logo-link">
-                        <img src={logoPath} alt="Won Music" className="signin-logo-img" />
+                    <Link href="/" className="signin-logo-link">
+                        <img src="/logoBlack.png" alt="Won Music" className="signin-logo-img" />
                         <span className="signin-logo-text">WON MUSIC</span>
                     </Link>
 
                     {/* Heading */}
                     <div className="signin-heading">
-                        <h1 className="signin-title">Chào mừng<br />quay lại</h1>
+                        <h1 className="signin-title">
+                            Chào mừng<br />
+                            <em>quay lại</em>
+                        </h1>
                         <p className="signin-sub">Đăng nhập để tiếp tục thưởng thức âm nhạc</p>
                     </div>
 
-                    {/* Waveform decoration */}
+                    {/* Waveform */}
                     <div className="signin-waveform" ref={barsRef} aria-hidden="true">
-                        {Array.from({ length: 28 }).map((_, i) => (
-                            <span key={i} className="wv-bar" />
-                        ))}
+                        {EQ_HEIGHTS.map((_, i) => <span key={i} className="wv-bar" />)}
                     </div>
 
                     {/* Form */}
                     <form className="signin-form" onSubmit={handleSubmit(onSubmit)} noValidate>
                         {/* Username */}
                         <div className="signin-field">
-                            <label htmlFor="username" className="signin-label">
-                                Tên đăng nhập
-                            </label>
+                            <label htmlFor="username" className="signin-label">Tên đăng nhập</label>
                             <div className="signin-input-wrap">
-                                <span className="signin-input-icon">♪</span>
+                                <span className="signin-input-icon">
+                                    <User size={15} />
+                                </span>
                                 <input
                                     type="text"
                                     id="username"
                                     placeholder="wonmusic_user"
-                                    className={cn("signin-input", errors.username && "is-error")}
+                                    autoComplete="username"
+                                    className={cn("signin-input no-right-pad", errors.username && "is-error")}
                                     {...register("username")}
                                 />
                             </div>
@@ -112,18 +118,28 @@ export function SigninForm({
 
                         {/* Password */}
                         <div className="signin-field">
-                            <label htmlFor="password" className="signin-label">
-                                Mật khẩu
-                            </label>
+                            <label htmlFor="password" className="signin-label">Mật khẩu</label>
                             <div className="signin-input-wrap">
-                                <span className="signin-input-icon">🔑</span>
+                                <span className="signin-input-icon">
+                                    <Lock size={15} />
+                                </span>
                                 <input
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     id="password"
                                     placeholder="••••••••"
+                                    autoComplete="current-password"
                                     className={cn("signin-input", errors.password && "is-error")}
                                     {...register("password")}
                                 />
+                                <button
+                                    type="button"
+                                    className="signin-input-toggle"
+                                    onClick={() => setShowPassword(v => !v)}
+                                    tabIndex={-1}
+                                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                                >
+                                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                                </button>
                             </div>
                             {errors.password && (
                                 <p className="signin-error">{errors.password.message}</p>
@@ -131,40 +147,33 @@ export function SigninForm({
                         </div>
 
                         {/* Submit */}
-                        <button
-                            type="submit"
-                            className="signin-btn"
-                            disabled={isSubmitting}
-                        >
+                        <button type="submit" className="signin-btn" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <span className="signin-btn-loading">
-                                    <span />
-                                    <span />
-                                    <span />
+                                    <span /><span /><span />
                                 </span>
                             ) : (
                                 <>
-                                    <span className="signin-btn-icon">▶</span>
+                                    <LogIn size={16} />
                                     Đăng nhập
                                 </>
                             )}
                         </button>
                     </form>
 
-                    {/* Footer */}
-                    {/* <p className="signin-footer-link">
-                        Chưa có tài khoản?{" "}
-                        <Link to="/signup">Đăng ký ngay</Link>
-                    </p> */}
                     <p className="signin-tos">
                         Bằng cách tiếp tục, bạn đồng ý với{" "}
-                        <Link to="#">Điều khoản dịch vụ</Link> và{" "}
-                        <Link to="#">Chính sách bảo mật</Link>.
+                        <Link href="#">Điều khoản dịch vụ</Link> và{" "}
+                        <Link href="#">Chính sách bảo mật</Link>.
                     </p>
                 </div>
 
-                {/* Right — visual panel */}
+                {/* ── Right: visual panel ── */}
                 <div className="signin-visual-panel" aria-hidden="true">
+                    <div className="vp-circle c1" />
+                    <div className="vp-circle c2" />
+
+                    {/* Vinyl */}
                     <div className="vinyl-wrap">
                         <div className="vinyl-disk">
                             <div className="vinyl-g g1" />
@@ -177,21 +186,25 @@ export function SigninForm({
                         <div className="vinyl-shadow" />
                     </div>
 
-                    <div className="np-card">
-                        <div className="np-bars">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i} className="np-bar" style={{ animationDelay: `${i * 0.18}s` }} />
-                            ))}
-                        </div>
-                        <div>
-                            <div className="np-title">Nơi Này Có Anh</div>
-                            <div className="np-artist">Sơn Tùng M-TP</div>
-                        </div>
+                    {/* EQ bars */}
+                    <div className="vp-eq">
+                        {VP_EQ.map((h, i) => (
+                            <div
+                                key={i}
+                                className="vp-eq-bar"
+                                style={{
+                                    height: `${h}%`,
+                                    animationDuration: `${0.6 + (i % 5) * 0.18}s`,
+                                    animationDelay: `${i * 0.07}s`,
+                                }}
+                            />
+                        ))}
                     </div>
 
+                    {/* Tagline */}
                     <div className="visual-tagline">
                         <span className="vt-line" />
-                        <span>Nền tảng âm nhạc #1 Việt Nam</span>
+                        <span>Âm nhạc #1 Việt Nam</span>
                         <span className="vt-line" />
                     </div>
                 </div>

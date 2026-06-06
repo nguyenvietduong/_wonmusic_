@@ -1,3 +1,4 @@
+'use client'
 import { useAuthStore } from "@/stores/useAuthStore";
 import { Button } from "../ui/button";
 // import { useNavigate } from "react-router";

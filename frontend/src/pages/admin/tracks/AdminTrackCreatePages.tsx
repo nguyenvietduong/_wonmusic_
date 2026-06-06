@@ -1,6 +1,8 @@
+'use client';
 // src/pages/admin/tracks/Admintrackcreatepage.tsx
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     ArrowLeft, Music, X, Upload, Image as ImageIcon,
     Mic2, Tag, Calendar, FileAudio,
@@ -26,9 +28,7 @@ const GENRES = [
     "Metal", "Blues", "Reggae", "Acoustic",
 ];
 
-const API = import.meta.env.MODE === "development"
-    ? "http://localhost:2004/api"
-    : "https://wonmusic-api.up.railway.app/api";
+const API = "/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface TrackForm {
@@ -38,26 +38,31 @@ interface TrackForm {
     genre: string;
     releaseYear: string;
     isPublished: boolean;
+    audioUrl: string;
+    coverUrl: string;
 }
 
 type Tab = "basic" | "media";
+type SourceMode = "upload" | "url";
 
 const EMPTY_FORM: TrackForm = {
     title: "", artistId: "",
     duration: 0, genre: "",
     releaseYear: String(new Date().getFullYear()),
     isPublished: true,
+    audioUrl: "", coverUrl: "",
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function AdminTrackCreatePages() {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const [artists, setArtists] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<Tab>("basic");
+    const [sourceMode, setSourceMode] = useState<SourceMode>("upload");
 
     // ── Audio player state ──
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -105,7 +110,7 @@ export default function AdminTrackCreatePages() {
     // ── Derived validation ──
     const titleValid = !!form.title.trim();
     const artistValid = !!form.artistId;
-    const audioValid = !!pendingAudioFile.current;
+    const audioValid = sourceMode === "url" ? !!form.audioUrl.trim() : !!pendingAudioFile.current;
     const isValid = titleValid && artistValid && audioValid;
 
     const missingFields = [
@@ -191,15 +196,14 @@ export default function AdminTrackCreatePages() {
     const validate = (): string | null => {
         if (!form.title.trim()) return "Tên bài hát không được để trống.";
         if (!form.artistId) return "Vui lòng chọn nghệ sĩ.";
-        if (!pendingAudioFile.current) return "Vui lòng chọn file âm thanh.";
+        if (sourceMode === "url" && !form.audioUrl.trim()) return "Vui lòng nhập URL audio.";
+        if (sourceMode === "upload" && !pendingAudioFile.current) return "Vui lòng chọn file âm thanh.";
         return null;
     };
 
     // ── Create ──
     const handleCreate = async () => {
-        // Touch all required fields to show all errors at once
         setTouched({ title: true, artistId: true, audio: true });
-
         const err = validate();
         if (err) { setError(err); return; }
 
@@ -207,33 +211,41 @@ export default function AdminTrackCreatePages() {
         setError(null);
 
         try {
-            const formData = new FormData();
+            let res;
 
-            formData.append("title", form.title);
-            formData.append("artistId", form.artistId);
-            formData.append("duration", String(form.duration));
-            formData.append("genre", form.genre);
-            formData.append("isPublished", String(form.isPublished));
-            if (form.releaseYear) {
-                formData.append("releaseYear", form.releaseYear);
+            if (sourceMode === "url") {
+                // ── URL mode: gửi JSON, không upload Cloudinary ──
+                res = await axios.post(`${API}/tracks`, {
+                    title:       form.title,
+                    artistId:    form.artistId,
+                    duration:    form.duration,
+                    genre:       form.genre,
+                    releaseYear: form.releaseYear || undefined,
+                    isPublished: form.isPublished,
+                    audioUrl:    form.audioUrl,
+                    coverUrl:    form.coverUrl || undefined,
+                });
+            } else {
+                // ── Upload mode: multipart/form-data → Cloudinary ──
+                const formData = new FormData();
+                formData.append("title", form.title);
+                formData.append("artistId", form.artistId);
+                formData.append("duration", String(form.duration));
+                formData.append("genre", form.genre);
+                formData.append("isPublished", String(form.isPublished));
+                if (form.releaseYear) formData.append("releaseYear", form.releaseYear);
+                if (pendingAudioFile.current) formData.append("audio", pendingAudioFile.current);
+                if (pendingCoverFile.current) formData.append("cover", pendingCoverFile.current);
+
+                setUploadingAudio(true);
+                res = await axios.post(`${API}/tracks`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+                setUploadingAudio(false);
             }
 
-            if (pendingAudioFile.current) {
-                formData.append("audio", pendingAudioFile.current);
-            }
-            if (pendingCoverFile.current) {
-                formData.append("cover", pendingCoverFile.current);
-            }
-
-            setUploadingAudio(true);
-            const res = await axios.post(`${API}/tracks`, formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-            setUploadingAudio(false);
-
-            const newId = res.data.data._id;
             toast.success("Tạo bài hát thành công!");
-            navigate(`/admin/tracks/${newId}`);
+            router.push(`/admin/tracks/${res.data.data._id}`);
 
         } catch (e: any) {
             setError(e?.response?.data?.message ?? "Tạo bài hát thất bại. Vui lòng thử lại.");
@@ -485,7 +497,7 @@ export default function AdminTrackCreatePages() {
 
             {/* ── Breadcrumb ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, animation: "ahFadeUp .3s both", flexWrap: "wrap" }}>
-                <Link to="/admin/tracks" className="tc-pill-btn"><ArrowLeft size={13} /> Bài hát</Link>
+                <Link href="/admin/tracks" className="tc-pill-btn"><ArrowLeft size={13} /> Bài hát</Link>
                 <span style={{ color: "rgba(255,255,255,.18)", fontSize: 12 }}>/</span>
                 <span style={{ fontSize: 13, color: "#4ade80", fontWeight: 600 }}>Tạo mới</span>
             </div>
@@ -509,7 +521,7 @@ export default function AdminTrackCreatePages() {
                     </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    <Link to="/admin/tracks" className="tc-pill-btn"><X size={13} /> Huỷ</Link>
+                    <Link href="/admin/tracks" className="tc-pill-btn"><X size={13} /> Huỷ</Link>
 
                     {/* Missing fields hint next to button */}
                     {!isValid && missingFields.length > 0 && (
@@ -779,10 +791,73 @@ export default function AdminTrackCreatePages() {
 
                     {/* ── Audio ── */}
                     <div className="tc-card" style={{ padding: "22px 24px" }}>
-                        <p className="tc-stitle">File âm thanh <span className="tc-req" style={{ fontSize: 10 }}>*</span></p>
+                        {/* Source mode toggle */}
+                        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+                            {(["upload", "url"] as SourceMode[]).map(mode => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setSourceMode(mode)}
+                                    style={{
+                                        flex: 1, padding: "8px 0", borderRadius: 10, fontSize: 12, fontWeight: 700,
+                                        fontFamily: "'Be Vietnam Pro',sans-serif", cursor: "pointer", transition: "all .18s",
+                                        border: sourceMode === mode ? "1px solid rgba(0,169,143,.4)" : "1px solid rgba(255,255,255,.08)",
+                                        background: sourceMode === mode ? "rgba(0,169,143,.12)" : "rgba(255,255,255,.03)",
+                                        color: sourceMode === mode ? "#34D4B8" : "rgba(255,255,255,.35)",
+                                    }}
+                                >
+                                    {mode === "upload" ? "⬆ Upload file" : "🔗 URL trực tiếp"}
+                                </button>
+                            ))}
+                        </div>
 
-                        {/* Mini player */}
-                        {activeAudioSrc && (
+                        <p className="tc-stitle">
+                            {sourceMode === "upload" ? "File âm thanh" : "URL âm thanh"}
+                            <span className="tc-req" style={{ fontSize: 10 }}>*</span>
+                        </p>
+
+                        {/* ── URL mode inputs ── */}
+                        {sourceMode === "url" && (
+                            <div style={{ marginBottom: 16 }}>
+                                <div className="tc-field">
+                                    <label className="tc-label">🔗 URL audio <span className="tc-req">*</span></label>
+                                    <input
+                                        className={`tc-input ${touched.audio && !audioValid ? "err" : ""}`}
+                                        value={form.audioUrl}
+                                        onChange={e => {
+                                            set("audioUrl", e.target.value);
+                                            // tự đọc duration nếu là URL hợp lệ
+                                            if (e.target.value.trim()) {
+                                                const tmp = new Audio(e.target.value.trim());
+                                                tmp.onloadedmetadata = () => {
+                                                    if (tmp.duration && isFinite(tmp.duration))
+                                                        set("duration", Math.round(tmp.duration));
+                                                };
+                                            }
+                                        }}
+                                        onBlur={() => touch("audio")}
+                                        placeholder="/audio/tenfile.mp3  hoặc  https://res.cloudinary.com/..."
+                                    />
+                                    <p style={{ fontSize: 11, color: "rgba(255,255,255,.2)", marginTop: 5 }}>
+                                        Local: <code style={{ color: "rgba(0,169,143,.7)" }}>/audio/tentrac.mp3</code> · Cloudinary/SoundCloud/bất kỳ URL public
+                                    </p>
+                                    {touched.audio && !audioValid && (
+                                        <p className="tc-field-err"><AlertCircle size={10} /> Vui lòng nhập URL audio</p>
+                                    )}
+                                </div>
+                                <div className="tc-field" style={{ marginBottom: 0 }}>
+                                    <label className="tc-label">🖼 URL ảnh bìa</label>
+                                    <input
+                                        className="tc-input"
+                                        value={form.coverUrl}
+                                        onChange={e => set("coverUrl", e.target.value)}
+                                        placeholder="/covers/tenfile.jpg  hoặc  https://..."
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Upload mode: mini player ── */}
+                        {sourceMode === "upload" && activeAudioSrc && (
                             <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 14, background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.12)" }}>
                                 {pendingAudioFile.current && (
                                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "5px 10px", borderRadius: 8, background: "rgba(74,222,128,.08)" }}>
@@ -838,38 +913,40 @@ export default function AdminTrackCreatePages() {
                             </div>
                         )}
 
-                        {/* Drop zone — shows error border if touched and empty */}
-                        <div
-                            className={`tc-drop ${audioDrag ? "drag" : ""} ${touched.audio && !audioValid ? "err-drop" : ""}`}
-                            onClick={() => audioInputRef.current?.click()}
-                            onDragOver={e => { e.preventDefault(); setAudioDrag(true); }}
-                            onDragLeave={() => setAudioDrag(false)}
-                            onDrop={e => { e.preventDefault(); setAudioDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f, "audio"); }}
-                        >
-                            <FileAudio
-                                size={22}
-                                color={
-                                    audioDrag ? "#4ade80"
-                                        : pendingAudioFile.current ? "rgba(74,222,128,.6)"
-                                            : touched.audio && !audioValid ? "rgba(248,113,113,.5)"
-                                                : "rgba(255,255,255,.2)"
-                                }
-                                style={{ margin: "0 auto 10px", display: "block", transition: "color .2s" }}
-                            />
-                            <p style={{ fontSize: 13, color: audioDrag ? "#4ade80" : touched.audio && !audioValid ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.3)", fontWeight: 500, transition: "color .2s" }}>
-                                {pendingAudioFile.current
-                                    ? <span style={{ color: "rgba(255,255,255,.4)" }}>Đổi file khác</span>
-                                    : <>Kéo thả hoặc <span style={{ color: touched.audio && !audioValid ? "#f87171" : "#4ade80" }}>chọn file audio</span></>
-                                }
-                            </p>
-                            <p style={{ fontSize: 11, color: "rgba(255,255,255,.18)", marginTop: 5 }}>MP3, WAV, FLAC · tối đa 50MB</p>
-                        </div>
-
-                        {/* Audio error message */}
-                        {touched.audio && !audioValid && (
-                            <p className="tc-field-err" style={{ marginTop: 8 }}>
-                                <AlertCircle size={10} /> Vui lòng chọn file âm thanh
-                            </p>
+                        {/* Drop zone — chỉ hiện khi upload mode */}
+                        {sourceMode === "upload" && (
+                            <>
+                                <div
+                                    className={`tc-drop ${audioDrag ? "drag" : ""} ${touched.audio && !audioValid ? "err-drop" : ""}`}
+                                    onClick={() => audioInputRef.current?.click()}
+                                    onDragOver={e => { e.preventDefault(); setAudioDrag(true); }}
+                                    onDragLeave={() => setAudioDrag(false)}
+                                    onDrop={e => { e.preventDefault(); setAudioDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f, "audio"); }}
+                                >
+                                    <FileAudio
+                                        size={22}
+                                        color={
+                                            audioDrag ? "#4ade80"
+                                                : pendingAudioFile.current ? "rgba(74,222,128,.6)"
+                                                    : touched.audio && !audioValid ? "rgba(248,113,113,.5)"
+                                                        : "rgba(255,255,255,.2)"
+                                        }
+                                        style={{ margin: "0 auto 10px", display: "block", transition: "color .2s" }}
+                                    />
+                                    <p style={{ fontSize: 13, color: audioDrag ? "#4ade80" : touched.audio && !audioValid ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.3)", fontWeight: 500, transition: "color .2s" }}>
+                                        {pendingAudioFile.current
+                                            ? <span style={{ color: "rgba(255,255,255,.4)" }}>Đổi file khác</span>
+                                            : <>Kéo thả hoặc <span style={{ color: touched.audio && !audioValid ? "#f87171" : "#4ade80" }}>chọn file audio</span></>
+                                        }
+                                    </p>
+                                    <p style={{ fontSize: 11, color: "rgba(255,255,255,.18)", marginTop: 5 }}>MP3, WAV, FLAC · tối đa 50MB · Tự động upload lên Cloudinary</p>
+                                </div>
+                                {touched.audio && !audioValid && (
+                                    <p className="tc-field-err" style={{ marginTop: 8 }}>
+                                        <AlertCircle size={10} /> Vui lòng chọn file âm thanh
+                                    </p>
+                                )}
+                            </>
                         )}
 
                         {/* Duration */}
@@ -897,7 +974,7 @@ export default function AdminTrackCreatePages() {
 
             {/* ── Bottom bar ── */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,.06)", animation: "ahFadeUp .5s both", flexWrap: "wrap" }}>
-                <Link to="/admin/tracks" style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <Link href="/admin/tracks" style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
                     <ArrowLeft size={13} /> Quay lại danh sách
                 </Link>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -908,7 +985,7 @@ export default function AdminTrackCreatePages() {
                             Còn thiếu: {missingFields.join(", ")}
                         </span>
                     )}
-                    <Link to="/admin/tracks" className="tc-pill-btn"><X size={13} /> Huỷ</Link>
+                    <Link href="/admin/tracks" className="tc-pill-btn"><X size={13} /> Huỷ</Link>
                     <button
                         className="tc-create-btn"
                         onClick={handleCreate}

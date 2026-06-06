@@ -1,20 +1,26 @@
-// src/pages/admin/AdminHomePage.tsx
-import { useEffect, useState }              from "react";
-import { Link }                             from "react-router";
-import { Music, Users, TrendingUp, Play }   from "lucide-react";
-import { trackService }                     from "@/services/trackService";
-import { artistService }                    from "@/services/artistService";
+'use client';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+    Music, Users, TrendingUp, Play, Clock,
+    BadgeCheck, ArrowRight, BarChart2, Mic2,
+    Star, ChevronUp,
+} from "lucide-react";
+import { trackService } from "@/services/trackService";
+import { artistService } from "@/services/artistService";
 
-const formatNum = (n: number) => {
-    if (n >= 1_000_000) return `${(n/1_000_000).toFixed(1)}M`;
-    if (n >= 1_000)     return `${(n/1_000).toFixed(1)}K`;
+// ─── helpers ────────────────────────────────────────────────────────────────
+const fNum = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
     return n.toString();
 };
-const formatTime = (sec: number) =>
-    `${Math.floor(sec/60)}:${String(Math.floor(sec%60)).padStart(2,"0")}`;
+const fTime = (s: number) =>
+    `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-const EQ_H = [40,70,55,85,45,75,60,90,50,65];
+const EQ_H = [40, 70, 55, 85, 45, 75, 60, 90, 50, 65];
 
+// ─── Component ──────────────────────────────────────────────────────────────
 export default function AdminHomePage() {
     const [tracks,  setTracks]  = useState<any[]>([]);
     const [artists, setArtists] = useState<any[]>([]);
@@ -25,32 +31,72 @@ export default function AdminHomePage() {
         (async () => {
             try {
                 const [t, a] = await Promise.all([
-                    trackService.getTop(10),
-                    artistService.getAll({ limit:6 }),
+                    trackService.getAll({ limit: 200 }),
+                    artistService.getAll({ limit: 200 }),
                 ]);
-                setTracks(t);
-                setArtists(a.data);
-            } catch {
-                setError(true);
-            } finally { setLoading(false); }
+                setTracks(t.data ?? []);
+                setArtists(a.data ?? []);
+            } catch { setError(true); }
+            finally  { setLoading(false); }
         })();
     }, []);
 
-    const totalPlays = tracks.reduce((s, t) => s + (t.plays ?? 0), 0);
+    const totalPlays    = tracks.reduce((s, t) => s + (t.plays    ?? 0), 0);
+    const totalDuration = tracks.reduce((s, t) => s + (t.duration ?? 0), 0);
+    const verifiedCount = artists.filter(a => a.verified).length;
+
+    // top 8 by plays for list, top 6 by followers for grid
+    const topTracks  = [...tracks].sort((a, b) => (b.plays ?? 0) - (a.plays ?? 0)).slice(0, 8);
+    const topArtists = [...artists].sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0)).slice(0, 6);
 
     const STATS = [
-        { label:"Tổng bài hát",  value: tracks.length,                          icon:Music,         color:"#4ade80", bg:"rgba(74,222,128,.1)"  },
-        { label:"Nghệ sĩ",       value: artists.length,                         icon:Users,         color:"#60a5fa", bg:"rgba(96,165,250,.1)"  },
-        { label:"Lượt nghe",     value: formatNum(totalPlays), icon:Play,                           color:"#f472b6", bg:"rgba(244,114,182,.1)" },
-        { label:"Đang hoạt động",value: artists.filter(a=>a.verified).length,   icon:TrendingUp,    color:"#fb923c", bg:"rgba(251,146,60,.1)" },
+        {
+            label: "Tổng bài hát",
+            value: tracks.length,
+            sub: `${fTime(totalDuration)} tổng`,
+            Icon: Music,
+            iconCls: "text-indigo-600", bgCls: "bg-indigo-50",
+            href: "/admin/tracks",
+        },
+        {
+            label: "Nghệ sĩ",
+            value: artists.length,
+            sub: `${verifiedCount} xác minh`,
+            Icon: Users,
+            iconCls: "text-blue-600", bgCls: "bg-blue-50",
+            href: "/admin/artists",
+        },
+        {
+            label: "Tổng lượt nghe",
+            value: fNum(totalPlays),
+            sub: "Toàn thời gian",
+            Icon: Play,
+            iconCls: "text-pink-600", bgCls: "bg-pink-50",
+            href: "/admin/tracks",
+        },
+        {
+            label: "Đã xác minh",
+            value: verifiedCount,
+            sub: `/ ${artists.length} nghệ sĩ`,
+            Icon: BadgeCheck,
+            iconCls: "text-orange-600", bgCls: "bg-orange-50",
+            href: "/admin/artists",
+        },
+    ];
+
+    const NAV_CARDS = [
+        { label: "Quản lý bài hát",  desc: "Thêm, sửa, xoá bài hát",    Icon: Music,    href: "/admin/tracks",  bg: "bg-indigo-600 hover:bg-indigo-700" },
+        { label: "Quản lý nghệ sĩ",  desc: "Thêm, sửa thông tin nghệ sĩ",Icon: Mic2,     href: "/admin/artists", bg: "bg-blue-600 hover:bg-blue-700"   },
+        { label: "Thống kê",          desc: "Xem báo cáo và biểu đồ",     Icon: BarChart2, href: "/admin/charts",  bg: "bg-violet-600 hover:bg-violet-700"},
+        { label: "Top bài hát",       desc: "Bài hát được nghe nhiều nhất",Icon: TrendingUp,href: "/admin/tracks",  bg: "bg-pink-600 hover:bg-pink-700"   },
     ];
 
     if (error) return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", padding: "60px 0", textAlign: "center" }}>
-            <p style={{ color: "#f87171", fontSize: 14, marginBottom: 12 }}>Không thể tải dữ liệu dashboard.</p>
+        <div className="py-16 text-center">
+            <p className="text-red-400 text-sm mb-3">Không thể tải dữ liệu dashboard.</p>
             <button
                 onClick={() => window.location.reload()}
-                style={{ padding: "8px 20px", borderRadius: 10, background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.2)", color: "#f87171", fontSize: 13, cursor: "pointer" }}
+                className="px-5 py-2 rounded-lg bg-red-50 border border-red-200 text-red-500 text-sm cursor-pointer hover:bg-red-100 transition-colors"
             >
                 Thử lại
             </button>
@@ -58,203 +104,232 @@ export default function AdminHomePage() {
     );
 
     return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif" }}>
+        <div>
             <style>{`
-                @keyframes ahEq    { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
-                @keyframes ahFadeUp{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes ahPulse { 0%,100%{opacity:.5} 50%{opacity:1} }
-                @keyframes ahBar   { from{width:0} to{width:var(--w)} }
-
-                .ah-stat-card {
-                    padding:20px 22px; border-radius:16px;
-                    border:1px solid rgba(255,255,255,.07);
-                    background:rgba(255,255,255,.03);
-                    transition:all .25s; animation:ahFadeUp .4s both;
-                    cursor:default;
-                }
-                .ah-stat-card:hover {
-                    background:rgba(255,255,255,.06);
-                    border-color:rgba(74,222,128,.2);
-                    transform:translateY(-4px);
-                }
-                .ah-track-row {
-                    display:flex; align-items:center; gap:14px;
-                    padding:10px 14px; border-radius:12px;
-                    transition:all .2s; cursor:pointer;
-                    border:1px solid transparent;
-                    animation:ahFadeUp .35s both;
-                }
-                .ah-track-row:hover {
-                    background:rgba(74,222,128,.06);
-                    border-color:rgba(74,222,128,.12);
-                }
-                .ah-artist-card {
-                    padding:16px; border-radius:14px;
-                    border:1px solid rgba(255,255,255,.07);
-                    background:rgba(255,255,255,.03);
-                    text-align:center; transition:all .25s;
-                    text-decoration:none; color:inherit;
-                    display:block; animation:ahFadeUp .4s both;
-                }
-                .ah-artist-card:hover {
-                    background:rgba(255,255,255,.06);
-                    border-color:rgba(74,222,128,.2);
-                    transform:translateY(-4px);
-                }
+                @keyframes dhUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes dhEq  { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
+                @keyframes dhBar { from{width:0} to{width:var(--w)} }
             `}</style>
 
             {/* ── Header ── */}
-            <div style={{ marginBottom:28, animation:"ahFadeUp .3s both" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                    <span style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80", display:"inline-block" }} />
-                    <span style={{ fontSize:11, color:"#4ade80", letterSpacing:"2px", textTransform:"uppercase", fontWeight:600 }}>
+            <div className="mb-7" style={{ animation: "dhUp .3s both" }}>
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
+                    <span className="text-[11px] text-indigo-500 tracking-widest uppercase font-semibold">
                         Won Music Admin
                     </span>
                 </div>
-                <h1 style={{ fontSize:40, color:"#fff", letterSpacing: 1, marginBottom: 4, lineHeight:1 }}>
-                    Dashboard
-                </h1>
-                <p style={{ fontSize:13, color:"rgba(255,255,255,.4)" }}>
-                    Tổng quan hệ thống Won Music
-                </p>
-
+                <div className="flex items-end justify-between flex-wrap gap-2">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                        <p className="text-sm text-gray-500 mt-0.5">Tổng quan hệ thống Won Music</p>
+                    </div>
+                    <span className="text-xs text-gray-400 font-medium">
+                        {new Date().toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    </span>
+                </div>
                 {/* EQ decoration */}
-                <div style={{ display:"flex", alignItems:"flex-end", gap:2.5, height:20, marginTop:12 }}>
-                    {EQ_H.map((h,i) => (
-                        <div key={i} style={{
-                            width:4, height:`${h}%`,
-                            background:`rgba(74,222,128,${.25+i*.05})`,
-                            borderRadius:2, transformOrigin:"bottom",
-                            animation:`ahEq ${.38+(i%5)*.13}s ease-in-out infinite`,
-                            animationDelay:`${i*.07}s`,
-                        }} />
+                <div className="flex items-end gap-[2.5px] h-5 mt-3">
+                    {EQ_H.map((h, i) => (
+                        <div
+                            key={i}
+                            className="w-1 rounded-sm bg-indigo-400/40"
+                            style={{
+                                height: `${h}%`,
+                                transformOrigin: "bottom",
+                                animation: `dhEq ${.38 + (i % 5) * .13}s ease-in-out infinite`,
+                                animationDelay: `${i * .07}s`,
+                                opacity: 0.2 + i * 0.055,
+                            }}
+                        />
                     ))}
                 </div>
             </div>
 
             {/* ── Stats ── */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:16, marginBottom:32 }}>
-                {STATS.map(({ label, value, icon:Icon, color, bg }, i) => (
-                    <div key={label} className="ah-stat-card" style={{ animationDelay:`${i*.07}s` }}>
-                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
-                            <div style={{ width:40, height:40, borderRadius:12, background:bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                <Icon size={18} color={color} />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                {STATS.map(({ label, value, sub, Icon, iconCls, bgCls, href }, i) => (
+                    <Link
+                        key={label}
+                        href={href}
+                        className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all no-underline group"
+                        style={{ animation: `dhUp .4s ${i * .07}s both` }}
+                    >
+                        <div className="flex items-start justify-between mb-3">
+                            <div className={`w-10 h-10 rounded-xl ${bgCls} flex items-center justify-center`}>
+                                <Icon size={18} className={iconCls} />
                             </div>
-                            <span style={{ fontSize:10, color:"rgba(74,222,128,.6)", background:"rgba(74,222,128,.08)", padding:"3px 8px", borderRadius:100, fontWeight:600, letterSpacing:.5 }}>
-                                Live
-                            </span>
+                            <ArrowRight size={14} className="text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all mt-1" />
                         </div>
-                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:36, color:"#fff", letterSpacing:1, lineHeight:1, marginBottom:4 }}>
-                            {loading ? "—" : value}
+                        <div className="text-2xl font-bold text-gray-900 leading-none mb-1">
+                            {loading ? (
+                                <div className="h-7 w-16 bg-gray-100 rounded animate-pulse" />
+                            ) : value}
                         </div>
-                        <p style={{ fontSize:12, color:"rgba(255,255,255,.4)", fontWeight:500 }}>{label}</p>
-                    </div>
+                        <p className="text-xs text-gray-500 font-medium mb-0.5">{label}</p>
+                        <p className="text-[11px] text-gray-400">{loading ? "" : sub}</p>
+                    </Link>
                 ))}
             </div>
 
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:32 }}>
+            {/* ── Main grid ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
 
-                {/* ── Top tracks ── */}
-                <div style={{
-                    borderRadius:18, border:"1px solid rgba(255,255,255,.07)",
-                    background:"rgba(255,255,255,.02)", overflow:"hidden",
-                }}>
-                    <div style={{ padding:"16px 18px 12px", borderBottom:"1px solid rgba(255,255,255,.05)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, color:"#fff", letterSpacing:1.5 }}>Top bài hát</span>
-                            <div style={{ display:"flex", alignItems:"flex-end", gap:1.5, height:12 }}>
-                                {[40,70,50,85,55].map((h,i) => (
-                                    <div key={i} style={{ width:2.5, height:`${h}%`, background:"#4ade80", borderRadius:1.5, transformOrigin:"bottom", animation:`ahEq ${.4+i*.1}s ease-in-out infinite`, animationDelay:`${i*.07}s` }} />
+                {/* Top tracks */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ animation: "dhUp .45s both" }}>
+                    <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+                                <Music size={13} className="text-indigo-500" />
+                            </div>
+                            <span className="text-sm font-bold text-gray-900">Top bài hát</span>
+                            {/* mini EQ */}
+                            <div className="flex items-end gap-[1.5px] h-3">
+                                {[40, 70, 50, 85, 55].map((h, i) => (
+                                    <div
+                                        key={i}
+                                        className="w-[2.5px] rounded-sm bg-indigo-400/60"
+                                        style={{
+                                            height: `${h}%`,
+                                            transformOrigin: "bottom",
+                                            animation: `dhEq ${.4 + i * .1}s ease-in-out infinite`,
+                                            animationDelay: `${i * .07}s`,
+                                        }}
+                                    />
                                 ))}
                             </div>
                         </div>
-                        <Link to="/admin/tracks" style={{ fontSize:12, color:"#4ade80", textDecoration:"none" }}>Xem tất cả →</Link>
+                        <Link href="/admin/tracks" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors no-underline flex items-center gap-1">
+                            Tất cả <ArrowRight size={11} />
+                        </Link>
                     </div>
 
-                    <div style={{ padding:"8px" }}>
+                    <div className="divide-y divide-gray-50">
                         {loading
-                            ? Array.from({length:5}).map((_,i) => (
-                                <div key={i} style={{ display:"flex", gap:12, padding:"10px 14px", borderRadius:12, animation:`ahPulse 1.5s ${i*.05}s ease-in-out infinite` }}>
-                                    <div style={{ width:40, height:40, borderRadius:8, background:"rgba(255,255,255,.06)", flexShrink:0 }} />
-                                    <div style={{ flex:1 }}>
-                                        <div style={{ height:12, background:"rgba(255,255,255,.06)", borderRadius:4, width:"55%", marginBottom:6 }} />
-                                        <div style={{ height:10, background:"rgba(255,255,255,.04)", borderRadius:4, width:"35%" }} />
+                            ? Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse">
+                                    <div className="w-5 h-2.5 bg-gray-100 rounded flex-shrink-0" />
+                                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex-shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-3 bg-gray-100 rounded w-3/5" />
+                                        <div className="h-1.5 bg-gray-50 rounded w-4/5" />
                                     </div>
+                                    <div className="w-8 h-3 bg-gray-100 rounded" />
                                 </div>
                             ))
-                            : tracks.slice(0,8).map((track, idx) => {
-                                const pct = Math.round((track.plays / (tracks[0]?.plays||1)) * 100);
+                            : topTracks.map((track, idx) => {
+                                const pct = Math.round((track.plays / (topTracks[0]?.plays || 1)) * 100);
                                 return (
-                                    <div key={track._id} className="ah-track-row" style={{ animationDelay:`${idx*.04}s` }}>
-                                        <div style={{ width:28, textAlign:"center", flexShrink:0 }}>
-                                            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, color:"rgba(74,222,128,.3)", lineHeight:1 }}>
-                                                {String(idx+1).padStart(2,"0")}
-                                            </span>
-                                        </div>
-                                        <div style={{ width:40, height:40, borderRadius:8, overflow:"hidden", flexShrink:0, background:"linear-gradient(135deg,#dcfce7,#86efac)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                    <Link
+                                        key={track._id}
+                                        href={`/admin/tracks/${track._id}`}
+                                        className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors no-underline group"
+                                        style={{ animation: `dhUp .28s ${idx * .03}s both` }}
+                                    >
+                                        {/* rank */}
+                                        <span className="text-xs font-mono text-gray-300 w-5 text-right flex-shrink-0">
+                                            {idx === 0
+                                                ? <span className="text-amber-400">🥇</span>
+                                                : idx === 1
+                                                ? <span className="text-gray-400">🥈</span>
+                                                : idx === 2
+                                                ? <span className="text-orange-400">🥉</span>
+                                                : String(idx + 1).padStart(2, "0")
+                                            }
+                                        </span>
+
+                                        {/* cover */}
+                                        <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center">
                                             {track.coverUrl
-                                                ? <img src={track.coverUrl} alt={track.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                                                : <span style={{ fontSize:18, color:"#16a34a" }}>♪</span>
+                                                ? <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
+                                                : <span className="text-indigo-400 text-base">♪</span>
                                             }
                                         </div>
-                                        <div style={{ flex:1, minWidth:0 }}>
-                                            <p style={{ fontSize:13, fontWeight:500, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginBottom:4 }}>
+
+                                        {/* title + bar */}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-semibold text-gray-800 truncate mb-1 group-hover:text-indigo-600 transition-colors">
                                                 {track.title}
                                             </p>
-                                            <div style={{ height:3, background:"rgba(255,255,255,.06)", borderRadius:2, overflow:"hidden" }}>
-                                                <div style={{ height:"100%", background:"linear-gradient(90deg,#16a34a,#4ade80)", borderRadius:2, width:`${pct}%`, animation:"ahBar .8s cubic-bezier(.4,0,.2,1) both", "--w":`${pct}%` } as any} />
+                                            <div className="h-0.5 bg-gray-100 rounded overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded"
+                                                    style={{
+                                                        width: `${pct}%`,
+                                                        animation: "dhBar .7s cubic-bezier(.4,0,.2,1) both",
+                                                        ["--w" as any]: `${pct}%`,
+                                                    }}
+                                                />
                                             </div>
                                         </div>
-                                        <div style={{ textAlign:"right", flexShrink:0 }}>
-                                            <p style={{ fontSize:12, fontWeight:600, color:"rgba(255,255,255,.6)" }}>{formatNum(track.plays)}</p>
-                                            <p style={{ fontSize:10, color:"rgba(255,255,255,.25)" }}>{formatTime(track.duration)}</p>
+
+                                        {/* stats */}
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="text-[12px] font-semibold text-gray-600 tabular-nums">
+                                                {fNum(track.plays ?? 0)}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 tabular-nums">
+                                                {fTime(track.duration ?? 0)}
+                                            </p>
                                         </div>
-                                    </div>
+                                    </Link>
                                 );
                             })
                         }
                     </div>
                 </div>
 
-                {/* ── Artists ── */}
-                <div style={{
-                    borderRadius:18, border:"1px solid rgba(255,255,255,.07)",
-                    background:"rgba(255,255,255,.02)", overflow:"hidden",
-                }}>
-                    <div style={{ padding:"16px 18px 12px", borderBottom:"1px solid rgba(255,255,255,.05)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, color:"#fff", letterSpacing:1.5 }}>Nghệ sĩ</span>
-                        <Link to="/admin/artists" style={{ fontSize:12, color:"#4ade80", textDecoration:"none" }}>Xem tất cả →</Link>
+                {/* Artists */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ animation: "dhUp .5s both" }}>
+                    <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <Users size={13} className="text-blue-500" />
+                            </div>
+                            <span className="text-sm font-bold text-gray-900">Nghệ sĩ nổi bật</span>
+                        </div>
+                        <Link href="/admin/artists" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors no-underline flex items-center gap-1">
+                            Tất cả <ArrowRight size={11} />
+                        </Link>
                     </div>
-                    <div style={{ padding:"12px", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+
+                    <div className="p-4 grid grid-cols-3 gap-2.5">
                         {loading
-                            ? Array.from({length:6}).map((_,i) => (
-                                <div key={i} style={{ padding:"14px 10px", borderRadius:12, background:"rgba(255,255,255,.03)", textAlign:"center", animation:`ahPulse 1.5s ${i*.05}s ease-in-out infinite` }}>
-                                    <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,.06)", margin:"0 auto 8px" }} />
-                                    <div style={{ height:10, background:"rgba(255,255,255,.06)", borderRadius:4, width:"70%", margin:"0 auto" }} />
+                            ? Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="p-3.5 rounded-xl bg-gray-50 text-center animate-pulse">
+                                    <div className="w-12 h-12 rounded-full bg-gray-200 mx-auto mb-2" />
+                                    <div className="h-2.5 bg-gray-200 rounded w-3/4 mx-auto mb-1.5" />
+                                    <div className="h-2 bg-gray-100 rounded w-1/2 mx-auto" />
                                 </div>
                             ))
-                            : artists.map((artist, idx) => (
-                                <Link key={artist._id} to={`/admin/artists`} className="ah-artist-card" style={{ animationDelay:`${idx*.06}s` }}>
-                                    <div style={{
-                                        width:48, height:48, borderRadius:"50%",
-                                        background:"linear-gradient(135deg,#bbf7d0,#4ade80)",
-                                        margin:"0 auto 10px",
-                                        display:"flex", alignItems:"center", justifyContent:"center",
-                                        fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, color:"#166534",
-                                        overflow:"hidden", border:"2px solid rgba(74,222,128,.2)",
-                                    }}>
-                                        {artist.avatar
-                                            ? <img src={artist.avatar} alt={artist.name} style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.currentTarget.style.display="none"; }} />
-                                            : artist.name.split(" ").slice(-2).map((w:string) => w[0]).join("").toUpperCase()
-                                        }
+                            : topArtists.map((artist, idx) => (
+                                <Link
+                                    key={artist._id}
+                                    href={`/admin/artists/${artist._id}`}
+                                    className="block p-3 rounded-xl border border-gray-100 bg-gray-50/60 text-center hover:bg-indigo-50 hover:border-indigo-200 hover:-translate-y-0.5 transition-all no-underline group"
+                                    style={{ animation: `dhUp .4s ${idx * .06}s both` }}
+                                >
+                                    <div className="relative w-12 h-12 mx-auto mb-2.5">
+                                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-sm font-bold text-indigo-600 border-2 border-white shadow-sm">
+                                            {artist.avatar
+                                                ? <img src={artist.avatar} alt={artist.name} className="w-full h-full object-cover" />
+                                                : artist.name.split(" ").slice(-2).map((w: string) => w[0]).join("").toUpperCase()
+                                            }
+                                        </div>
+                                        {artist.verified && (
+                                            <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 w-[18px] h-[18px] rounded-full bg-indigo-600 border-2 border-white flex items-center justify-center">
+                                                <BadgeCheck size={9} className="text-white" />
+                                            </div>
+                                        )}
                                     </div>
-                                    <p style={{ fontSize:12, fontWeight:600, color:"#fff", marginBottom:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                                    <p className="text-[12px] font-semibold text-gray-800 truncate group-hover:text-indigo-600 transition-colors">
                                         {artist.name}
                                     </p>
-                                    <p style={{ fontSize:10, color:"#4ade80" }}>{artist.genre ?? "—"}</p>
-                                    {artist.verified && (
-                                        <span style={{ fontSize:9, color:"#4ade80", background:"rgba(74,222,128,.1)", padding:"2px 6px", borderRadius:100, marginTop:4, display:"inline-block" }}>✓ Xác minh</span>
-                                    )}
+                                    <p className="text-[10px] text-gray-400 mt-0.5">{artist.genre ?? "—"}</p>
+                                    <p className="text-[11px] font-semibold text-gray-500 mt-1 tabular-nums">
+                                        {fNum(artist.followers ?? 0)}
+                                        <span className="font-normal text-gray-400"> followers</span>
+                                    </p>
                                 </Link>
                             ))
                         }
@@ -262,27 +337,27 @@ export default function AdminHomePage() {
                 </div>
             </div>
 
-            {/* ── Quick actions ── */}
-            <div style={{ borderRadius:18, border:"1px solid rgba(255,255,255,.07)", background:"rgba(255,255,255,.02)", padding:"18px" }}>
-                <p style={{ fontSize:12, color:"rgba(255,255,255,.3)", letterSpacing:"2px", textTransform:"uppercase", fontWeight:600, marginBottom:14 }}>
-                    Thao tác nhanh
-                </p>
-                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-                    {[
-                        { label:"+ Thêm bài hát",  to:"/admin/tracks",  color:"#4ade80" },
-                        { label:"+ Thêm nghệ sĩ",  to:"/admin/artists", color:"#60a5fa" },
-                    ].map(({ label, to, color }) => (
-                        <Link key={to} to={to} style={{
-                            padding:"10px 20px", borderRadius:100,
-                            border:`1px solid ${color}30`,
-                            background:`${color}10`,
-                            color, fontSize:13, fontWeight:500,
-                            textDecoration:"none", transition:"all .2s",
-                        }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background=`${color}20`; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background=`${color}10`; }}
+            {/* ── Quick nav ── */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5" style={{ animation: "dhUp .55s both" }}>
+                <div className="flex items-center gap-2 mb-4">
+                    <p className="text-[10px] font-bold tracking-[2px] uppercase text-gray-400">Truy cập nhanh</p>
+                    <div className="flex-1 h-px bg-gray-100" />
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {NAV_CARDS.map(({ label, desc, Icon, href, bg }, i) => (
+                        <Link
+                            key={label}
+                            href={href}
+                            className={`${bg} rounded-xl p-4 text-white no-underline flex items-start gap-3 transition-all hover:-translate-y-0.5 hover:shadow-lg group`}
+                            style={{ animation: `dhUp .5s ${i * .07}s both` }}
                         >
-                            {label}
+                            <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 group-hover:bg-white/30 transition-colors">
+                                <Icon size={16} className="text-white" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold leading-tight">{label}</p>
+                                <p className="text-[11px] text-white/70 mt-0.5 leading-snug">{desc}</p>
+                            </div>
                         </Link>
                     ))}
                 </div>

@@ -1,14 +1,14 @@
+'use client'
 import { cn } from "@/lib/utils";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useNavigate } from "react-router";
-import { Link } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useRef } from "react";
-import "@/styles/signup.css";
 
-const theme = import.meta.env.VITE_APP_ASSET_THEME || "Default";
+const theme = process.env.NEXT_PUBLIC_APP_ASSET_THEME || "Default";
 
 const signUpSchema = z.object({
     firstname: z.string().min(1, "Tên bắt buộc phải có"),
@@ -22,7 +22,7 @@ type SignUpFormValues = z.infer<typeof signUpSchema>;
 
 export function SignupForm({ className, ...props }: React.ComponentProps<"div">) {
     const { signUp } = useAuthStore();
-    const navigate = useNavigate();
+    const router = useRouter();
     const notesRef = useRef<HTMLDivElement>(null);
 
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignUpFormValues>({
@@ -32,7 +32,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
     const onSubmit = async (data: SignUpFormValues) => {
         const { firstname, lastname, username, email, password } = data;
         await signUp(username, password, email, firstname, lastname);
-        navigate("/signin");
+        router.push("/signin");
     };
 
     // Stagger floating note animations
@@ -130,7 +130,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                 {/* Right — form panel */}
                 <div className="signup-form-panel">
                     {/* Logo */}
-                    <Link to="/" className="su-logo-link">
+                    <Link href="/" className="su-logo-link">
                         <img src={logoPath} alt="Won Music" className="su-logo-img" />
                         <span className="su-logo-text">WON MUSIC</span>
                     </Link>
@@ -232,12 +232,12 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
 
                     <p className="su-footer-link">
                         Đã có tài khoản?{" "}
-                        <Link to="/signin">Đăng nhập</Link>
+                        <Link href="/signin">Đăng nhập</Link>
                     </p>
                     <p className="su-tos">
                         Bằng cách tiếp tục, bạn đồng ý với{" "}
-                        <Link to="#">Điều khoản dịch vụ</Link> và{" "}
-                        <Link to="#">Chính sách bảo mật</Link>.
+                        <Link href="#">Điều khoản dịch vụ</Link> và{" "}
+                        <Link href="#">Chính sách bảo mật</Link>.
                     </p>
                 </div>
             </div>

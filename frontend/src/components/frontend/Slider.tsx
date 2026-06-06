@@ -5,6 +5,8 @@ import {
     useTransform,
     useSpring,
     useInView,
+    useMotionValue,
+    useMotionTemplate,
     AnimatePresence,
 } from "framer-motion";
 
@@ -24,14 +26,16 @@ const MusicNote: React.FC<NoteProps> = ({ x, size, delay, duration, symbol, colo
     >{symbol}</motion.span>
 );
 
-const EqBar: React.FC<{ delay: number; baseH: number }> = ({ delay, baseH }) => (
+const EqBar: React.FC<{ delay: number; baseH: number; hot: boolean }> = ({ delay, baseH, hot }) => (
     <motion.div
-        className="w-[3px] rounded-full bg-gradient-to-t from-green-500 to-emerald-300"
+        className={`w-[3px] rounded-full bg-gradient-to-t ${hot ? "from-teal-400 to-teal-200" : "from-teal-600 to-teal-300"}`}
         style={{ height: baseH }}
-        animate={{ scaleY: [1, 2.8, 0.5, 2.1, 1] }}
-        transition={{ duration: 0.8, delay, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ scaleY: hot ? [1, 4.2, 0.3, 3.8, 1] : [1, 2.8, 0.5, 2.1, 1] }}
+        transition={{ duration: hot ? 0.42 : 0.8, delay, repeat: Infinity, ease: "easeInOut" }}
     />
 );
+
+interface RippleItem { id: number; x: number; y: number; }
 
 interface PlatformBtnProps { icon: React.ReactNode; label: string; delay: number; href?: string; }
 const PlatformBtn: React.FC<PlatformBtnProps> = ({ icon, label, delay, href = "#" }) => (
@@ -42,7 +46,7 @@ const PlatformBtn: React.FC<PlatformBtnProps> = ({ icon, label, delay, href = "#
         transition={{ delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
         whileHover={{ scale: 1.07, y: -3 }}
         whileTap={{ scale: 0.96 }}
-        className="flex items-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-full bg-green-400 hover:bg-green-300 text-black font-bold text-[11px] sm:text-sm shadow-[0_4px_20px_rgba(74,222,128,0.35)] hover:shadow-[0_4px_28px_rgba(74,222,128,0.55)] transition-colors duration-200 cursor-pointer"
+        className="flex items-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-full bg-[#00A98F] hover:bg-[#34D4B8] text-black font-bold text-[11px] sm:text-sm shadow-[0_4px_20px_rgba(0,169,143,0.4)] hover:shadow-[0_4px_28px_rgba(52,212,184,0.5)] transition-colors duration-200 cursor-pointer"
     >
         {icon}
         <span>{label}</span>
@@ -69,6 +73,17 @@ const Slider: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.15, once: false });
     const [tick, setTick] = useState(0);
+    const [isHovered, setIsHovered] = useState(false);
+    const [ripples, setRipples] = useState<RippleItem[]>([]);
+    const rippleIdRef = useRef(0);
+    const lastRippleRef = useRef(0);
+
+    // Smooth cursor position for the glow effect
+    const cursorX = useMotionValue(50);
+    const cursorY = useMotionValue(50);
+    const smoothX = useSpring(cursorX, { stiffness: 90, damping: 22 });
+    const smoothY = useSpring(cursorY, { stiffness: 90, damping: 22 });
+    const cursorGlow = useMotionTemplate`radial-gradient(320px circle at ${smoothX}% ${smoothY}%, rgba(0,169,143,0.22), rgba(52,212,184,0.06) 45%, transparent 70%)`;
 
     useEffect(() => {
         const t = setInterval(() => setTick((p) => p + 1), 12000);
@@ -76,18 +91,37 @@ const Slider: React.FC = () => {
     }, []);
 
     const rawMX = useSpring(0, { stiffness: 45, damping: 22 });
+
     const handleMouseMove = (e: React.MouseEvent) => {
         rawMX.set((e.clientX / window.innerWidth - 0.5) * 18);
+
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            cursorX.set(x);
+            cursorY.set(y);
+
+            // Emit a ripple ring every 650ms while moving
+            const now = Date.now();
+            if (now - lastRippleRef.current > 650) {
+                const id = rippleIdRef.current++;
+                setRipples(prev => [...prev.slice(-7), { id, x, y }]);
+                setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 1600);
+                lastRippleRef.current = now;
+            }
+        }
     };
 
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
     const bgScale   = useTransform(scrollYProgress, [0, 0.5], [1.1, 1]);
     const bgY       = useTransform(scrollYProgress, [0, 1], ["-3%", "3%"]);
     const textY     = useTransform(scrollYProgress, [0, 1], ["0%", "16%"]);
-    const wrapAlpha = useTransform(scrollYProgress, [0, 0.07, 0.93, 1], [0, 1, 1, 0]);
+    // Start visible (0.5 = midpoint = slider fully in view on load), fade out when scrolled past
+    const wrapAlpha = useTransform(scrollYProgress, [0, 0.05, 0.9, 1], [1, 1, 1, 0]);
 
     const symbols    = ["♩","♪","♫","♬","𝄞","𝄢","♭","♮","♯"];
-    const noteColors = ["#4ade80","#34d399","#6ee7b7","#ffffff66","#fbbf2444"];
+    const noteColors = ["#34D4B8","#00A98F","#6ee7b7","#ffffff66","#6366F144"];
     const notes: NoteProps[] = Array.from({ length: 14 }, (_, i) => ({
         id: i + tick * 100,
         x: Math.random() * 96 + 2,
@@ -112,26 +146,82 @@ const Slider: React.FC = () => {
         <motion.div
             ref={containerRef}
             onMouseMove={handleMouseMove}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => { setIsHovered(false); setRipples([]); }}
             style={{ opacity: wrapAlpha }}
-            className="relative w-full h-[80vh] xl:h-screen overflow-hidden text-white select-none bg-slate-950 z-30 flex items-center justify-center"
+            className="relative w-full h-[80vh] xl:h-screen overflow-hidden text-white select-none bg-[#242424] z-30 flex items-center justify-center"
         >
             {/* ══ BG ══ */}
             <motion.div
                 style={{ scale: bgScale, y: bgY, x: rawMX, rotate: useTransform(rawMX, [-9, 9], [-0.3, 0.3]) }}
                 className="absolute inset-0 w-[106%] h-[106%] -left-[3%] -top-[3%]"
             >
-                <img src="/setups/banners/banner.png" alt="Artist" className="w-full h-full object-cover object-top brightness-[0.72] saturate-[1.15]" />
+                <img
+                    src="/setups/banners/banner.png" alt="Artist"
+                    className="w-full h-full object-cover object-top brightness-[0.72] saturate-[1.15]"
+                />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
                 <div className="absolute inset-0 opacity-[0.08] bg-[radial-gradient(circle,rgba(255,255,255,0.3)_1px,transparent_0)] bg-[length:3px_3px]" />
             </motion.div>
 
-            <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent pointer-events-none z-10" />
+            {/* ══ CURSOR GLOW — follows mouse smoothly ══ */}
+            <motion.div
+                className="absolute inset-0 pointer-events-none z-[5]"
+                style={{ background: cursorGlow }}
+                animate={{ opacity: isHovered ? 1 : 0 }}
+                transition={{ duration: 0.4 }}
+            />
+
+            {/* ══ SOUND RIPPLE RINGS ══ */}
+            <AnimatePresence>
+                {ripples.map(r => (
+                    <motion.div
+                        key={r.id}
+                        className="absolute pointer-events-none z-[6] rounded-full"
+                        style={{
+                            left: `${r.x}%`,
+                            top: `${r.y}%`,
+                            width: 180,
+                            height: 180,
+                            border: "1.5px solid rgba(52,212,184,0.55)",
+                            boxShadow: "0 0 12px rgba(0,169,143,0.25)",
+                        }}
+                        initial={{ scale: 0, opacity: 0.85, x: "-50%", y: "-50%" }}
+                        animate={{ scale: 2.0, opacity: 0, x: "-50%", y: "-50%" }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1.4, ease: [0.2, 0, 0.8, 1] }}
+                    />
+                ))}
+            </AnimatePresence>
+
+            {/* Second inner ripple (smaller, faster) */}
+            <AnimatePresence>
+                {ripples.map(r => (
+                    <motion.div
+                        key={`${r.id}-inner`}
+                        className="absolute pointer-events-none z-[6] rounded-full"
+                        style={{
+                            left: `${r.x}%`,
+                            top: `${r.y}%`,
+                            width: 80,
+                            height: 80,
+                            border: "1px solid rgba(0,169,143,0.7)",
+                        }}
+                        initial={{ scale: 0, opacity: 1, x: "-50%", y: "-50%" }}
+                        animate={{ scale: 2.5, opacity: 0, x: "-50%", y: "-50%" }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.9, ease: [0.2, 0, 0.8, 1] }}
+                    />
+                ))}
+            </AnimatePresence>
+
+            <div className="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-[#242424] via-[#242424]/70 to-transparent pointer-events-none z-10" />
             <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent pointer-events-none z-10" />
 
             <AnimatePresence>{notes.map((n) => <MusicNote key={n.id} {...n} />)}</AnimatePresence>
 
             <motion.div
-                className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-400/25 to-transparent pointer-events-none z-20"
+                className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-teal-400/25 to-transparent pointer-events-none z-20"
                 animate={{ top: ["10%", "90%", "10%"] }}
                 transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
             />
@@ -139,17 +229,19 @@ const Slider: React.FC = () => {
             {(["top-0 left-0","top-0 right-0","bottom-0 left-0","bottom-0 right-0"] as const).map((pos, i) => (
                 <motion.div key={i} className={`absolute ${pos} w-8 h-8 sm:w-12 sm:h-12 pointer-events-none z-30`}
                     initial={{ opacity: 0 }} animate={isInView ? { opacity: 1 } : {}} transition={{ delay: 1.6 + i * 0.08 }}>
-                    <div className={`absolute ${i < 2 ? "top-0" : "bottom-0"} ${i % 2 === 0 ? "left-0" : "right-0"} w-6 sm:w-9 h-[1.5px] bg-green-400/30`} />
-                    <div className={`absolute ${i < 2 ? "top-0" : "bottom-0"} ${i % 2 === 0 ? "left-0" : "right-0"} w-[1.5px] h-6 sm:h-9 bg-green-400/30`} />
+                    <div className={`absolute ${i < 2 ? "top-0" : "bottom-0"} ${i % 2 === 0 ? "left-0" : "right-0"} w-6 sm:w-9 h-[1.5px] bg-teal-400/30`} />
+                    <div className={`absolute ${i < 2 ? "top-0" : "bottom-0"} ${i % 2 === 0 ? "left-0" : "right-0"} w-[1.5px] h-6 sm:h-9 bg-teal-400/30`} />
                 </motion.div>
             ))}
 
+            {/* ══ WAVEFORM SVG — brightens on hover ══ */}
             <motion.svg viewBox="0 0 200 60" className="absolute top-6 right-6 w-24 sm:w-36 z-20"
-                style={{ opacity: 0.15 }} initial={{ opacity: 0, x: 16 }}
-                animate={isInView ? { opacity: 0.15, x: 0 } : {}} transition={{ delay: 1.3, duration: 0.9 }}>
+                initial={{ opacity: 0, x: 16 }}
+                animate={isInView ? { opacity: isHovered ? 0.5 : 0.15, x: 0 } : {}}
+                transition={{ delay: isInView ? 1.3 : 0, duration: 0.9 }}>
                 {Array.from({ length: 40 }, (_, i) => {
                     const h = Math.abs(Math.sin(i * 0.55)) * 16 + 6;
-                    return <motion.rect key={i} x={i * 5} y={30 - h / 2} width={3} height={h} rx={1.5} fill="#4ade80"
+                    return <motion.rect key={i} x={i * 5} y={30 - h / 2} width={3} height={h} rx={1.5} fill="#34D4B8"
                         animate={{ height: [h, h * 1.9, h * 0.4, h] }}
                         transition={{ duration: 1.1, delay: i * 0.04, repeat: Infinity, ease: "easeInOut" }} />;
                 })}
@@ -200,7 +292,7 @@ const Slider: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Arrow image — floats to the right of the text, pointing down-left */}
+                    {/* Arrow image */}
                     <motion.div
                         initial={{ opacity: 0, x: -10, y: -10 }}
                         animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
@@ -213,7 +305,6 @@ const Slider: React.FC = () => {
                             pointer-events-none
                         "
                     >
-                        {/* Subtle bounce to draw attention toward the buttons */}
                         <motion.img
                             src="/setups/banners/bn-arrowv.png"
                             alt="arrow"
@@ -232,7 +323,7 @@ const Slider: React.FC = () => {
                 </div>
             </motion.div>
 
-            {/* Equalizer */}
+            {/* ══ EQ BARS — amp up on hover ══ */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={isInView ? { opacity: 1 } : {}}
@@ -240,7 +331,7 @@ const Slider: React.FC = () => {
                 className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-end gap-[3px]"
             >
                 {Array.from({ length: 32 }, (_, i) => (
-                    <EqBar key={i} delay={i * 0.048} baseH={Math.random() * 16 + 7} />
+                    <EqBar key={i} delay={i * 0.048} baseH={Math.random() * 16 + 7} hot={isHovered} />
                 ))}
             </motion.div>
         </motion.div>

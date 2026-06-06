@@ -15,7 +15,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
             <button
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:bg-white hover:text-green-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="p-2 rounded-xl border border-[rgba(255,255,255,0.1)] text-[#B3B3B3] hover:bg-[rgba(255,255,255,0.12)] hover:text-[#34D4B8] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
                 <ChevronLeft size={20} />
             </button>
@@ -26,8 +26,8 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
                     onClick={() => onPageChange(page)}
                     className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
                         currentPage === page
-                            ? "bg-green-600 text-white shadow-lg shadow-green-200"
-                            : "bg-white border border-slate-200 text-slate-600 hover:border-green-600 hover:text-green-600"
+                            ? "bg-[#00A98F] text-white"
+                            : "bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.1)] text-[#B3B3B3] hover:border-[#00A98F] hover:text-[#34D4B8]"
                     }`}
                 >
                     {page}
@@ -37,7 +37,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
             <button
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:bg-white hover:text-green-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="p-2 rounded-xl border border-[rgba(255,255,255,0.1)] text-[#B3B3B3] hover:bg-[rgba(255,255,255,0.12)] hover:text-[#34D4B8] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
                 <ChevronRight size={20} />
             </button>

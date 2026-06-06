@@ -1,6 +1,6 @@
+'use client'
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import "@/styles/music-theme.css";
+import Link from "next/link";
 import { trackService, type Track } from "@/services/trackService";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
@@ -15,14 +15,14 @@ const PERIOD_LIMITS: Record<Period, number> = {
 };
 
 const ACCENT_COLORS = [
-    { from: "#0a3d1f", to: "#16a34a" },
-    { from: "#1a3d2a", to: "#22c55e" },
-    { from: "#0f2d1a", to: "#166534" },
-    { from: "#052e16", to: "#14532d" },
-    { from: "#0a2214", to: "#15803d" },
-    { from: "#0d2818", to: "#166534" },
-    { from: "#052e16", to: "#16a34a" },
-    { from: "#0a3d1f", to: "#22c55e" },
+    { from: "#E8ECF8", to: "#D8DFF0" },
+    { from: "#E0F4F0", to: "#C8EDE8" },
+    { from: "#EEEEFB", to: "#DDDAF8" },
+    { from: "#EAEAFB", to: "#D4D5F8" },
+    { from: "#E0F4F0", to: "#C8EDE8" },
+    { from: "#E8ECF8", to: "#D8DFF0" },
+    { from: "#DCF4F0", to: "#C4EDE8" },
+    { from: "#EAEAFB", to: "#DDDAF8" },
 ];
 
 const TrendIndicator = ({ rank }: { rank: number }) => {
@@ -228,7 +228,7 @@ const ChartsSection = () => {
                 </div>
 
                 <div className="charts-footer">
-                    <Link to="/charts" className="btn-outline-music">
+                    <Link href="/charts" className="btn-outline-music">
                         {t.viewFull}
                     </Link>
                 </div>

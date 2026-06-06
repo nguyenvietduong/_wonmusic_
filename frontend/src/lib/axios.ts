@@ -2,13 +2,9 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import axios from "axios";
 
 const api = axios.create({
-    baseURL:
-        import.meta.env.MODE === "development"
-            ? "http://localhost:2004/api"
-            : "https://moximovie-production.up.railway.app/api",
+    baseURL: "/api",
     withCredentials: true,
 });
-// https://mooxinz-production.up.railway.app/api
 
 // gắn access token vào req header
 api.interceptors.request.use((config) => {

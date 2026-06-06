@@ -1,4 +1,4 @@
-import { useLocation }                  from "react-router-dom";
+'use client';
 import { useState, useRef, useEffect }  from "react";
 
 import SEO                              from "@/components/frontend/SEO";
@@ -22,8 +22,7 @@ const BATCH_SIZE = 4;
 const HomePage = () => {
     const [loadedCount, setLoadedCount] = useState(BATCH_SIZE);
     const triggerRef = useRef<HTMLDivElement>(null);
-    const location = useLocation();
-    const shouldShowIntro = Boolean(location.state?.fromLanding);
+    const shouldShowIntro = false;
     const [showLoading, setShowLoading] = useState(shouldShowIntro);
 
     useEffect(() => {

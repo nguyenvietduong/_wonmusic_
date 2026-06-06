@@ -1,16 +1,17 @@
-// src/pages/admin/AdminArtistsPage.tsx
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
+'use client';
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
-    Mic2, Search, Plus, Users, TrendingUp,
-    Edit2, ArrowUpDown, CheckCircle2,
-    Music, Instagram, Youtube, Facebook,
-    BadgeCheck, Star,
+    Mic2, Search, Plus, Users, TrendingUp, Edit2,
+    ArrowUpDown, CheckCircle2, Music, Instagram,
+    Youtube, Facebook, BadgeCheck, Star, X, ChevronDown,
 } from "lucide-react";
 import { artistService } from "@/services/artistService";
+import axios from "axios";
+import { toast } from "sonner";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-const formatNum = (n: number) => {
+const fNum = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
     if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
     return n.toString();
@@ -18,49 +19,69 @@ const formatNum = (n: number) => {
 
 const EQ_H = [35, 65, 50, 80, 40, 72, 55, 88, 45, 60];
 
+const GENRE_OPTIONS = [
+    "Pop", "R&B", "Hip-hop", "Rock", "Electronic",
+    "Jazz", "Classical", "Folk", "Indie", "Ballad", "Rap",
+];
+
 type SortKey = "name" | "followers" | "createdAt";
 type SortDir = "asc" | "desc";
 
+interface FormState {
+    name: string; genre: string; bio: string; avatarUrl: string;
+    followers: string; verified: boolean;
+    facebook: string; instagram: string; youtube: string;
+}
+const EMPTY: FormState = {
+    name: "", genre: "", bio: "", avatarUrl: "",
+    followers: "", verified: false,
+    facebook: "", instagram: "", youtube: "",
+};
+
+const INPUT = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white transition-shadow";
+
 // ─── Component ──────────────────────────────────────────────────────────────
 export default function AdminArtistsPage() {
-    const [artists,     setArtists]     = useState<any[]>([]);
-    const [filtered,    setFiltered]    = useState<any[]>([]);
-    const [loading,     setLoading]     = useState(true);
-    const [search,      setSearch]      = useState("");
-    const [sortKey,     setSortKey]     = useState<SortKey>("followers");
-    const [sortDir,     setSortDir]     = useState<SortDir>("desc");
-    const [page,        setPage]        = useState(1);
+    const [artists,    setArtists]    = useState<any[]>([]);
+    const [filtered,   setFiltered]   = useState<any[]>([]);
+    const [loading,    setLoading]    = useState(true);
+    const [search,     setSearch]     = useState("");
+    const [sortKey,    setSortKey]    = useState<SortKey>("followers");
+    const [sortDir,    setSortDir]    = useState<SortDir>("desc");
+    const [page,       setPage]       = useState(1);
     const PER_PAGE = 10;
 
-    // ── Load ──
-    useEffect(() => {
-        (async () => {
-            try {
-                const res = await artistService.getAll({ limit: 200 });
-                setArtists(Array.isArray(res) ? res : res?.data ?? []);
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
+    const [showModal,  setShowModal]  = useState(false);
+    const [form,       setForm]       = useState<FormState>(EMPTY);
+    const [submitting, setSubmitting] = useState(false);
+    const [formError,  setFormError]  = useState("");
+    const [showSocial, setShowSocial] = useState(false);
+    const overlayRef = useRef<HTMLDivElement>(null);
 
-    // ── Filter + sort ──
+    // ── load ──
+    const loadArtists = async () => {
+        setLoading(true);
+        try {
+            const res = await artistService.getAll({ limit: 200 });
+            setArtists(res?.data ?? []);
+        } finally { setLoading(false); }
+    };
+    useEffect(() => { loadArtists(); }, []);
+
+    // ── filter + sort ──
     useEffect(() => {
         let list = [...artists];
         if (search.trim()) {
             const q = search.toLowerCase();
-            list = list.filter(
-                a =>
-                    a.name?.toLowerCase().includes(q) ||
-                    a.genre?.toLowerCase().includes(q) ||
-                    a.bio?.toLowerCase().includes(q)
+            list = list.filter(a =>
+                a.name?.toLowerCase().includes(q) ||
+                a.genre?.toLowerCase().includes(q) ||
+                a.bio?.toLowerCase().includes(q)
             );
         }
         list.sort((a, b) => {
-            const av = a[sortKey] ?? 0;
-            const bv = b[sortKey] ?? 0;
-            if (typeof av === "string")
-                return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+            const av = a[sortKey] ?? 0, bv = b[sortKey] ?? 0;
+            if (typeof av === "string") return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
             return sortDir === "asc" ? av - bv : bv - av;
         });
         setFiltered(list);
@@ -69,455 +90,523 @@ export default function AdminArtistsPage() {
 
     const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
     const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-
     const toggleSort = (key: SortKey) => {
-        if (sortKey === key) setSortDir(d => (d === "asc" ? "desc" : "asc"));
+        if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
         else { setSortKey(key); setSortDir("desc"); }
     };
 
-    // ── Stats ──
-    const totalFollowers  = artists.reduce((s, a) => s + (a.followers ?? 0), 0);
-    const verifiedCount   = artists.filter(a => a.verified).length;
-    const avgFollowers    = artists.length ? Math.round(totalFollowers / artists.length) : 0;
+    const totalFollowers = artists.reduce((s, a) => s + (a.followers ?? 0), 0);
+    const verifiedCount  = artists.filter(a => a.verified).length;
+    const avgFollowers   = artists.length ? Math.round(totalFollowers / artists.length) : 0;
 
     const STATS = [
-        { label: "Tổng nghệ sĩ",     value: artists.length,          icon: Mic2,        color: "#4ade80", bg: "rgba(74,222,128,.1)"  },
-        { label: "Tổng followers",    value: formatNum(totalFollowers), icon: TrendingUp,  color: "#60a5fa", bg: "rgba(96,165,250,.1)"  },
-        { label: "TB followers",      value: formatNum(avgFollowers),  icon: Users,       color: "#f472b6", bg: "rgba(244,114,182,.1)" },
-        { label: "Đã xác minh",       value: verifiedCount,           icon: BadgeCheck,  color: "#fb923c", bg: "rgba(251,146,60,.1)"  },
+        { label: "Tổng nghệ sĩ",  value: artists.length,            Icon: Mic2,       iconCls: "text-indigo-500", bgCls: "bg-indigo-50"  },
+        { label: "Tổng followers", value: fNum(totalFollowers),      Icon: TrendingUp, iconCls: "text-blue-500",   bgCls: "bg-blue-50"    },
+        { label: "TB followers",   value: fNum(avgFollowers),        Icon: Users,      iconCls: "text-pink-500",   bgCls: "bg-pink-50"    },
+        { label: "Đã xác minh",   value: verifiedCount,             Icon: BadgeCheck, iconCls: "text-orange-500", bgCls: "bg-orange-50"  },
     ];
 
+    // ── modal helpers ──
+    const openModal  = () => { setForm(EMPTY); setFormError(""); setShowSocial(false); setShowModal(true); };
+    const closeModal = () => { if (!submitting) setShowModal(false); };
+    const setField   = (k: keyof FormState, v: string | boolean) => setForm(p => ({ ...p, [k]: v }));
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!form.name.trim()) { setFormError("Tên nghệ sĩ là bắt buộc."); return; }
+        setFormError("");
+        setSubmitting(true);
+        try {
+            const payload: Record<string, any> = {
+                name:      form.name.trim(),
+                genre:     form.genre.trim()    || undefined,
+                bio:       form.bio.trim()      || undefined,
+                avatar:    form.avatarUrl.trim()|| undefined,
+                followers: form.followers ? Number(form.followers) : 0,
+                verified:  form.verified,
+            };
+            const social: Record<string, string> = {};
+            if (form.facebook.trim())  social.facebook  = form.facebook.trim();
+            if (form.instagram.trim()) social.instagram = form.instagram.trim();
+            if (form.youtube.trim())   social.youtube   = form.youtube.trim();
+            if (Object.keys(social).length) payload.socialLinks = social;
+            await axios.post("/api/artists", payload);
+            toast.success("Đã thêm nghệ sĩ!");
+            setShowModal(false);
+            loadArtists();
+        } catch (err: any) {
+            setFormError(err?.response?.data?.message ?? err?.message ?? "Có lỗi xảy ra.");
+        } finally { setSubmitting(false); }
+    };
+
     return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif" }}>
+        <div>
             <style>{`
-                @keyframes ahEq     { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
-                @keyframes ahFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes ahPulse  { 0%,100%{opacity:.4} 50%{opacity:.8} }
-                @keyframes ahScale  { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
-
-                .aa-stat-card {
-                    padding:18px 20px; border-radius:16px;
-                    border:1px solid rgba(255,255,255,.07);
-                    background:rgba(255,255,255,.03);
-                    transition:all .22s; animation:ahFadeUp .4s both;
-                }
-                .aa-stat-card:hover {
-                    background:rgba(255,255,255,.055);
-                    border-color:rgba(74,222,128,.18);
-                    transform:translateY(-2px);
-                }
-
-                .aa-table {
-                    width:100%; border-collapse:collapse; table-layout:fixed;
-                }
-                .aa-table colgroup col.col-num    { width:50px; }
-                .aa-table colgroup col.col-avatar { width:58px; }
-                .aa-table colgroup col.col-name   { min-width:160px; }
-                .aa-table colgroup col.col-genre  { width:120px; }
-                .aa-table colgroup col.col-follow { width:120px; }
-                .aa-table colgroup col.col-social { width:110px; }
-                .aa-table colgroup col.col-badge  { width:100px; }
-                .aa-table colgroup col.col-act    { width:160px; }
-
-                .aa-table thead tr {
-                    background:rgba(0,0,0,.18);
-                    border-bottom:1px solid rgba(255,255,255,.06);
-                }
-                .aa-table thead th {
-                    padding:10px 14px;
-                    font-size:11px; font-weight:700; letter-spacing:.55px;
-                    text-transform:uppercase; color:rgba(255,255,255,.3);
-                    text-align:left; white-space:nowrap;
-                }
-                .aa-table thead th.th-center { text-align:center; }
-                .aa-table thead th.th-right  { text-align:right; padding-right:18px; }
-
-                .aa-table tbody tr {
-                    border-bottom:1px solid rgba(255,255,255,.04);
-                    transition:background .14s;
-                    animation:ahFadeUp .28s both;
-                }
-                .aa-table tbody tr:last-child { border-bottom:none; }
-                .aa-table tbody tr:hover      { background:rgba(74,222,128,.04); }
-
-                .aa-table td {
-                    padding:10px 14px;
-                    font-size:13px; color:rgba(255,255,255,.65);
-                    vertical-align:middle;
-                    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-                }
-                .aa-table td.td-center { text-align:center; }
-                .aa-table td.td-right  { text-align:right; padding-right:18px; }
-
-                .aa-sort-btn {
-                    background:none; border:none; cursor:pointer;
-                    display:inline-flex; align-items:center; gap:4px;
-                    color:rgba(255,255,255,.3); font-size:11px;
-                    font-family:'Be Vietnam Pro',sans-serif; font-weight:700;
-                    letter-spacing:.55px; text-transform:uppercase;
-                    padding:0; transition:color .18s;
-                }
-                .aa-sort-btn:hover  { color:rgba(255,255,255,.65); }
-                .aa-sort-btn.active { color:#4ade80; }
-
-                .aa-action-btn {
-                    display:inline-flex; align-items:center; gap:5px;
-                    padding:5px 11px; border-radius:7px; border:none;
-                    font-size:12px; font-weight:600; cursor:pointer;
-                    transition:background .14s; font-family:'Be Vietnam Pro',sans-serif;
-                    text-decoration:none; vertical-align:middle;
-                }
-                .aa-action-edit { background:rgba(34,197,94,.09); color:#22c55e; }
-                .aa-action-edit:hover { background:rgba(34,197,94,.17); }
-                .aa-action-del  { background:rgba(248,113,113,.09); color:#f87171; }
-                .aa-action-del:hover  { background:rgba(248,113,113,.17); }
-
-                .aa-pg-btn {
-                    width:32px; height:32px; border-radius:8px;
-                    border:1px solid rgba(255,255,255,.08);
-                    background:transparent; cursor:pointer;
-                    font-size:13px; color:rgba(255,255,255,.45);
-                    display:inline-flex; align-items:center; justify-content:center;
-                    transition:all .18s; font-family:'Be Vietnam Pro',sans-serif;
-                }
-                .aa-pg-btn:hover:not(:disabled) {
-                    background:rgba(74,222,128,.1); border-color:rgba(74,222,128,.3); color:#4ade80;
-                }
-                .aa-pg-btn.active {
-                    background:rgba(74,222,128,.15); border-color:rgba(74,222,128,.4);
-                    color:#4ade80; font-weight:700;
-                }
-                .aa-pg-btn:disabled { opacity:.3; cursor:not-allowed; }
-
-                .aa-search-input {
-                    background:rgba(255,255,255,.04);
-                    border:1px solid rgba(255,255,255,.08);
-                    border-radius:10px; padding:9px 14px 9px 38px;
-                    color:#fff; font-size:13px; font-family:'Be Vietnam Pro',sans-serif;
-                    outline:none; transition:all .2s; width:240px;
-                }
-                .aa-search-input::placeholder { color:rgba(255,255,255,.22); }
-                .aa-search-input:focus {
-                    border-color:rgba(74,222,128,.35);
-                    background:rgba(74,222,128,.03);
-                }
-
-                .aa-modal-overlay {
-                    position:fixed; inset:0; z-index:999;
-                    background:rgba(0,0,0,.72); display:flex;
-                    align-items:center; justify-content:center;
-                    animation:ahFadeUp .14s ease; backdrop-filter:blur(4px);
-                }
-                .aa-modal {
-                    background:#141a14; border:1px solid rgba(255,255,255,.1);
-                    border-radius:20px; padding:28px;
-                    max-width:400px; width:90%;
-                    animation:ahScale .18s ease;
-                }
-
-                .aa-social-icon {
-                    display:inline-flex; align-items:center; justify-content:center;
-                    width:22px; height:22px; border-radius:5px;
-                    background:rgba(255,255,255,.06);
-                    color:rgba(255,255,255,.35); transition:all .15s;
-                    text-decoration:none;
-                }
-                .aa-social-icon:hover {
-                    background:rgba(74,222,128,.15);
-                    color:#4ade80;
-                }
-
-                .aa-verified-badge {
-                    display:inline-flex; align-items:center; gap:4px;
-                    padding:3px 8px; border-radius:100px;
-                    font-size:10px; font-weight:700; letter-spacing:.5px;
-                }
+                @keyframes apUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes apEq  { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
+                @keyframes apBar { from{width:0} to{width:var(--w)} }
+                @keyframes apSc  { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
             `}</style>
 
             {/* ── Header ── */}
-            <div style={{ marginBottom: 28, animation: "ahFadeUp .3s both" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
-                    <span style={{ fontSize: 11, color: "#4ade80", letterSpacing: "2px", textTransform: "uppercase", fontWeight: 600 }}>
-                        Won Music Admin
-                    </span>
+            <div className="mb-7" style={{ animation: "apUp .3s both" }}>
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" />
+                    <span className="text-xs text-gray-500 tracking-widest uppercase font-semibold">Won Music Admin</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <div className="flex items-end justify-between flex-wrap gap-3">
                     <div>
-                        <h1 style={{ fontSize: 40, color: "#fff", letterSpacing: 1, marginBottom: 4, lineHeight: 1 }}>
-                            Danh Sách Nghệ Sĩ
-                        </h1>
-                        <p style={{ fontSize: 13, color: "rgba(255,255,255,.4)" }}>
-                            Quản lý toàn bộ nghệ sĩ trong hệ thống
-                        </p>
+                        <h1 className="text-2xl font-bold text-gray-900">Danh Sách Nghệ Sĩ</h1>
+                        <p className="text-sm text-gray-500 mt-1">Quản lý toàn bộ nghệ sĩ trong hệ thống</p>
                     </div>
-                    <Link
-                        to="/admin/artists/new"
-                        style={{
-                            display: "inline-flex", alignItems: "center", gap: 7,
-                            padding: "11px 20px", borderRadius: 100,
-                            background: "linear-gradient(135deg,#16a34a,#4ade80)",
-                            color: "#0a1a0a", fontSize: 13, fontWeight: 700,
-                            textDecoration: "none",
-                            boxShadow: "0 4px 20px rgba(74,222,128,.22)",
-                        }}
+                    <button
+                        onClick={openModal}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold transition-colors cursor-pointer"
                     >
                         <Plus size={15} /> Thêm nghệ sĩ
-                    </Link>
+                    </button>
                 </div>
-                {/* EQ bars */}
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 2.5, height: 20, marginTop: 12 }}>
+                {/* EQ decoration */}
+                <div className="flex items-end gap-[2.5px] h-5 mt-3">
                     {EQ_H.map((h, i) => (
-                        <div key={i} style={{
-                            width: 4, height: `${h}%`,
-                            background: `rgba(74,222,128,${.2 + i * .055})`,
-                            borderRadius: 2, transformOrigin: "bottom",
-                            animation: `ahEq ${.38 + (i % 5) * .13}s ease-in-out infinite`,
-                            animationDelay: `${i * .07}s`,
-                        }} />
+                        <div
+                            key={i}
+                            className="w-1 rounded-sm bg-indigo-400/40"
+                            style={{
+                                height: `${h}%`,
+                                transformOrigin: "bottom",
+                                animation: `apEq ${.38 + (i % 5) * .13}s ease-in-out infinite`,
+                                animationDelay: `${i * .07}s`,
+                                opacity: 0.2 + i * 0.055,
+                            }}
+                        />
                     ))}
                 </div>
             </div>
 
             {/* ── Stats ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(175px,1fr))", gap: 14, marginBottom: 28 }}>
-                {STATS.map(({ label, value, icon: Icon, color, bg }, i) => (
-                    <div key={label} className="aa-stat-card" style={{ animationDelay: `${i * .07}s` }}>
-                        <div style={{ width: 38, height: 38, borderRadius: 11, background: bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-                            <Icon size={17} color={color} />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
+                {STATS.map(({ label, value, Icon, iconCls, bgCls }, i) => (
+                    <div
+                        key={label}
+                        className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all"
+                        style={{ animation: `apUp .4s ${i * .07}s both` }}
+                    >
+                        <div className={`w-10 h-10 rounded-xl ${bgCls} flex items-center justify-center mb-3`}>
+                            <Icon size={18} className={iconCls} />
                         </div>
-                        <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 32, color: "#fff", letterSpacing: 1, lineHeight: 1, marginBottom: 4 }}>
+                        <div className="text-2xl font-bold text-gray-900 leading-none mb-1">
                             {loading ? "—" : value}
                         </div>
-                        <p style={{ fontSize: 12, color: "rgba(255,255,255,.38)", fontWeight: 500 }}>{label}</p>
+                        <p className="text-xs text-gray-500 font-medium">{label}</p>
                     </div>
                 ))}
             </div>
 
             {/* ── Table card ── */}
-            <div style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,.07)", background: "rgba(255,255,255,.02)", overflow: "hidden" }}>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 
                 {/* Toolbar */}
-                <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ position: "relative" }}>
-                        <Search size={14} color="rgba(255,255,255,.3)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 flex-wrap">
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                         <input
-                            className="aa-search-input"
+                            className="bg-white border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-60"
                             placeholder="Tìm nghệ sĩ, thể loại..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
-                    <div style={{ flex: 1 }} />
-                    <span style={{ fontSize: 12, color: "rgba(255,255,255,.28)", fontWeight: 500 }}>
-                        {filtered.length} kết quả
-                    </span>
+                    <div className="flex-1" />
+                    <span className="text-xs text-gray-400 font-medium">{filtered.length} kết quả</span>
                 </div>
 
-                {/* Scrollable table wrapper */}
-                <div style={{ overflowX: "auto" }}>
-                    <table className="aa-table">
+                {/* Table */}
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
                         <colgroup>
-                            <col className="col-num" />
-                            <col className="col-avatar" />
-                            <col className="col-name" />
-                            <col className="col-genre" />
-                            <col className="col-follow" />
-                            <col className="col-social" />
-                            <col className="col-badge" />
-                            <col className="col-act" />
+                            <col style={{ width: 48 }} />
+                            <col style={{ width: 56 }} />
+                            <col style={{ minWidth: 160 }} />
+                            <col style={{ width: 110 }} />
+                            <col style={{ width: 120 }} />
+                            <col style={{ width: 100 }} />
+                            <col style={{ width: 100 }} />
+                            <col style={{ width: 110 }} />
                         </colgroup>
                         <thead>
-                            <tr>
-                                <th className="th-center">#</th>
+                            <tr className="bg-gray-50 border-b border-gray-200">
+                                <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
                                 <th />
-                                <th>
-                                    <button className={`aa-sort-btn ${sortKey === "name" ? "active" : ""}`} onClick={() => toggleSort("name")}>
+                                <th className="px-3 py-2.5 text-left">
+                                    <button
+                                        onClick={() => toggleSort("name")}
+                                        className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide transition-colors ${sortKey === "name" ? "text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}
+                                    >
                                         Nghệ sĩ <ArrowUpDown size={10} />
                                     </button>
                                 </th>
-                                <th>Thể loại</th>
-                                <th>
-                                    <button className={`aa-sort-btn ${sortKey === "followers" ? "active" : ""}`} onClick={() => toggleSort("followers")}>
+                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Thể loại</th>
+                                <th className="px-3 py-2.5 text-left">
+                                    <button
+                                        onClick={() => toggleSort("followers")}
+                                        className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide transition-colors ${sortKey === "followers" ? "text-indigo-600" : "text-gray-500 hover:text-gray-700"}`}
+                                    >
                                         Followers <ArrowUpDown size={10} />
                                     </button>
                                 </th>
-                                <th className="th-center">Social</th>
-                                <th className="th-center">Trạng thái</th>
-                                <th className="th-right">Hành động</th>
+                                <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Social</th>
+                                <th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
+                                <th className="px-3 py-2.5 pr-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading
                                 ? Array.from({ length: 8 }).map((_, i) => (
-                                    <tr key={i} style={{ animation: `ahPulse 1.6s ${i * .06}s ease-in-out infinite` }}>
-                                        <td className="td-center">
-                                            <div style={{ width: 20, height: 11, borderRadius: 3, background: "rgba(255,255,255,.07)", margin: "0 auto" }} />
+                                    <tr key={i} className="border-b border-gray-100 animate-pulse">
+                                        <td className="px-3 py-3 text-center"><div className="w-5 h-2.5 rounded bg-gray-100 mx-auto" /></td>
+                                        <td className="px-2 py-2"><div className="w-9 h-9 rounded-full bg-gray-100" /></td>
+                                        <td className="px-3 py-3">
+                                            <div className="h-3 bg-gray-100 rounded w-3/5 mb-2" />
+                                            <div className="h-1.5 bg-gray-50 rounded w-4/5" />
                                         </td>
-                                        <td>
-                                            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,.07)" }} />
-                                        </td>
-                                        <td>
-                                            <div style={{ height: 12, background: "rgba(255,255,255,.07)", borderRadius: 4, width: "55%", marginBottom: 7 }} />
-                                            <div style={{ height: 4, background: "rgba(255,255,255,.05)", borderRadius: 2, width: "35%" }} />
-                                        </td>
-                                        <td><div style={{ height: 11, background: "rgba(255,255,255,.05)", borderRadius: 4, width: "60%" }} /></td>
-                                        <td><div style={{ height: 11, background: "rgba(255,255,255,.05)", borderRadius: 4, width: "50%" }} /></td>
-                                        <td><div style={{ height: 11, background: "rgba(255,255,255,.05)", borderRadius: 4, width: "60%", margin: "0 auto" }} /></td>
-                                        <td><div style={{ height: 11, background: "rgba(255,255,255,.05)", borderRadius: 4, width: "50%", margin: "0 auto" }} /></td>
+                                        <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-14" /></td>
+                                        <td className="px-3 py-3"><div className="h-3 bg-gray-100 rounded w-3/5" /></td>
+                                        <td className="px-3 py-3"><div className="h-3 bg-gray-100 rounded w-4/5 mx-auto" /></td>
+                                        <td className="px-3 py-3"><div className="h-5 bg-gray-100 rounded-full w-16 mx-auto" /></td>
                                         <td />
                                     </tr>
                                 ))
                                 : paginated.length === 0
-                                    ? (
-                                        <tr>
-                                            <td colSpan={8} style={{ padding: "52px 0", textAlign: "center" }}>
-                                                <Mic2 size={40} color="rgba(255,255,255,.1)" style={{ margin: "0 auto 12px", display: "block" }} />
-                                                <p style={{ fontSize: 14, color: "rgba(255,255,255,.28)" }}>Không tìm thấy nghệ sĩ nào</p>
+                                ? (
+                                    <tr>
+                                        <td colSpan={8} className="py-16 text-center">
+                                            <Mic2 size={40} className="text-gray-200 mx-auto mb-3" />
+                                            <p className="text-sm text-gray-400">Không tìm thấy nghệ sĩ nào</p>
+                                        </td>
+                                    </tr>
+                                )
+                                : paginated.map((artist, idx) => {
+                                    const globalIdx  = (page - 1) * PER_PAGE + idx + 1;
+                                    const topFollower = artists[0]?.followers || 1;
+                                    const pct        = Math.round((artist.followers / topFollower) * 100);
+                                    const socials    = artist.socialLinks ?? {};
+                                    const hasSocial  = socials.facebook || socials.instagram || socials.youtube || socials.tiktok;
+
+                                    return (
+                                        <tr
+                                            key={artist._id}
+                                            className="hover:bg-gray-50 border-b border-gray-100 transition-colors"
+                                            style={{ animation: `apUp .28s ${idx * .03}s both` }}
+                                        >
+                                            {/* # */}
+                                            <td className="px-3 py-2.5 text-center">
+                                                <span className="text-xs font-mono text-gray-300">
+                                                    {String(globalIdx).padStart(2, "0")}
+                                                </span>
+                                            </td>
+
+                                            {/* Avatar */}
+                                            <td className="px-2 py-2">
+                                                <div className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-100 to-indigo-200 flex-shrink-0 ${artist.verified ? "ring-2 ring-indigo-400 ring-offset-1" : ""}`}>
+                                                    {artist.avatar
+                                                        ? <img src={artist.avatar} alt={artist.name} className="w-full h-full object-cover" />
+                                                        : <Mic2 size={15} className="text-indigo-400" />
+                                                    }
+                                                </div>
+                                            </td>
+
+                                            {/* Name + bar */}
+                                            <td className="px-3 py-2.5 overflow-hidden">
+                                                <Link href={`/admin/artists/${artist._id}`} className="block no-underline">
+                                                    <p className="text-sm font-semibold text-gray-900 truncate mb-1">{artist.name}</p>
+                                                    <div className="h-0.5 bg-gray-100 rounded overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded"
+                                                            style={{
+                                                                width: `${pct}%`,
+                                                                animation: "apBar .7s cubic-bezier(.4,0,.2,1) both",
+                                                                ["--w" as any]: `${pct}%`,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </Link>
+                                            </td>
+
+                                            {/* Genre */}
+                                            <td className="px-3 py-2.5">
+                                                {artist.genre
+                                                    ? <span className="inline-block bg-indigo-50 text-indigo-600 text-xs font-medium px-2.5 py-0.5 rounded-full border border-indigo-100">
+                                                        {artist.genre}
+                                                      </span>
+                                                    : <span className="text-xs text-gray-300">—</span>
+                                                }
+                                            </td>
+
+                                            {/* Followers */}
+                                            <td className="px-3 py-2.5">
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    <Users size={11} className="text-indigo-400" />
+                                                    <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                                                        {fNum(artist.followers ?? 0)}
+                                                    </span>
+                                                </span>
+                                            </td>
+
+                                            {/* Social */}
+                                            <td className="px-3 py-2.5 text-center">
+                                                {hasSocial
+                                                    ? <div className="inline-flex gap-1 justify-center">
+                                                        {socials.facebook  && <a href={socials.facebook}  target="_blank" rel="noreferrer" className="w-6 h-6 rounded-md bg-gray-100 text-gray-400 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition-colors"><Facebook  size={11} /></a>}
+                                                        {socials.instagram && <a href={socials.instagram} target="_blank" rel="noreferrer" className="w-6 h-6 rounded-md bg-gray-100 text-gray-400 hover:bg-pink-50 hover:text-pink-600 flex items-center justify-center transition-colors"><Instagram size={11} /></a>}
+                                                        {socials.youtube   && <a href={socials.youtube}   target="_blank" rel="noreferrer" className="w-6 h-6 rounded-md bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors"><Youtube   size={11} /></a>}
+                                                        {socials.tiktok    && <a href={socials.tiktok}    target="_blank" rel="noreferrer" className="w-6 h-6 rounded-md bg-gray-100 text-gray-400 hover:bg-gray-200 flex items-center justify-center transition-colors"><Music     size={11} /></a>}
+                                                      </div>
+                                                    : <span className="text-xs text-gray-300">—</span>
+                                                }
+                                            </td>
+
+                                            {/* Verified */}
+                                            <td className="px-3 py-2.5 text-center">
+                                                {artist.verified
+                                                    ? <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-semibold px-2 py-0.5 rounded-full">
+                                                        <CheckCircle2 size={9} /> Xác minh
+                                                      </span>
+                                                    : <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 text-xs font-medium px-2 py-0.5 rounded-full">
+                                                        <Star size={9} /> Thường
+                                                      </span>
+                                                }
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="px-3 py-2.5 pr-4 text-right whitespace-nowrap">
+                                                <Link
+                                                    href={`/admin/artists/${artist._id}/edit`}
+                                                    className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-md text-xs font-semibold inline-flex items-center gap-1 transition-colors"
+                                                    onClick={e => e.stopPropagation()}
+                                                >
+                                                    <Edit2 size={11} /> Sửa
+                                                </Link>
                                             </td>
                                         </tr>
-                                    )
-                                    : paginated.map((artist, idx) => {
-                                        const globalIdx = (page - 1) * PER_PAGE + idx + 1;
-                                        const topFollower = artists[0]?.followers || 1;
-                                        const pct = Math.round((artist.followers / topFollower) * 100);
-                                        const socials = artist.socialLinks ?? {};
-                                        const hasSocial = socials.facebook || socials.instagram || socials.youtube || socials.tiktok;
-
-                                        return (
-                                            <tr key={artist._id} style={{ animationDelay: `${idx * .03}s` }}>
-
-                                                {/* # */}
-                                                <td className="td-center">
-                                                    <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 15, color: "rgba(74,222,128,.28)" }}>
-                                                        {String(globalIdx).padStart(2, "0")}
-                                                    </span>
-                                                </td>
-
-                                                {/* Avatar */}
-                                                <td style={{ padding: "8px 10px" }}>
-                                                    <div style={{
-                                                        width: 38, height: 38, borderRadius: "50%",
-                                                        overflow: "hidden", flexShrink: 0,
-                                                        background: "linear-gradient(135deg,#052e16,#14532d)",
-                                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                                        border: artist.verified ? "2px solid rgba(74,222,128,.4)" : "2px solid transparent",
-                                                    }}>
-                                                        {artist.avatar
-                                                            ? <img src={artist.avatar} alt={artist.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                                            : <Mic2 size={16} color="rgba(74,222,128,.4)" />
-                                                        }
-                                                    </div>
-                                                </td>
-
-                                                {/* Name + followers bar */}
-                                                <td>
-                                                    <Link to={`/admin/artists/${artist._id}`} style={{ textDecoration: "none", display: "block" }}>
-                                                        <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                            {artist.name}
-                                                        </p>
-                                                        <div style={{ height: 3, background: "rgba(255,255,255,.07)", borderRadius: 2, overflow: "hidden" }}>
-                                                            <div style={{
-                                                                height: "100%",
-                                                                background: "linear-gradient(90deg,#16a34a,#4ade80)",
-                                                                borderRadius: 2,
-                                                                width: `${pct}%`,
-                                                                transition: "width .7s cubic-bezier(.4,0,.2,1)",
-                                                            }} />
-                                                        </div>
-                                                    </Link>
-                                                </td>
-
-                                                {/* Genre */}
-                                                <td>
-                                                    {artist.genre
-                                                        ? <span style={{
-                                                            display: "inline-block", padding: "2px 9px", borderRadius: 100,
-                                                            fontSize: 11, fontWeight: 600,
-                                                            background: "rgba(74,222,128,.08)",
-                                                            border: "1px solid rgba(74,222,128,.15)",
-                                                            color: "rgba(74,222,128,.8)",
-                                                          }}>
-                                                            {artist.genre}
-                                                          </span>
-                                                        : <span style={{ color: "rgba(255,255,255,.2)", fontSize: 12 }}>—</span>
-                                                    }
-                                                </td>
-
-                                                {/* Followers */}
-                                                <td>
-                                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                                                        <Users size={11} color="rgba(74,222,128,.5)" />
-                                                        <span style={{ fontWeight: 600, color: "rgba(255,255,255,.65)" }}>
-                                                            {formatNum(artist.followers ?? 0)}
-                                                        </span>
-                                                    </span>
-                                                </td>
-
-                                                {/* Social links */}
-                                                <td className="td-center">
-                                                    {hasSocial
-                                                        ? <div style={{ display: "inline-flex", gap: 5 }}>
-                                                            {socials.facebook  && <a href={socials.facebook}  target="_blank" rel="noreferrer" className="aa-social-icon"><Facebook  size={12} /></a>}
-                                                            {socials.instagram && <a href={socials.instagram} target="_blank" rel="noreferrer" className="aa-social-icon"><Instagram size={12} /></a>}
-                                                            {socials.youtube   && <a href={socials.youtube}   target="_blank" rel="noreferrer" className="aa-social-icon"><Youtube   size={12} /></a>}
-                                                            {socials.tiktok    && <a href={socials.tiktok}    target="_blank" rel="noreferrer" className="aa-social-icon"><Music     size={12} /></a>}
-                                                          </div>
-                                                        : <span style={{ fontSize: 11, color: "rgba(255,255,255,.18)" }}>—</span>
-                                                    }
-                                                </td>
-
-                                                {/* Verified badge */}
-                                                <td className="td-center">
-                                                    {artist.verified
-                                                        ? <span className="aa-verified-badge" style={{ background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.25)", color: "#4ade80" }}>
-                                                            <CheckCircle2 size={10} /> Xác minh
-                                                          </span>
-                                                        : <span className="aa-verified-badge" style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.3)" }}>
-                                                            <Star size={10} /> Thường
-                                                          </span>
-                                                    }
-                                                </td>
-
-                                                {/* Actions */}
-                                                <td className="td-right" style={{ whiteSpace: "nowrap" }}>
-                                                    <Link
-                                                        to={`/admin/artists/${artist._id}/edit`}
-                                                        className="aa-action-btn aa-action-edit"
-                                                        onClick={e => e.stopPropagation()}
-                                                    >
-                                                        <Edit2 size={12} /> Sửa
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
+                                    );
+                                })
                             }
                         </tbody>
                     </table>
                 </div>
 
-                {/* ── Pagination ── */}
+                {/* Pagination */}
                 {!loading && filtered.length > PER_PAGE && (
-                    <div style={{ padding: "14px 18px", borderTop: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-                        <span style={{ fontSize: 12, color: "rgba(255,255,255,.28)" }}>
+                    <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
+                        <span className="text-xs text-gray-400 font-medium">
                             Trang {page} / {totalPages} · {filtered.length} nghệ sĩ
                         </span>
-                        <div style={{ display: "flex", gap: 6 }}>
-                            <button className="aa-pg-btn" disabled={page === 1} onClick={() => setPage(1)}>«</button>
-                            <button className="aa-pg-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
+                        <div className="flex gap-1.5">
+                            {[
+                                { label: "«", disabled: page === 1,         onClick: () => setPage(1)           },
+                                { label: "‹", disabled: page === 1,         onClick: () => setPage(p => p - 1)  },
+                            ].map(b => (
+                                <button key={b.label} disabled={b.disabled} onClick={b.onClick}
+                                    className="border border-gray-200 rounded-lg px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                                    {b.label}
+                                </button>
+                            ))}
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                 const p = Math.min(Math.max(page - 2, 1), Math.max(totalPages - 4, 1)) + i;
                                 return p <= totalPages ? (
-                                    <button key={p} className={`aa-pg-btn ${page === p ? "active" : ""}`} onClick={() => setPage(p)}>{p}</button>
+                                    <button key={p} onClick={() => setPage(p)}
+                                        className={`border rounded-lg px-3 py-1 text-sm transition-colors ${page === p ? "border-indigo-500 bg-indigo-50 text-indigo-600 font-bold" : "border-gray-200 hover:bg-gray-50 text-gray-700"}`}>
+                                        {p}
+                                    </button>
                                 ) : null;
                             })}
-                            <button className="aa-pg-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>›</button>
-                            <button className="aa-pg-btn" disabled={page === totalPages} onClick={() => setPage(totalPages)}>»</button>
+                            {[
+                                { label: "›", disabled: page === totalPages, onClick: () => setPage(p => p + 1)  },
+                                { label: "»", disabled: page === totalPages, onClick: () => setPage(totalPages)  },
+                            ].map(b => (
+                                <button key={b.label} disabled={b.disabled} onClick={b.onClick}
+                                    className="border border-gray-200 rounded-lg px-3 py-1 text-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+                                    {b.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* ── Add Artist Modal ── */}
+            {showModal && (
+                <div
+                    ref={overlayRef}
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={e => { if (e.target === overlayRef.current) closeModal(); }}
+                    style={{ animation: "apUp .14s ease" }}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                        style={{ animation: "apSc .18s ease" }}
+                    >
+                        {/* header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                    <Mic2 size={15} className="text-indigo-600" />
+                                </div>
+                                <h2 className="text-base font-bold text-gray-900">Thêm nghệ sĩ mới</h2>
+                            </div>
+                            <button onClick={closeModal}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors cursor-pointer">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* form */}
+                        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+
+                            {/* avatar preview + name row */}
+                            <div className="flex gap-4 items-start">
+                                {/* avatar preview */}
+                                <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center border-2 border-indigo-100">
+                                    {form.avatarUrl.trim()
+                                        ? <img src={form.avatarUrl.trim()} alt="" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = "none")} />
+                                        : <Mic2 size={24} className="text-indigo-300" />
+                                    }
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                        Tên nghệ sĩ <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text" value={form.name}
+                                        onChange={e => setField("name", e.target.value)}
+                                        placeholder="Nhập tên nghệ sĩ..."
+                                        className={INPUT} required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* genre + followers */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Thể loại</label>
+                                    <select value={form.genre} onChange={e => setField("genre", e.target.value)} className={INPUT}>
+                                        <option value="">-- Chọn thể loại --</option>
+                                        {GENRE_OPTIONS.map(g => <option key={g} value={g}>{g}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Followers</label>
+                                    <input
+                                        type="number" min={0} value={form.followers}
+                                        onChange={e => setField("followers", e.target.value)}
+                                        placeholder="0" className={INPUT}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* bio */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Tiểu sử</label>
+                                <textarea
+                                    rows={3} value={form.bio}
+                                    onChange={e => setField("bio", e.target.value)}
+                                    placeholder="Giới thiệu ngắn về nghệ sĩ..."
+                                    className={INPUT + " resize-none"}
+                                />
+                            </div>
+
+                            {/* avatar url */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">Avatar URL</label>
+                                <input
+                                    type="text" value={form.avatarUrl}
+                                    onChange={e => setField("avatarUrl", e.target.value)}
+                                    placeholder="https://... (URL ảnh đại diện)"
+                                    className={INPUT}
+                                />
+                            </div>
+
+                            {/* verified toggle */}
+                            <div className="flex items-center justify-between py-0.5">
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-700">Đã xác minh</p>
+                                    <p className="text-[11px] text-gray-400">Hiển thị badge xác minh</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setField("verified", !form.verified)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer flex-shrink-0 ${form.verified ? "bg-indigo-600" : "bg-gray-200"}`}
+                                >
+                                    <span
+                                        className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+                                        style={{ transform: form.verified ? "translateX(20px)" : "translateX(0)" }}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* social (collapsible) */}
+                            <div className="border border-gray-100 rounded-xl overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSocial(v => !v)}
+                                    className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Music size={12} /> Liên kết mạng xã hội
+                                        <span className="text-[10px] font-normal text-gray-400">(tuỳ chọn)</span>
+                                    </span>
+                                    <ChevronDown size={14} className={`transition-transform text-gray-400 ${showSocial ? "rotate-180" : ""}`} />
+                                </button>
+                                {showSocial && (
+                                    <div className="px-4 pb-4 pt-1 space-y-3 border-t border-gray-100">
+                                        {[
+                                            { key: "facebook",  Icon: Facebook,  label: "Facebook",  placeholder: "https://facebook.com/..." },
+                                            { key: "instagram", Icon: Instagram, label: "Instagram", placeholder: "https://instagram.com/..." },
+                                            { key: "youtube",   Icon: Youtube,   label: "YouTube",   placeholder: "https://youtube.com/..."  },
+                                        ].map(({ key, Icon, label, placeholder }) => (
+                                            <div key={key}>
+                                                <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1">
+                                                    <Icon size={11} /> {label}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={form[key as keyof FormState] as string}
+                                                    onChange={e => setField(key as keyof FormState, e.target.value)}
+                                                    placeholder={placeholder}
+                                                    className={INPUT}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* error */}
+                            {formError && (
+                                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-3 py-2">
+                                    {formError}
+                                </div>
+                            )}
+
+                            {/* footer */}
+                            <div className="flex justify-end gap-2.5 pt-2 border-t border-gray-100">
+                                <button type="button" onClick={closeModal} disabled={submitting}
+                                    className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer">
+                                    Huỷ
+                                </button>
+                                <button type="submit" disabled={submitting}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 flex items-center gap-2 cursor-pointer">
+                                    {submitting
+                                        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang lưu...</>
+                                        : <><Plus size={14} /> Thêm nghệ sĩ</>
+                                    }
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

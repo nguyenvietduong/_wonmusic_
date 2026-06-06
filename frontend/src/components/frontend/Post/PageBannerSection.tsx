@@ -51,7 +51,7 @@ const PageBannerSection = () => {
                                 className="
                                     w-10 xl:w-20 xl:-ml-24
                                     h-[3px]
-                                    bg-green-700
+                                    bg-[#00A98F]
                                     origin-center
                                     transition-all duration-500 ease-out
                                     xl:group-hover:rotate-90

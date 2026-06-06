@@ -1,9 +1,7 @@
 // src/services/artistService.ts
 import axios from "axios";
 
-const api = import.meta.env.MODE === "development"
-    ? "http://localhost:2004/api"
-    : "https://wonmusic-api.up.railway.app/api";
+const api = '/api';
 
 export interface Artist {
     _id:         string;

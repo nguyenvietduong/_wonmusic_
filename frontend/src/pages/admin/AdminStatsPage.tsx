@@ -1,48 +1,44 @@
-// src/pages/admin/AdminStatsPage.tsx
+'use client';
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import {
-    Music, Mic2, TrendingUp, Clock, Play,
-    Users, BarChart2, Activity, ArrowUpRight,
-    Minus, Star, BadgeCheck,
-    Disc3, Headphones, Zap, Globe,
+    Music, Mic2, TrendingUp, Clock, Play, Users,
+    BarChart2, Activity, ArrowUpRight, Minus, Star,
+    BadgeCheck, Disc3, Headphones, Zap, Globe, ArrowRight,
 } from "lucide-react";
 import { trackService }  from "@/services/trackService";
 import { artistService } from "@/services/artistService";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── helpers ────────────────────────────────────────────────────────────────
 const fmt = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
     if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K`;
     return String(n);
 };
-const fmtTime = (s: number) =>
-    `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const fmtTime  = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const fmtHours = (s: number) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
 };
 
 const EQ_H = [28, 55, 40, 72, 33, 62, 48, 80, 38, 55, 68, 42, 76, 30, 58];
 
-// ─── Mini bar chart ───────────────────────────────────────────────────────────
-function MiniBar({ values, color = "#4ade80" }: { values: number[]; color?: string }) {
+// ─── MiniBar ────────────────────────────────────────────────────────────────
+function MiniBar({ values, color = "#6366f1" }: { values: number[]; color?: string }) {
     const max = Math.max(...values, 1);
     return (
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 40 }}>
+        <div className="flex items-end gap-[2px] h-8">
             {values.map((v, i) => (
                 <div
                     key={i}
                     style={{
-                        flex: 1,
+                        flex: 1, minHeight: 3,
                         height: `${(v / max) * 100}%`,
-                        minHeight: 3,
                         borderRadius: "3px 3px 1px 1px",
                         background: color,
-                        opacity: 0.3 + (v / max) * 0.7,
-                        animation: `ahBar .5s ${i * .04}s cubic-bezier(.4,0,.2,1) both`,
+                        opacity: 0.25 + (v / max) * 0.65,
+                        animation: `stBar .5s ${i * .04}s cubic-bezier(.4,0,.2,1) both`,
+                        transformOrigin: "bottom",
                     }}
                 />
             ))}
@@ -50,35 +46,28 @@ function MiniBar({ values, color = "#4ade80" }: { values: number[]; color?: stri
     );
 }
 
-// ─── Donut chart ──────────────────────────────────────────────────────────────
+// ─── Donut ──────────────────────────────────────────────────────────────────
 function Donut({ segments }: { segments: { value: number; color: string; label: string }[] }) {
-    const total = segments.reduce((s, seg) => s + seg.value, 0) || 1;
-    const r = 52, cx = 64, cy = 64, stroke = 14;
-    const circumference = 2 * Math.PI * r;
+    const total = segments.reduce((s, g) => s + g.value, 0) || 1;
+    const r = 52, cx = 64, cy = 64, sw = 14;
+    const circ = 2 * Math.PI * r;
     let offset = 0;
-
     return (
         <svg width={128} height={128} viewBox="0 0 128 128">
-            <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,.05)" strokeWidth={stroke} />
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={sw} />
             {segments.map((seg, i) => {
-                const dashArray = (seg.value / total) * circumference;
-                const dashOffset = circumference - offset;
-                offset += dashArray;
+                const dash   = (seg.value / total) * circ;
+                const dOff   = circ - offset;
+                offset += dash;
                 return (
                     <circle
-                        key={i}
-                        cx={cx} cy={cy} r={r}
-                        fill="none"
-                        stroke={seg.color}
-                        strokeWidth={stroke}
-                        strokeDasharray={`${dashArray} ${circumference - dashArray}`}
-                        strokeDashoffset={dashOffset}
+                        key={i} cx={cx} cy={cy} r={r}
+                        fill="none" stroke={seg.color}
+                        strokeWidth={sw}
+                        strokeDasharray={`${dash} ${circ - dash}`}
+                        strokeDashoffset={dOff}
                         strokeLinecap="round"
-                        style={{
-                            transform: "rotate(-90deg)",
-                            transformOrigin: "center",
-                            transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1)",
-                        }}
+                        style={{ transform: "rotate(-90deg)", transformOrigin: "center", transition: "stroke-dasharray .8s cubic-bezier(.4,0,.2,1)" }}
                     />
                 );
             })}
@@ -86,42 +75,39 @@ function Donut({ segments }: { segments: { value: number; color: string; label: 
     );
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-export default function AdminStatsPage() {
-    const [tracks,  setTracks]  = useState<any[]>([]);
-    const [artists, setArtists] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error,   setError]   = useState(false);
+// ─── Palette ────────────────────────────────────────────────────────────────
+const GENRE_COLORS = ["#6366f1","#3b82f6","#ec4899","#f97316","#8b5cf6","#10b981"];
 
-    // animated counters
-    const [counters, setCounters] = useState({
-        tracks: 0, artists: 0, plays: 0, followers: 0,
-    });
+// ─── Component ──────────────────────────────────────────────────────────────
+export default function AdminStatsPage() {
+    const [tracks,   setTracks]   = useState<any[]>([]);
+    const [artists,  setArtists]  = useState<any[]>([]);
+    const [loading,  setLoading]  = useState(true);
+    const [error,    setError]    = useState(false);
+    const [counters, setCounters] = useState({ tracks: 0, artists: 0, plays: 0, followers: 0 });
     const animRef = useRef<number>(0);
 
     useEffect(() => {
         (async () => {
             try {
                 const [tRes, aRes] = await Promise.all([
-                    trackService.getAll?.() ?? trackService.getTop(200),
+                    trackService.getAll({ limit: 200 }),
                     artistService.getAll({ limit: 200 }),
                 ]);
-                const t = Array.isArray(tRes) ? tRes : tRes?.data ?? [];
-                const a = Array.isArray(aRes) ? aRes : aRes?.data ?? [];
+                const t: any[] = Array.isArray(tRes) ? tRes : tRes?.data ?? [];
+                const a: any[] = Array.isArray(aRes) ? aRes : aRes?.data ?? [];
                 setTracks(t);
                 setArtists(a);
 
-                // animate counters
                 const targets = {
                     tracks:    t.length,
                     artists:   a.length,
                     plays:     t.reduce((s: number, x: any) => s + (x.plays ?? 0), 0),
                     followers: a.reduce((s: number, x: any) => s + (x.followers ?? 0), 0),
                 };
-                const start = performance.now();
-                const dur = 1200;
+                const start = performance.now(), dur = 1200;
                 const tick = (now: number) => {
-                    const p = Math.min((now - start) / dur, 1);
+                    const p    = Math.min((now - start) / dur, 1);
                     const ease = 1 - Math.pow(1 - p, 3);
                     setCounters({
                         tracks:    Math.round(ease * targets.tracks),
@@ -132,17 +118,14 @@ export default function AdminStatsPage() {
                     if (p < 1) animRef.current = requestAnimationFrame(tick);
                 };
                 animRef.current = requestAnimationFrame(tick);
-            } catch {
-                setError(true);
-            } finally {
-                setLoading(false);
-            }
+            } catch { setError(true); }
+            finally  { setLoading(false); }
         })();
         return () => cancelAnimationFrame(animRef.current);
     }, []);
 
-    // ── Derived stats ──
-    const totalPlays     = tracks.reduce((s, t) => s + (t.plays ?? 0), 0);
+    // ── derived ──
+    const totalPlays     = tracks.reduce((s, t) => s + (t.plays    ?? 0), 0);
     const totalDuration  = tracks.reduce((s, t) => s + (t.duration ?? 0), 0);
     const totalFollowers = artists.reduce((s, a) => s + (a.followers ?? 0), 0);
     const verifiedCount  = artists.filter(a => a.verified).length;
@@ -150,333 +133,258 @@ export default function AdminStatsPage() {
     const avgDuration    = tracks.length ? Math.round(totalDuration / tracks.length) : 0;
     const avgPlays       = tracks.length ? Math.round(totalPlays / tracks.length) : 0;
 
-    // Top tracks
-    const topTracks = [...tracks].sort((a, b) => (b.plays ?? 0) - (a.plays ?? 0)).slice(0, 8);
-
-    // Top artists by followers
+    const topTracks  = [...tracks].sort((a, b)  => (b.plays    ?? 0) - (a.plays    ?? 0)).slice(0, 8);
     const topArtists = [...artists].sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0)).slice(0, 6);
 
-    // Genre distribution
     const genreMap: Record<string, number> = {};
-    tracks.forEach(t => {
-        if (t.genre) genreMap[t.genre] = (genreMap[t.genre] ?? 0) + 1;
-    });
-    const genreEntries = Object.entries(genreMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6);
-    const genreTotal = genreEntries.reduce((s, [, v]) => s + v, 0) || 1;
+    tracks.forEach(t => { if (t.genre) genreMap[t.genre] = (genreMap[t.genre] ?? 0) + 1; });
+    const genreEntries = Object.entries(genreMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const genreTotal   = genreEntries.reduce((s, [, v]) => s + v, 0) || 1;
 
-    const GENRE_COLORS = ["#4ade80", "#60a5fa", "#f472b6", "#fb923c", "#a78bfa", "#34d399"];
-
-    // Artist genre donut data
     const artistGenreMap: Record<string, number> = {};
-    artists.forEach(a => {
-        if (a.genre) artistGenreMap[a.genre] = (artistGenreMap[a.genre] ?? 0) + 1;
-    });
-    const donutSegments = Object.entries(artistGenreMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
+    artists.forEach(a => { if (a.genre) artistGenreMap[a.genre] = (artistGenreMap[a.genre] ?? 0) + 1; });
+    const donutSegs = Object.entries(artistGenreMap)
+        .sort((a, b) => b[1] - a[1]).slice(0, 5)
         .map(([label, value], i) => ({ label, value, color: GENRE_COLORS[i] }));
 
-    const skeletonPulse = `@keyframes sk{0%,100%{opacity:.3}50%{opacity:.7}}`;
-
     if (error) return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", padding: "60px 0", textAlign: "center" }}>
-            <p style={{ color: "#f87171", fontSize: 14, marginBottom: 12 }}>Không thể tải dữ liệu thống kê.</p>
+        <div className="py-16 text-center">
+            <p className="text-red-400 text-sm mb-3">Không thể tải dữ liệu thống kê.</p>
             <button
                 onClick={() => window.location.reload()}
-                style={{ padding: "8px 20px", borderRadius: 10, background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.2)", color: "#f87171", fontSize: 13, cursor: "pointer" }}
+                className="px-5 py-2 rounded-lg bg-red-50 border border-red-200 text-red-500 text-sm cursor-pointer hover:bg-red-100 transition-colors"
             >
                 Thử lại
             </button>
         </div>
     );
 
+    const KPIS = [
+        {
+            label: "Tổng bài hát",    value: loading ? null : fmt(counters.tracks),
+            sub: `${publishedCount} đã xuất bản`,
+            Icon: Music,      iconCls: "text-indigo-600", bgCls: "bg-indigo-50",
+            color: "#6366f1", spark: [3,5,4,7,6,8,5,9,7,8,10,9], delay: "0s",
+        },
+        {
+            label: "Nghệ sĩ",         value: loading ? null : fmt(counters.artists),
+            sub: `${verifiedCount} đã xác minh`,
+            Icon: Mic2,       iconCls: "text-blue-600",   bgCls: "bg-blue-50",
+            color: "#3b82f6", spark: [2,4,3,5,4,6,5,7,6,7,8,7], delay: ".07s",
+        },
+        {
+            label: "Tổng lượt nghe",  value: loading ? null : fmt(counters.plays),
+            sub: `TB ${fmt(avgPlays)} / bài`,
+            Icon: TrendingUp, iconCls: "text-pink-600",   bgCls: "bg-pink-50",
+            color: "#ec4899", spark: [5,8,6,9,7,11,8,12,9,11,13,12], delay: ".14s",
+        },
+        {
+            label: "Tổng followers",  value: loading ? null : fmt(counters.followers),
+            sub: `TB ${fmt(artists.length ? Math.round(totalFollowers / artists.length) : 0)} / NS`,
+            Icon: Users,      iconCls: "text-orange-500", bgCls: "bg-orange-50",
+            color: "#f97316", spark: [4,6,5,8,7,9,6,10,8,9,11,10], delay: ".21s",
+        },
+        {
+            label: "Tổng thời lượng", value: loading ? null : fmtHours(totalDuration),
+            sub: `TB ${fmtTime(avgDuration)} / bài`,
+            Icon: Clock,      iconCls: "text-violet-600", bgCls: "bg-violet-50",
+            color: "#8b5cf6", spark: [3,5,4,6,5,7,4,8,6,7,9,8], delay: ".28s",
+        },
+        {
+            label: "Tỉ lệ xuất bản",  value: loading ? null : `${tracks.length ? Math.round(publishedCount / tracks.length * 100) : 0}%`,
+            sub: `${tracks.length - publishedCount} bản nháp`,
+            Icon: Globe,      iconCls: "text-teal-600",   bgCls: "bg-teal-50",
+            color: "#10b981", spark: [6,8,7,9,8,10,9,10,8,11,10,12], delay: ".35s",
+        },
+    ];
+
     return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", paddingBottom: 80 }}>
+        <div>
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
-                ${skeletonPulse}
-
-                @keyframes ahFadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes ahEq     { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
-                @keyframes ahBar    { from{transform:scaleY(0)} to{transform:scaleY(1)} }
-                @keyframes ahSpin   { to{transform:rotate(360deg)} }
-                @keyframes countUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes ahPulse  { 0%,100%{opacity:.35} 50%{opacity:.75} }
-                @keyframes shimmer  {
-                    0%   { background-position: 200% 0 }
-                    100% { background-position: -200% 0 }
-                }
-
-                .as-card {
-                    border-radius:18px;
-                    border:1px solid rgba(255,255,255,.07);
-                    background:rgba(255,255,255,.025);
-                    transition:border-color .2s;
-                }
-                .as-card:hover { border-color:rgba(74,222,128,.12); }
-
-                .as-kpi {
-                    padding:20px 22px; border-radius:16px;
-                    border:1px solid rgba(255,255,255,.07);
-                    background:rgba(255,255,255,.025);
-                    transition:all .22s; animation:ahFadeUp .4s both;
-                    position:relative; overflow:hidden;
-                }
-                .as-kpi:hover {
-                    background:rgba(255,255,255,.045);
-                    border-color:rgba(74,222,128,.2);
-                    transform:translateY(-2px);
-                }
-                .as-kpi::before {
-                    content:''; position:absolute; top:0; left:0; right:0; height:1px;
-                    background:linear-gradient(90deg,transparent,rgba(74,222,128,.3),transparent);
-                    opacity:0; transition:opacity .3s;
-                }
-                .as-kpi:hover::before { opacity:1; }
-
-                .as-stitle {
-                    font-size:11px; color:rgba(255,255,255,.28);
-                    letter-spacing:2px; text-transform:uppercase; font-weight:700;
-                    margin-bottom:18px; display:flex; align-items:center; gap:8px;
-                }
-                .as-stitle::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.05); }
-
-                .as-track-row {
-                    display:flex; align-items:center; gap:12px;
-                    padding:9px 14px; border-radius:11px; transition:background .14s;
-                }
-                .as-track-row:hover { background:rgba(74,222,128,.05); }
-
-                .as-artist-row {
-                    display:flex; align-items:center; gap:10px;
-                    padding:8px 14px; border-radius:11px; transition:background .14s;
-                }
-                .as-artist-row:hover { background:rgba(74,222,128,.05); }
-
-                .as-badge {
-                    display:inline-flex; align-items:center; gap:4px;
-                    padding:3px 9px; border-radius:100px;
-                    font-size:10px; font-weight:700; letter-spacing:.5px;
-                }
-
-                .as-delta {
-                    display:inline-flex; align-items:center; gap:3px;
-                    font-size:11px; font-weight:700; padding:2px 7px;
-                    border-radius:100px;
-                }
+                @keyframes stUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes stEq  { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
+                @keyframes stBar { from{transform:scaleY(0)} to{transform:scaleY(1)} }
+                @keyframes dhBar { from{width:0} to{width:var(--w)} }
             `}</style>
 
             {/* ── Header ── */}
-            <div style={{ marginBottom: 28, animation: "ahFadeUp .3s both" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
-                    <span style={{ fontSize: 11, color: "#4ade80", letterSpacing: "2px", textTransform: "uppercase", fontWeight: 600 }}>
-                        Won Music Admin
-                    </span>
+            <div className="mb-7" style={{ animation: "stUp .3s both" }}>
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
+                    <span className="text-[11px] text-indigo-500 tracking-widest uppercase font-semibold">Won Music Admin</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <div className="flex items-end justify-between flex-wrap gap-3">
                     <div>
-                        <h1 style={{ fontSize: 40, color: "#fff", letterSpacing: 1, marginBottom: 4, lineHeight: 1 }}>
-                            Thống Kê Tổng Quan
-                        </h1>
-                        <p style={{ fontSize: 13, color: "rgba(255,255,255,.4)" }}>
-                            Dữ liệu realtime từ toàn bộ hệ thống
-                        </p>
+                        <h1 className="text-2xl font-bold text-gray-900">Thống Kê Tổng Quan</h1>
+                        <p className="text-sm text-gray-500 mt-0.5">Dữ liệu từ toàn bộ hệ thống</p>
                     </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                        <Link to="/admin/tracks"  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.5)", fontSize: 12, fontWeight: 600, textDecoration: "none", transition: "all .18s" }}>
-                            <Music size={13} /> Bài hát
+                    <div className="flex gap-2">
+                        <Link href="/admin/tracks"  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-500 text-xs font-semibold hover:border-indigo-300 hover:text-indigo-600 transition-colors no-underline">
+                            <Music size={12} /> Bài hát
                         </Link>
-                        <Link to="/admin/artists" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.5)", fontSize: 12, fontWeight: 600, textDecoration: "none", transition: "all .18s" }}>
-                            <Mic2 size={13} /> Nghệ sĩ
+                        <Link href="/admin/artists" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-500 text-xs font-semibold hover:border-indigo-300 hover:text-indigo-600 transition-colors no-underline">
+                            <Mic2 size={12} /> Nghệ sĩ
                         </Link>
                     </div>
                 </div>
-                {/* EQ */}
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 2.5, height: 20, marginTop: 12 }}>
+                <div className="flex items-end gap-[2.5px] h-4 mt-3">
                     {EQ_H.map((h, i) => (
-                        <div key={i} style={{ width: 4, height: `${h}%`, background: `rgba(74,222,128,${.18 + i * .04})`, borderRadius: 2, transformOrigin: "bottom", animation: `ahEq ${.38 + (i % 5) * .13}s ease-in-out infinite`, animationDelay: `${i * .07}s` }} />
+                        <div key={i} className="w-1 rounded-sm bg-indigo-400/30"
+                            style={{ height: `${h}%`, transformOrigin: "bottom", animation: `stEq ${.38 + (i % 5) * .13}s ease-in-out infinite`, animationDelay: `${i * .07}s` }}
+                        />
                     ))}
                 </div>
             </div>
 
-            {/* ════════ KPI Cards ════════ */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 24 }}>
-                {[
-                    {
-                        label: "Tổng bài hát",     value: loading ? "—" : fmt(counters.tracks),
-                        sub: `${publishedCount} đã xuất bản`,
-                        icon: Music,      color: "#4ade80", bg: "rgba(74,222,128,.1)",
-                        spark: [3,5,4,7,6,8,5,9,7,8,10,9],
-                        delay: "0s",
-                    },
-                    {
-                        label: "Tổng nghệ sĩ",     value: loading ? "—" : fmt(counters.artists),
-                        sub: `${verifiedCount} đã xác minh`,
-                        icon: Mic2,       color: "#60a5fa", bg: "rgba(96,165,250,.1)",
-                        spark: [2,4,3,5,4,6,5,7,6,7,8,7],
-                        delay: ".07s",
-                    },
-                    {
-                        label: "Tổng lượt nghe",   value: loading ? "—" : fmt(counters.plays),
-                        sub: `TB ${fmt(avgPlays)} / bài`,
-                        icon: TrendingUp, color: "#f472b6", bg: "rgba(244,114,182,.1)",
-                        spark: [5,8,6,9,7,11,8,12,9,11,13,12],
-                        delay: ".14s",
-                    },
-                    {
-                        label: "Tổng followers",   value: loading ? "—" : fmt(counters.followers),
-                        sub: `TB ${fmt(artists.length ? Math.round(totalFollowers / artists.length) : 0)} / nghệ sĩ`,
-                        icon: Users,      color: "#fb923c", bg: "rgba(251,146,60,.1)",
-                        spark: [4,6,5,8,7,9,6,10,8,9,11,10],
-                        delay: ".21s",
-                    },
-                    {
-                        label: "Tổng thời lượng",  value: loading ? "—" : fmtHours(totalDuration),
-                        sub: `TB ${fmtTime(avgDuration)} / bài`,
-                        icon: Clock,      color: "#a78bfa", bg: "rgba(167,139,250,.1)",
-                        spark: [3,5,4,6,5,7,4,8,6,7,9,8],
-                        delay: ".28s",
-                    },
-                    {
-                        label: "Tỉ lệ xuất bản",   value: loading ? "—" : `${tracks.length ? Math.round(publishedCount / tracks.length * 100) : 0}%`,
-                        sub: `${tracks.length - publishedCount} bản nháp`,
-                        icon: Globe,      color: "#34d399", bg: "rgba(52,211,153,.1)",
-                        spark: [6,8,7,9,8,10,9,10,8,11,10,12],
-                        delay: ".35s",
-                    },
-                ].map(({ label, value, sub, icon: Icon, color, bg, spark, delay }) => (
-                    <div key={label} className="as-kpi" style={{ animationDelay: delay }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                            <div style={{ width: 38, height: 38, borderRadius: 11, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Icon size={17} color={color} />
+            {/* ── KPI Cards ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+                {KPIS.map(({ label, value, sub, Icon, iconCls, bgCls, color, spark, delay }) => (
+                    <div
+                        key={label}
+                        className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all"
+                        style={{ animation: `stUp .4s ${delay} both` }}
+                    >
+                        <div className="flex items-start justify-between mb-3">
+                            <div className={`w-10 h-10 rounded-xl ${bgCls} flex items-center justify-center`}>
+                                <Icon size={18} className={iconCls} />
                             </div>
                             {!loading && (
-                                <span className="as-delta" style={{ background: "rgba(74,222,128,.1)", color: "#4ade80" }}>
-                                    <ArrowUpRight size={10} /> live
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                                    <ArrowUpRight size={9} /> live
                                 </span>
                             )}
                         </div>
-                        <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 36, color: "#fff", letterSpacing: 1, lineHeight: 1, marginBottom: 4 }}>
-                            {value}
-                        </div>
-                        <p style={{ fontSize: 12, color: "rgba(255,255,255,.38)", fontWeight: 500, marginBottom: 12 }}>{label}</p>
-                        <p style={{ fontSize: 11, color: "rgba(255,255,255,.22)", marginBottom: 12 }}>{sub}</p>
+                        {loading ? (
+                            <div className="h-8 w-20 bg-gray-100 rounded animate-pulse mb-1" />
+                        ) : (
+                            <div className="text-3xl font-bold text-gray-900 leading-none mb-1 tabular-nums">{value}</div>
+                        )}
+                        <p className="text-xs font-semibold text-gray-500 mb-0.5">{label}</p>
+                        <p className="text-[11px] text-gray-400 mb-3">{loading ? "" : sub}</p>
                         {!loading && <MiniBar values={spark} color={color} />}
                     </div>
                 ))}
             </div>
 
-            {/* ════════ Row 2: Top Tracks + Genre ════════ */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16, marginBottom: 16 }}>
+            {/* ── Row 2: Top Tracks + Genre ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 mb-5">
 
                 {/* Top tracks */}
-                <div className="as-card" style={{ padding: "22px 0", animation: "ahFadeUp .45s both" }}>
-                    <div style={{ padding: "0 22px 0 22px" }}>
-                        <p className="as-stitle"><TrendingUp size={11} /> Top bài hát theo lượt nghe</p>
-                    </div>
-
-                    {loading
-                        ? Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 22px", animation: `ahPulse 1.6s ${i * .08}s ease-in-out infinite` }}>
-                                <div style={{ width: 22, height: 11, borderRadius: 3, background: "rgba(255,255,255,.07)" }} />
-                                <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,.07)", flexShrink: 0 }} />
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ height: 11, borderRadius: 3, background: "rgba(255,255,255,.07)", width: "55%", marginBottom: 7 }} />
-                                    <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,.05)", width: "80%" }} />
-                                </div>
-                                <div style={{ width: 38, height: 11, borderRadius: 3, background: "rgba(255,255,255,.05)" }} />
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ animation: "stUp .45s both" }}>
+                    <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+                                <TrendingUp size={13} className="text-indigo-500" />
                             </div>
-                        ))
-                        : topTracks.map((track, idx) => {
-                            const maxP = topTracks[0]?.plays || 1;
-                            const pct  = Math.round((track.plays / maxP) * 100);
-                            const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : null;
-                            return (
-                                <div key={track._id} className="as-track-row" style={{ animationDelay: `${idx * .04}s`, margin: "0 8px" }}>
-                                    <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 15, color: medal ? "transparent" : "rgba(74,222,128,.25)", width: 26, textAlign: "center", flexShrink: 0 }}>
-                                        {medal ?? String(idx + 1).padStart(2, "0")}
-                                    </span>
-                                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#052e16,#14532d)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        {track.coverUrl
-                                            ? <img src={track.coverUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                            : <Music size={14} color="rgba(74,222,128,.3)" />
-                                        }
+                            <span className="text-sm font-bold text-gray-900">Top bài hát theo lượt nghe</span>
+                        </div>
+                        <Link href="/admin/tracks" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 no-underline">
+                            Tất cả <ArrowRight size={11} />
+                        </Link>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                        {loading
+                            ? Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse">
+                                    <div className="w-5 h-2.5 bg-gray-100 rounded flex-shrink-0" />
+                                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex-shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-3 bg-gray-100 rounded w-3/5" />
+                                        <div className="h-1.5 bg-gray-50 rounded w-4/5" />
                                     </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <Link to={`/admin/tracks/${track._id}`} style={{ textDecoration: "none" }}>
-                                            <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    <div className="w-10 h-3 bg-gray-100 rounded" />
+                                </div>
+                            ))
+                            : topTracks.map((track, idx) => {
+                                const pct = Math.round((track.plays / (topTracks[0]?.plays || 1)) * 100);
+                                const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : null;
+                                return (
+                                    <Link
+                                        key={track._id}
+                                        href={`/admin/tracks/${track._id}`}
+                                        className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 transition-colors no-underline group"
+                                        style={{ animation: `stUp .28s ${idx * .03}s both` }}
+                                    >
+                                        <span className="text-[11px] w-5 text-center flex-shrink-0 text-gray-300">
+                                            {medal ?? <span className="font-mono">{String(idx + 1).padStart(2, "0")}</span>}
+                                        </span>
+                                        <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center">
+                                            {track.coverUrl
+                                                ? <img src={track.coverUrl} alt="" className="w-full h-full object-cover" />
+                                                : <span className="text-indigo-400 text-sm">♪</span>
+                                            }
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-semibold text-gray-800 truncate mb-1 group-hover:text-indigo-600 transition-colors">
                                                 {track.title}
                                             </p>
-                                        </Link>
-                                        <div style={{ height: 3, background: "rgba(255,255,255,.07)", borderRadius: 2, overflow: "hidden" }}>
-                                            <div style={{ height: "100%", width: `${pct}%`, borderRadius: 2, background: idx < 3 ? "linear-gradient(90deg,#16a34a,#4ade80)" : "rgba(74,222,128,.35)", transition: "width .8s cubic-bezier(.4,0,.2,1)" }} />
+                                            <div className="h-0.5 bg-gray-100 rounded overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded"
+                                                    style={{ width: `${pct}%`, animation: "dhBar .7s cubic-bezier(.4,0,.2,1) both", ["--w" as any]: `${pct}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                                        <Play size={10} color="rgba(74,222,128,.5)" />
-                                        <span style={{ fontSize: 12, fontWeight: 700, color: idx < 3 ? "#4ade80" : "rgba(255,255,255,.5)" }}>
-                                            {fmt(track.plays ?? 0)}
-                                        </span>
-                                    </div>
-                                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.25)", flexShrink: 0 }}>
-                                        {track.artistId?.name ?? "—"}
-                                    </span>
-                                </div>
-                            );
-                        })
-                    }
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="text-[12px] font-bold text-gray-700 tabular-nums flex items-center gap-1 justify-end">
+                                                <Play size={9} className="text-indigo-400" />
+                                                {fmt(track.plays ?? 0)}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400">{fmtTime(track.duration ?? 0)}</p>
+                                        </div>
+                                    </Link>
+                                );
+                            })
+                        }
+                    </div>
                 </div>
 
                 {/* Genre breakdown */}
-                <div className="as-card" style={{ padding: "22px", animation: "ahFadeUp .5s both" }}>
-                    <p className="as-stitle"><BarChart2 size={11} /> Phân bố thể loại</p>
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5" style={{ animation: "stUp .5s both" }}>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
+                            <BarChart2 size={13} className="text-violet-500" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-900">Phân bố thể loại</span>
+                    </div>
 
                     {loading ? (
-                        <div style={{ animation: "ahPulse 1.5s ease-in-out infinite" }}>
-                            <div style={{ width: 128, height: 128, borderRadius: "50%", background: "rgba(255,255,255,.06)", margin: "0 auto 20px" }} />
-                            {[1,2,3,4].map(i => <div key={i} style={{ height: 28, borderRadius: 8, background: "rgba(255,255,255,.04)", marginBottom: 8 }} />)}
+                        <div className="animate-pulse">
+                            <div className="w-32 h-32 rounded-full bg-gray-100 mx-auto mb-4" />
+                            {[1,2,3,4].map(i => <div key={i} className="h-7 rounded-lg bg-gray-50 mb-2" />)}
                         </div>
                     ) : genreEntries.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "30px 0" }}>
-                            <Disc3 size={32} color="rgba(255,255,255,.1)" style={{ margin: "0 auto 10px", display: "block" }} />
-                            <p style={{ fontSize: 12, color: "rgba(255,255,255,.25)" }}>Chưa có dữ liệu</p>
+                        <div className="py-8 text-center">
+                            <Disc3 size={32} className="text-gray-200 mx-auto mb-2" />
+                            <p className="text-xs text-gray-400">Chưa có dữ liệu</p>
                         </div>
                     ) : (
                         <>
-                            {/* Donut */}
-                            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20, position: "relative" }}>
-                                <Donut segments={donutSegments.length ? donutSegments : [{ value: 1, color: "rgba(74,222,128,.2)", label: "" }]} />
-                                <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center" }}>
-                                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22, color: "#fff", letterSpacing: 1 }}>
-                                        {genreEntries.length}
-                                    </div>
-                                    <div style={{ fontSize: 9, color: "rgba(255,255,255,.3)", letterSpacing: "1.5px", textTransform: "uppercase", fontWeight: 700 }}>
-                                        thể loại
-                                    </div>
+                            <div className="flex justify-center mb-4 relative">
+                                <Donut segments={donutSegs.length ? donutSegs : [{ value: 1, color: "#e5e7eb", label: "" }]} />
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                                    <div className="text-2xl font-bold text-gray-900">{genreEntries.length}</div>
+                                    <div className="text-[9px] font-bold uppercase tracking-widest text-gray-400">thể loại</div>
                                 </div>
                             </div>
-
-                            {/* Legend bars */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div className="space-y-2.5">
                                 {genreEntries.map(([genre, count], i) => (
                                     <div key={genre}>
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                                                <div style={{ width: 8, height: 8, borderRadius: 2, background: GENRE_COLORS[i], flexShrink: 0 }} />
-                                                <span style={{ fontSize: 12, color: "rgba(255,255,255,.6)", fontWeight: 500 }}>{genre}</span>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: GENRE_COLORS[i] }} />
+                                                <span className="text-xs text-gray-700 font-medium">{genre}</span>
                                             </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                                <span style={{ fontSize: 11, color: "rgba(255,255,255,.35)" }}>{count}</span>
-                                                <span style={{ fontSize: 10, color: "rgba(255,255,255,.2)" }}>
-                                                    {Math.round(count / genreTotal * 100)}%
-                                                </span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[11px] text-gray-500 font-semibold tabular-nums">{count}</span>
+                                                <span className="text-[10px] text-gray-400">{Math.round(count / genreTotal * 100)}%</span>
                                             </div>
                                         </div>
-                                        <div style={{ height: 3, background: "rgba(255,255,255,.06)", borderRadius: 2, overflow: "hidden" }}>
-                                            <div style={{ height: "100%", width: `${count / genreTotal * 100}%`, background: GENRE_COLORS[i], borderRadius: 2, transition: "width .8s cubic-bezier(.4,0,.2,1)" }} />
+                                        <div className="h-1 bg-gray-100 rounded overflow-hidden">
+                                            <div
+                                                className="h-full rounded"
+                                                style={{ width: `${count / genreTotal * 100}%`, background: GENRE_COLORS[i], transition: "width .8s cubic-bezier(.4,0,.2,1)" }}
+                                            />
                                         </div>
                                     </div>
                                 ))}
@@ -486,124 +394,155 @@ export default function AdminStatsPage() {
                 </div>
             </div>
 
-            {/* ════════ Row 3: Top Artists + Quick Stats ════════ */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* ── Row 3: Top Artists + Insights ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
                 {/* Top artists */}
-                <div className="as-card" style={{ padding: "22px", animation: "ahFadeUp .55s both" }}>
-                    <p className="as-stitle"><Mic2 size={11} /> Top nghệ sĩ theo followers</p>
-
-                    {loading
-                        ? Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.04)", animation: `ahPulse 1.6s ${i * .08}s ease-in-out infinite` }}>
-                                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.07)", flexShrink: 0 }} />
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ height: 11, borderRadius: 3, background: "rgba(255,255,255,.07)", width: "45%", marginBottom: 6 }} />
-                                    <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,.05)", width: "65%" }} />
-                                </div>
-                                <div style={{ width: 42, height: 11, borderRadius: 3, background: "rgba(255,255,255,.05)" }} />
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ animation: "stUp .55s both" }}>
+                    <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <Mic2 size={13} className="text-blue-500" />
                             </div>
-                        ))
-                        : topArtists.map((artist, idx) => {
-                            const maxF = topArtists[0]?.followers || 1;
-                            const pct  = Math.round((artist.followers / maxF) * 100);
-                            return (
-                                <div key={artist._id} className="as-artist-row" style={{ borderBottom: idx < topArtists.length - 1 ? "1px solid rgba(255,255,255,.04)" : "none", borderRadius: 0, padding: "10px 8px", animationDelay: `${idx * .05}s` }}>
-                                    <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 14, color: "rgba(74,222,128,.22)", width: 22, flexShrink: 0, textAlign: "center" }}>
-                                        {String(idx + 1).padStart(2, "0")}
-                                    </span>
-                                    <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#052e16,#14532d)", display: "flex", alignItems: "center", justifyContent: "center", border: artist.verified ? "2px solid rgba(74,222,128,.35)" : "2px solid transparent" }}>
-                                        {artist.avatar
-                                            ? <img src={artist.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                            : <Mic2 size={14} color="rgba(74,222,128,.3)" />
-                                        }
+                            <span className="text-sm font-bold text-gray-900">Top nghệ sĩ theo followers</span>
+                        </div>
+                        <Link href="/admin/artists" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 no-underline">
+                            Tất cả <ArrowRight size={11} />
+                        </Link>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                        {loading
+                            ? Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse">
+                                    <div className="w-9 h-9 rounded-full bg-gray-100 flex-shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-3 bg-gray-100 rounded w-2/5" />
+                                        <div className="h-1.5 bg-gray-50 rounded w-3/5" />
                                     </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                                            <Link to={`/admin/artists/${artist._id}`} style={{ textDecoration: "none" }}>
-                                                <span style={{ fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                    {artist.name}
-                                                </span>
-                                            </Link>
-                                            {artist.verified && <BadgeCheck size={11} color="#4ade80" />}
-                                        </div>
-                                        <div style={{ height: 3, background: "rgba(255,255,255,.07)", borderRadius: 2, overflow: "hidden" }}>
-                                            <div style={{ height: "100%", width: `${pct}%`, borderRadius: 2, background: idx === 0 ? "linear-gradient(90deg,#16a34a,#4ade80)" : `rgba(74,222,128,${.25 + pct / 100 * .4})`, transition: "width .8s cubic-bezier(.4,0,.2,1)" }} />
-                                        </div>
-                                    </div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                                        <Users size={10} color="rgba(74,222,128,.5)" />
-                                        <span style={{ fontSize: 12, fontWeight: 700, color: idx === 0 ? "#4ade80" : "rgba(255,255,255,.5)" }}>
-                                            {fmt(artist.followers ?? 0)}
-                                        </span>
-                                    </div>
+                                    <div className="w-12 h-3 bg-gray-100 rounded" />
                                 </div>
-                            );
-                        })
-                    }
+                            ))
+                            : topArtists.map((artist, idx) => {
+                                const maxF = topArtists[0]?.followers || 1;
+                                const pct  = Math.round((artist.followers / maxF) * 100);
+                                return (
+                                    <Link
+                                        key={artist._id}
+                                        href={`/admin/artists/${artist._id}`}
+                                        className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 transition-colors no-underline group"
+                                        style={{ animation: `stUp .35s ${idx * .04}s both` }}
+                                    >
+                                        <span className="text-[11px] font-mono text-gray-300 w-5 text-center flex-shrink-0">
+                                            {String(idx + 1).padStart(2, "0")}
+                                        </span>
+                                        <div className="relative w-9 h-9 flex-shrink-0">
+                                            <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-xs font-bold text-indigo-600 border-2 border-white shadow-sm">
+                                                {artist.avatar
+                                                    ? <img src={artist.avatar} alt="" className="w-full h-full object-cover" />
+                                                    : artist.name.split(" ").slice(-2).map((w: string) => w[0]).join("").toUpperCase()
+                                                }
+                                            </div>
+                                            {artist.verified && (
+                                                <div className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-indigo-600 border border-white flex items-center justify-center">
+                                                    <BadgeCheck size={8} className="text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-semibold text-gray-800 truncate mb-1 group-hover:text-indigo-600 transition-colors">
+                                                {artist.name}
+                                            </p>
+                                            <div className="h-0.5 bg-gray-100 rounded overflow-hidden">
+                                                <div
+                                                    className="h-full rounded"
+                                                    style={{
+                                                        width: `${pct}%`,
+                                                        background: idx === 0 ? "linear-gradient(90deg,#6366f1,#818cf8)" : `rgba(99,102,241,${.2 + pct / 100 * .55})`,
+                                                        transition: "width .8s cubic-bezier(.4,0,.2,1)",
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <Users size={9} className="text-indigo-400" />
+                                            <span className="text-[12px] font-bold text-gray-600 tabular-nums">{fmt(artist.followers ?? 0)}</span>
+                                        </div>
+                                    </Link>
+                                );
+                            })
+                        }
+                    </div>
                 </div>
 
-                {/* Quick insight cards */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Insights */}
+                <div className="flex flex-col gap-4">
 
                     {/* Plays insight */}
-                    <div className="as-card" style={{ padding: "20px 22px", animation: "ahFadeUp .6s both" }}>
-                        <p className="as-stitle"><Activity size={11} /> Phân tích lượt nghe</p>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5" style={{ animation: "stUp .6s both" }}>
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-7 h-7 rounded-lg bg-pink-50 flex items-center justify-center">
+                                <Activity size={13} className="text-pink-500" />
+                            </div>
+                            <span className="text-sm font-bold text-gray-900">Phân tích lượt nghe</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
                             {[
-                                { label: "Bài nghe nhiều nhất", value: topTracks[0] ? fmt(topTracks[0].plays) : "—", icon: Zap, color: "#4ade80" },
-                                { label: "Bài nghe ít nhất",    value: topTracks.length ? fmt([...tracks].sort((a, b) => (a.plays ?? 0) - (b.plays ?? 0))[0]?.plays ?? 0) : "—", icon: Minus, color: "#f87171" },
-                                { label: "Trung bình / bài",    value: fmt(avgPlays), icon: BarChart2, color: "#60a5fa" },
-                                { label: "Tổng giờ nghe",       value: fmtHours(totalDuration), icon: Headphones, color: "#fb923c" },
-                            ].map(({ label, value, icon: Icon, color }) => (
-                                <div key={label} style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                                        <Icon size={12} color={color} />
-                                        <span style={{ fontSize: 10, color: "rgba(255,255,255,.3)", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" }}>{label}</span>
+                                { label: "Bài nghe nhiều nhất", value: topTracks[0] ? fmt(topTracks[0].plays) : "—", Icon: Zap,       iconCls: "text-indigo-500",  bgCls: "bg-indigo-50"  },
+                                { label: "Bài nghe ít nhất",    value: tracks.length  ? fmt([...tracks].sort((a,b)=>(a.plays??0)-(b.plays??0))[0]?.plays ?? 0) : "—", Icon: Minus, iconCls: "text-red-400",    bgCls: "bg-red-50"    },
+                                { label: "Trung bình / bài",    value: fmt(avgPlays),  Icon: BarChart2,  iconCls: "text-blue-500",   bgCls: "bg-blue-50"   },
+                                { label: "Tổng giờ nghe",       value: fmtHours(totalDuration), Icon: Headphones, iconCls: "text-orange-500", bgCls: "bg-orange-50" },
+                            ].map(({ label, value, Icon, iconCls, bgCls }) => (
+                                <div key={label} className="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
+                                    <div className={`w-7 h-7 rounded-lg ${bgCls} flex items-center justify-center mb-2`}>
+                                        <Icon size={12} className={iconCls} />
                                     </div>
-                                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 26, color, letterSpacing: 1 }}>
-                                        {loading ? "—" : value}
+                                    <div className="text-xl font-bold text-gray-900 tabular-nums leading-none mb-1">
+                                        {loading ? <div className="h-5 w-12 bg-gray-100 rounded animate-pulse" /> : value}
                                     </div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Artist insight */}
-                    <div className="as-card" style={{ padding: "20px 22px", animation: "ahFadeUp .65s both", flex: 1 }}>
-                        <p className="as-stitle"><Star size={11} /> Phân tích nghệ sĩ</p>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex-1" style={{ animation: "stUp .65s both" }}>
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                                <Star size={13} className="text-orange-500" />
+                            </div>
+                            <span className="text-sm font-bold text-gray-900">Phân tích nghệ sĩ</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 mb-4">
                             {[
-                                { label: "Xác minh", value: verifiedCount, total: artists.length, color: "#4ade80", icon: BadgeCheck },
-                                { label: "Chưa xác minh", value: artists.length - verifiedCount, total: artists.length, color: "#fb923c", icon: Mic2 },
-                            ].map(({ label, value, total, color, icon: Icon }) => (
-                                <div key={label} style={{ padding: "14px", borderRadius: 12, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                                        <Icon size={12} color={color} />
-                                        <span style={{ fontSize: 10, color: "rgba(255,255,255,.3)", fontWeight: 700, letterSpacing: "1px", textTransform: "uppercase" }}>{label}</span>
+                                { label: "Đã xác minh",  value: verifiedCount,              color: "#6366f1", textCls: "text-indigo-600", bgCls: "bg-indigo-50",  Icon: BadgeCheck },
+                                { label: "Chưa xác minh",value: artists.length-verifiedCount,color: "#f97316", textCls: "text-orange-500", bgCls: "bg-orange-50", Icon: Mic2       },
+                            ].map(({ label, value, color, textCls, bgCls, Icon }) => (
+                                <div key={label} className="p-3 rounded-xl border border-gray-100 bg-gray-50/50">
+                                    <div className={`w-7 h-7 rounded-lg ${bgCls} flex items-center justify-center mb-2`}>
+                                        <Icon size={12} className={textCls} />
                                     </div>
-                                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 30, color, letterSpacing: 1, marginBottom: 6 }}>
-                                        {loading ? "—" : value}
+                                    <div className={`text-2xl font-bold tabular-nums leading-none mb-2 ${textCls}`}>
+                                        {loading ? <div className="h-6 w-8 bg-gray-100 rounded animate-pulse" /> : value}
                                     </div>
-                                    <div style={{ height: 4, background: "rgba(255,255,255,.06)", borderRadius: 2, overflow: "hidden" }}>
-                                        <div style={{ height: "100%", width: `${total ? value / total * 100 : 0}%`, background: color, borderRadius: 2, transition: "width .8s cubic-bezier(.4,0,.2,1)", opacity: .7 }} />
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-2">{label}</p>
+                                    <div className="h-1 bg-gray-100 rounded overflow-hidden">
+                                        <div className="h-full rounded transition-all duration-700" style={{ width: `${artists.length ? value / artists.length * 100 : 0}%`, background: color, opacity: .7 }} />
                                     </div>
-                                    <span style={{ fontSize: 10, color: "rgba(255,255,255,.2)", marginTop: 4, display: "block" }}>
-                                        {total ? Math.round(value / total * 100) : 0}% tổng số
-                                    </span>
+                                    <p className="text-[10px] text-gray-400 mt-1">{artists.length ? Math.round(value / artists.length * 100) : 0}%</p>
                                 </div>
                             ))}
                         </div>
-
-                        {/* Most popular genre among artists */}
-                        {!loading && donutSegments.length > 0 && (
-                            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.05)" }}>
-                                <p style={{ fontSize: 10, color: "rgba(255,255,255,.25)", letterSpacing: "1.5px", textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
-                                    Thể loại phổ biến nhất
-                                </p>
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                    {donutSegments.slice(0, 4).map((seg) => (
-                                        <span key={seg.label} className="as-badge" style={{ background: `${seg.color}18`, border: `1px solid ${seg.color}33`, color: seg.color }}>
+                        {!loading && donutSegs.length > 0 && (
+                            <div className="pt-3 border-t border-gray-100">
+                                <p className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-2">Thể loại phổ biến</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {donutSegs.slice(0, 4).map((seg) => (
+                                        <span
+                                            key={seg.label}
+                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border"
+                                            style={{ background: `${seg.color}18`, borderColor: `${seg.color}33`, color: seg.color }}
+                                        >
                                             {seg.label}
                                         </span>
                                     ))}

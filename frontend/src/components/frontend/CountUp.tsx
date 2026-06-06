@@ -61,7 +61,7 @@ const CountUp = forwardRef<CountUpRef, CountUpProps>(({ value }, ref) => {
             <span ref={spanRef}>
                 {displayValue.toLocaleString()}
             </span>
-            <span className="text-green-600 ml-1">+</span>
+            <span className="text-[#34D4B8] ml-1">+</span>
         </p>
     );
 });

@@ -1,21 +1,24 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+'use client'
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { MenuIcon, Search, X, User } from "lucide-react";
+import { Search, X, User, MenuIcon } from "lucide-react";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { navbarText } from "@/locales/navbar";
 import NavbarSidebar from "./NavbarSidebar";
 import LanguageSwitcher from "./LanguageSwitcher";
-import { Button } from "../ui/button";
-import { FaFacebookF } from "react-icons/fa";
 import { trackService, type Track } from "@/services/trackService";
 import { artistService, type Artist } from "@/services/artistService";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DEBOUNCE_MS = 350;
+const GENRES = ["Pop", "Indie", "EDM", "Ballad", "Hip-hop", "R&B", "Folk"];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,7 +38,7 @@ const SearchSkeleton = ({ rows = 3 }: SearchSkeletonProps) => (
     <div className="p-4 space-y-1">
         {Array.from({ length: rows }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 py-2">
-                <div className="w-10 h-10 rounded-lg flex-shrink-0 bg-white/[0.06]" />
+                <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "rgba(0,0,0,0.07)" }} />
                 <div className="flex-1 space-y-1.5">
                     <div className="nav-skeleton h-3 rounded-full w-3/5" />
                     <div className="nav-skeleton h-2.5 rounded-full w-2/5" />
@@ -48,10 +51,10 @@ const SearchSkeleton = ({ rows = 3 }: SearchSkeletonProps) => (
 interface SearchEmptyProps { query: string; noResultsFor: string }
 const SearchEmpty = ({ query, noResultsFor }: SearchEmptyProps) => (
     <div className="py-6 px-4 text-center">
-        <div className="text-3xl mb-2 opacity-40">♪</div>
-        <p className="text-sm text-white/40">
+        <div className="text-3xl mb-2" style={{ opacity: 0.35 }}>♪</div>
+        <p className="text-sm" style={{ color: "rgba(0,0,0,0.45)" }}>
             {noResultsFor}{" "}
-            <span className="text-green-400">"{query}"</span>
+            <span style={{ color: "#34D4B8" }}>"{query}"</span>
         </p>
     </div>
 );
@@ -59,97 +62,79 @@ const SearchEmpty = ({ query, noResultsFor }: SearchEmptyProps) => (
 interface TrackItemProps { track: Track; onPlay: (track: Track) => void }
 const TrackItem = ({ track, onPlay }: TrackItemProps) => (
     <div className="nav-result-item" onClick={() => onPlay(track)}>
-        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-[#0a3d1f] to-[#16a34a] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg, #E8ECF8, #D8DFF0)" }}>
             {track.coverUrl ? (
                 <img src={track.coverUrl} alt={track.title} className="w-full h-full object-cover" />
             ) : (
-                <span className="text-green-400 text-base">♪</span>
+                <span style={{ color: "#34D4B8", fontSize: 16 }}>♪</span>
             )}
         </div>
-
         <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-white truncate">{track.title}</p>
-            <p className="text-xs text-white/45 mt-0.5">{track.artistId.name}</p>
+            <p className="text-[13px] font-medium truncate" style={{ color: "#0D0D1A" }}>{track.title}</p>
+            <p className="text-xs mt-0.5" style={{ color: "rgba(0,0,0,0.45)" }}>{track.artistId.name}</p>
         </div>
-
-        <div className="flex items-center gap-2.5 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
             {track.genre && (
-                <span className="text-[10px] text-green-400 bg-green-400/10 border border-green-400/20 px-2 py-0.5 rounded-full">
-                    {track.genre}
-                </span>
+                <span className="nav-genre-pill">{track.genre}</span>
             )}
-            <span className="text-[11px] text-white/30">{formatTime(track.duration)}</span>
-            <span className="text-base text-green-400/70">▶</span>
+            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.35)" }}>{formatTime(track.duration)}</span>
+            <span style={{ color: "rgba(0,169,143,0.7)", fontSize: 14 }}>▶</span>
         </div>
     </div>
 );
 
 interface ArtistItemProps { artist: Artist; artistsLabel: string; onClick: () => void }
 const ArtistItem = ({ artist, artistsLabel, onClick }: ArtistItemProps) => (
-    <Link to={`/artists/${artist._id}`} className="nav-result-item" onClick={onClick}>
-        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-green-400/30 bg-gradient-to-br from-[#bbf7d0] to-[#4ade80] flex items-center justify-center text-sm font-bold text-[#166534]">
+    <Link href={`/artists/${artist._id}`} className="nav-result-item" onClick={onClick}>
+        <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-sm font-bold"
+            style={{ background: "linear-gradient(135deg, #D8DFF0, #C8F0EC)", color: "#00A98F", border: "2px solid rgba(0,169,143,0.3)" }}>
             {artist.avatar ? (
                 <img src={artist.avatar} alt={artist.name} className="w-full h-full object-cover" />
-            ) : (
-                getInitials(artist.name)
-            )}
+            ) : getInitials(artist.name)}
         </div>
-
         <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-white truncate">
+            <p className="text-[13px] font-medium truncate" style={{ color: "#0D0D1A" }}>
                 {artist.name}
-                {artist.verified && (
-                    <span className="text-green-400 text-[11px] ml-1.5">✓</span>
-                )}
+                {artist.verified && <span style={{ color: "#34D4B8", fontSize: 11, marginLeft: 4 }}>✓</span>}
             </p>
-            <p className="text-xs text-white/45 mt-0.5">{artist.genre ?? artistsLabel}</p>
+            <p className="text-xs mt-0.5" style={{ color: "rgba(0,0,0,0.45)" }}>{artist.genre ?? artistsLabel}</p>
         </div>
-
-        <span className="text-xs text-white/30 flex-shrink-0">→</span>
+        <span style={{ fontSize: 12, color: "rgba(0,0,0,0.3)" }}>→</span>
     </Link>
 );
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const Navbar = () => {
-    const { pathname } = useLocation();
-    const navigate = useNavigate();
+    const pathname = usePathname();
+    const router = useRouter();
     const user = useAuthStore((s) => s.user);
     const { lang } = useLanguageStore();
+    const { siteName, logoUrl, fetch: fetchSettings, loaded: settingsLoaded } = useSettingsStore();
+
+    useEffect(() => { if (!settingsLoaded) fetchSettings(); }, [settingsLoaded, fetchSettings]);
     const t = navbarText[lang];
     const { play } = usePlayerStore();
 
-    // UI state
-    const [atTop, setAtTop] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // Search state
     const [searchOpen, setSearchOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [tracks, setTracks] = useState<Track[]>([]);
     const [artists, setArtists] = useState<Artist[]>([]);
     const [searching, setSearching] = useState(false);
 
-    // Refs
     const searchRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
     const hasResults = tracks.length > 0 || artists.length > 0;
 
     const navLinks = [
-        { to: "/", label: t.home },
+        { to: "/",            label: t.home },
         { to: "/gioi-thieu", label: t.about },
-        { to: "/artists", label: t.artists },
-        { to: "/lien-he", label: t.contact },
+        { to: "/artists",    label: t.artists },
+        { to: "/lien-he",    label: t.contact },
     ];
-
-    // ── Scroll listener ──
-    useEffect(() => {
-        const onScroll = () => setAtTop(window.scrollY < 50);
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-    }, []);
 
     // ── Focus / reset on search toggle ──
     useEffect(() => {
@@ -185,13 +170,7 @@ const Navbar = () => {
     // ── Debounced search ──
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
-
-        if (!query.trim()) {
-            setTracks([]);
-            setArtists([]);
-            return;
-        }
-
+        if (!query.trim()) { setTracks([]); setArtists([]); return; }
         debounceRef.current = setTimeout(async () => {
             try {
                 setSearching(true);
@@ -200,105 +179,110 @@ const Navbar = () => {
                     artistService.getAll({ limit: 3 }),
                 ]);
                 setTracks(tracksRes);
-                setArtists(
-                    artistsRes.data
-                        .filter((a) => a.name.toLowerCase().includes(query.toLowerCase()))
-                        .slice(0, 3)
-                );
+                setArtists(artistsRes.data.filter((a) =>
+                    a.name.toLowerCase().includes(query.toLowerCase())
+                ).slice(0, 3));
             } finally {
                 setSearching(false);
             }
         }, DEBOUNCE_MS);
-
-        return () => {
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-        };
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [query]);
 
-    // ── Handlers ──
     const goHome = useCallback(() => {
         if (pathname !== "/") {
-            navigate("/");
+            router.push("/");
             setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
         } else {
             window.scrollTo({ top: 0, behavior: "smooth" });
         }
-    }, [pathname, navigate]);
+    }, [pathname, router]);
 
     const handlePlayTrack = useCallback((track: Track) => {
-        play({
-            id: track._id,
-            title: track.title,
-            artist: track.artistId.name,
-            audioUrl: track.audioUrl,
-            coverUrl: track.coverUrl,
-            duration: track.duration,
-        });
+        play({ id: track._id, title: track.title, artist: track.artistId.name, audioUrl: track.audioUrl, coverUrl: track.coverUrl, duration: track.duration });
         setSearchOpen(false);
     }, [play]);
 
     const handleSubmit = useCallback((e?: React.FormEvent) => {
         e?.preventDefault();
         if (!query.trim()) return;
-        navigate(`/search?q=${encodeURIComponent(query)}`);
+        router.push(`/search?q=${encodeURIComponent(query)}`);
         setSearchOpen(false);
-    }, [navigate, query]);
+    }, [router, query]);
 
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
         <>
             <style>{`
-                /* ── Nav links ── */
-                .nav-link {
+                /* ── Nav link ── */
+                .nic-nav-link {
                     position: relative;
-                    padding: 6px 12px;
-                    font-size: 13px;
-                    font-weight: 600;
+                    padding: 6px 10px;
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 11px;
+                    font-weight: 700;
                     text-transform: uppercase;
-                    letter-spacing: 0.8px;
-                    color: rgba(255,255,255,0.85);
+                    letter-spacing: 1.5px;
+                    color: rgba(0,0,0,0.82);
                     text-decoration: none;
                     transition: color 0.2s;
                     white-space: nowrap;
                 }
-                .nav-link::after {
+                .nic-nav-link::after {
                     content: '';
                     position: absolute;
-                    bottom: -2px; left: 12px; right: 12px;
-                    height: 1.5px;
-                    background: #4ade80;
+                    bottom: -1px; left: 10px; right: 10px;
+                    height: 2px;
+                    background: #34D4B8;
                     transform: scaleX(0);
                     transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
                     transform-origin: center;
+                    border-radius: 2px;
                 }
-                .nav-link:hover,
-                .nav-link.active { color: #4ade80; }
-                .nav-link:hover::after,
-                .nav-link.active::after { transform: scaleX(1); }
+                .nic-nav-link:hover,
+                .nic-nav-link.active { color: #34D4B8; }
+                .nic-nav-link:hover::after,
+                .nic-nav-link.active::after { transform: scaleX(1); }
+
+                /* ── Genre tab (row 2) ── */
+                .nic-genre-tab {
+                    padding: 4px 14px;
+                    border-radius: 100px;
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 10px; font-weight: 700;
+                    letter-spacing: 2px; text-transform: uppercase;
+                    color: rgba(0,0,0,0.68);
+                    background: transparent;
+                    border: none; cursor: pointer;
+                    transition: all 0.2s;
+                    white-space: nowrap;
+                    text-decoration: none;
+                }
+                .nic-genre-tab:hover {
+                    background: rgba(0,169,143,0.12);
+                    color: #34D4B8;
+                }
 
                 /* ── Search input ── */
-                .nav-search-input {
+                .nic-search-input {
                     width: 100%;
                     background: transparent;
-                    border: none;
-                    outline: none;
-                    font-size: 14px;
-                    color: #fff;
+                    border: none; outline: none;
+                    font-size: 13px; color: #0D0D1A;
                     font-family: 'Be Vietnam Pro', sans-serif;
                 }
-                .nav-search-input::placeholder { color: rgba(255,255,255,0.4); }
+                .nic-search-input::placeholder { color: rgba(0,0,0,0.35); }
 
-                /* ── Dropdown ── */
+                /* ── Search dropdown ── */
                 .nav-search-dropdown {
                     position: absolute;
-                    top: calc(100% + 8px);
-                    left: 0; right: 0;
-                    background: #0d1f13;
-                    border: 1px solid rgba(74,222,128,0.15);
-                    border-radius: 16px;
+                    top: calc(100% + 8px); left: 0; right: 0;
+                    background: #FFFFFF;
+                    border: 1px solid rgba(0,169,143,0.2);
+                    border-radius: 12px;
                     overflow: hidden;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+                    box-shadow: 0 24px 60px rgba(0,0,0,0.12);
                     z-index: 100;
                     animation: navDropDown 0.2s ease;
                 }
@@ -309,16 +293,23 @@ const Navbar = () => {
 
                 /* ── Result item ── */
                 .nav-result-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    padding: 10px 16px;
-                    cursor: pointer;
+                    display: flex; align-items: center; gap: 12px;
+                    padding: 10px 16px; cursor: pointer;
                     transition: background 0.15s;
-                    text-decoration: none;
-                    color: inherit;
+                    text-decoration: none; color: inherit;
                 }
-                .nav-result-item:hover { background: rgba(74,222,128,0.08); }
+                .nav-result-item:hover { background: rgba(0,169,143,0.08); }
+
+                /* ── Genre pill in dropdown ── */
+                .nav-genre-pill {
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 9px; font-weight: 700;
+                    letter-spacing: 1.5px; text-transform: uppercase;
+                    color: #34D4B8;
+                    background: rgba(0,169,143,0.1);
+                    border: 1px solid rgba(0,169,143,0.25);
+                    padding: 2px 8px; border-radius: 100px;
+                }
 
                 /* ── Skeleton shimmer ── */
                 @keyframes navShimmer {
@@ -326,104 +317,115 @@ const Navbar = () => {
                     100% { background-position:  200% center; }
                 }
                 .nav-skeleton {
-                    background: linear-gradient(
-                        90deg,
-                        rgba(255,255,255,0.06) 0%,
-                        rgba(255,255,255,0.12) 50%,
-                        rgba(255,255,255,0.06) 100%
-                    );
+                    background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 100%);
                     background-size: 200%;
                     animation: navShimmer 1.5s linear infinite;
                 }
+
+                /* ── Logo mark ── */
+                .nic-logo-mark {
+                    width: 32px; height: 32px;
+                    border-radius: 6px;
+                    background: linear-gradient(135deg, #00A98F 0%, #818CF8 50%, #6366F1 100%);
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0;
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 14px; font-weight: 800; color: #fff;
+                }
+
+                /* ── User badge ── */
+                .nic-user-badge {
+                    display: flex; align-items: center; gap: 6px;
+                    padding: 6px 14px; border-radius: 6px;
+                    background: rgba(0,0,0,0.06);
+                    border: 1px solid rgba(0,0,0,0.1);
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 11px; font-weight: 700;
+                    color: rgba(0,0,0,0.85);
+                    text-decoration: none;
+                    transition: all 0.2s;
+                    letter-spacing: 0.5px;
+                }
+                .nic-user-badge:hover { border-color: rgba(0,169,143,0.4); color: #34D4B8; }
             `}</style>
 
-            <nav
-                className={cn(
-                    "fixed inset-x-0 top-0 z-40 transition-all duration-300",
-                    atTop
-                        ? "bg-transparent"
-                        : "bg-[#05070b]/92 backdrop-blur-md shadow-[0_1px_0_rgba(74,222,128,0.1)]"
-                )}
+            {/* ═══════════════════════════════════════════════════════
+                HEADER WRAPPER — fixed, 2-layer
+            ═══════════════════════════════════════════════════════ */}
+            <header
+                className="fixed inset-x-0 top-0 z-40"
+                style={{
+                    background: "rgba(248,248,252,0.96)",
+                    backdropFilter: "saturate(180%) blur(12px)",
+                    borderBottom: "1px solid rgba(0,169,143,0.15)",
+                    boxShadow: "0 1px 0 rgba(0,169,143,0.05), 0 4px 16px -8px rgba(0,0,0,0.08)",
+                }}
             >
-                <div className="w-full flex h-16 items-center px-6 xl:px-10 gap-4 justify-between xl:justify-start">
+                {/* ── Layer 1: brand + main nav + utils ── */}
+                <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 32px", height: 60, display: "flex", alignItems: "center", gap: 24 }}>
 
                     {/* Logo */}
-                    <button onClick={goHome} className="flex-shrink-0">
-                        <img
-                            src="/logo.png"
-                            alt="logo"
-                            className="h-20 w-auto object-contain cursor-pointer"
-                        />
+                    <button onClick={goHome} style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}>
+                        {logoUrl ? (
+                            <img
+                                src={logoUrl}
+                                alt={siteName}
+                                style={{ height: 80, width: "auto", objectFit: "contain", maxWidth: 120 }}
+                            />
+                        ) : (
+                            <div className="nic-logo-mark">W</div>
+                        )}
+                        {!logoUrl && (
+                            <div style={{ textAlign: "left", lineHeight: 1.2 }}>
+                                <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 800, color: "#0D0D1A", letterSpacing: "-0.3px" }}>
+                                    {siteName || "WON MUSIC"}
+                                </div>
+                                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "rgba(0,0,0,0.38)", letterSpacing: "1.5px", textTransform: "uppercase" }}>MUSIC PLATFORM</div>
+                            </div>
+                        )}
                     </button>
 
-                    {/* Nav links — desktop only */}
-                    <div className="hidden xl:flex items-center gap-1 ml-4">
+                    {/* Divider */}
+                    <div style={{ width: 1, height: 28, background: "rgba(0,0,0,0.08)", flexShrink: 0 }} className="hidden xl:block" />
+
+                    {/* Nav links — desktop */}
+                    <nav style={{ display: "flex", alignItems: "center", gap: 2 }} className="hidden xl:flex">
                         {navLinks.map(({ to, label }) => (
-                            <Link
-                                key={to}
-                                to={to}
-                                className={cn("nav-link", pathname === to && "active")}
-                            >
+                            <Link key={to} href={to} className={cn("nic-nav-link", pathname === to && "active")}>
                                 {label}
                             </Link>
                         ))}
-                    </div>
+                    </nav>
 
-                    {/* Search bar — desktop only */}
+                    {/* Search — desktop, ml-auto pushes it right */}
                     <div
                         ref={searchRef}
                         className="hidden xl:block relative ml-auto"
-                        style={{
-                            width: searchOpen ? 400 : 200,
-                            transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)",
-                        }}
+                        style={{ width: searchOpen ? 380 : 200, transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)" }}
                     >
                         <form
                             onSubmit={handleSubmit}
                             onClick={() => setSearchOpen(true)}
                             style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 10,
-                                background: searchOpen
-                                    ? "rgba(255,255,255,0.08)"
-                                    : "rgba(255,255,255,0.05)",
-                                border: `1px solid ${searchOpen
-                                        ? "rgba(74,222,128,0.4)"
-                                        : "rgba(255,255,255,0.1)"
-                                    }`,
-                                borderRadius: 100,
-                                padding: "8px 16px",
-                                cursor: "text",
-                                transition: "all 0.3s",
+                                display: "flex", alignItems: "center", gap: 8,
+                                background: searchOpen ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                                border: `1px solid ${searchOpen ? "rgba(0,169,143,0.4)" : "rgba(0,0,0,0.08)"}`,
+                                borderRadius: 8, padding: "7px 14px",
+                                cursor: "text", transition: "all 0.25s",
                             }}
                         >
-                            <Search
-                                size={14}
-                                style={{
-                                    color: searchOpen ? "#4ade80" : "rgba(255,255,255,0.4)",
-                                    flexShrink: 0,
-                                    transition: "color 0.2s",
-                                }}
-                            />
+                            <Search size={13} style={{ color: searchOpen ? "#34D4B8" : "rgba(0,0,0,0.35)", flexShrink: 0, transition: "color 0.2s" }} />
                             <input
                                 ref={inputRef}
-                                className="nav-search-input"
+                                className="nic-search-input"
                                 placeholder={t.searchPlaceholder}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                             />
                             {query && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setQuery("");
-                                        inputRef.current?.focus();
-                                    }}
-                                    className="flex flex-shrink-0 text-white/40 hover:text-white/70 transition-colors"
-                                >
-                                    <X size={14} />
+                                <button type="button" onClick={(e) => { e.stopPropagation(); setQuery(""); inputRef.current?.focus(); }}
+                                    style={{ color: "rgba(0,0,0,0.35)", background: "none", border: "none", cursor: "pointer", display: "flex" }}>
+                                    <X size={13} />
                                 </button>
                             )}
                         </form>
@@ -437,50 +439,40 @@ const Navbar = () => {
                                     <SearchEmpty query={query} noResultsFor={t.noResultsFor} />
                                 ) : (
                                     <>
-                                        {/* Tracks */}
                                         {tracks.length > 0 && (
                                             <>
-                                                <p className="px-4 pt-2.5 pb-1.5 text-[11px] text-white/40 uppercase tracking-[1.5px] font-semibold">
+                                                <p style={{ padding: "10px 16px 6px", fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(0,0,0,0.35)" }}>
                                                     {t.tracksLabel}
                                                 </p>
-                                                {tracks.map((track) => (
-                                                    <TrackItem
-                                                        key={track._id}
-                                                        track={track}
-                                                        onPlay={handlePlayTrack}
-                                                    />
-                                                ))}
+                                                {tracks.map((track) => <TrackItem key={track._id} track={track} onPlay={handlePlayTrack} />)}
                                             </>
                                         )}
-
-                                        {/* Divider */}
                                         {tracks.length > 0 && artists.length > 0 && (
-                                            <div className="h-px bg-white/[0.06] my-1" />
+                                            <div style={{ height: 1, background: "rgba(0,0,0,0.06)", margin: "4px 0" }} />
                                         )}
-
-                                        {/* Artists */}
                                         {artists.length > 0 && (
                                             <>
-                                                <p className="px-4 pt-2.5 pb-1.5 text-[11px] text-white/40 uppercase tracking-[1.5px] font-semibold">
+                                                <p style={{ padding: "10px 16px 6px", fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(0,0,0,0.35)" }}>
                                                     {t.artistsLabel}
                                                 </p>
-                                                {artists.map((artist) => (
-                                                    <ArtistItem
-                                                        key={artist._id}
-                                                        artist={artist}
-                                                        artistsLabel={t.artistsLabel}
-                                                        onClick={() => setSearchOpen(false)}
-                                                    />
-                                                ))}
+                                                {artists.map((artist) => <ArtistItem key={artist._id} artist={artist} artistsLabel={t.artistsLabel} onClick={() => setSearchOpen(false)} />)}
                                             </>
                                         )}
-
-                                        {/* View all */}
                                         <button
                                             type="button"
                                             onClick={() => handleSubmit()}
-                                            className="w-full px-4 py-3 border-t border-white/[0.06] bg-green-400/5 hover:bg-green-400/10 text-green-400 text-[13px] font-medium transition-colors text-left"
-                                            style={{ fontFamily: "'Be Vietnam Pro', sans-serif" }}
+                                            style={{
+                                                width: "100%", padding: "10px 16px",
+                                                borderTop: "1px solid rgba(0,0,0,0.08)",
+                                                background: "rgba(0,169,143,0.06)",
+                                                color: "#34D4B8",
+                                                fontFamily: "'Be Vietnam Pro',sans-serif",
+                                                fontSize: 13, fontWeight: 600,
+                                                border: "none", borderRadius: 0, cursor: "pointer",
+                                                textAlign: "left", transition: "background 0.15s",
+                                            }}
+                                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,169,143,0.12)")}
+                                            onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,169,143,0.06)")}
                                         >
                                             {t.seeAllResults} "<strong>{query}</strong>" →
                                         </button>
@@ -490,69 +482,56 @@ const Navbar = () => {
                         )}
                     </div>
 
-                    {/* Right section */}
-                    <div className="ml-4 xl:ml-0 flex items-center gap-3 flex-shrink-0">
-                        <div className="hidden xl:block h-5 w-px bg-white/10" />
+                    {/* Right utils — desktop */}
+                    <div className="hidden xl:flex items-center gap-3 flex-shrink-0">
+                        <LanguageSwitcher />
 
-                        {/* Language switcher — desktop only */}
-                        <div className="hidden xl:block">
-                            <LanguageSwitcher />
-                        </div>
-
-                        <div className="hidden xl:block h-5 w-px bg-white/10" />
-
-                        {/* Facebook — desktop only */}
-                        <Button
-                            asChild
-                            className="hidden xl:flex bg-transparent hover:bg-transparent px-0"
-                        >
-                            <a
-                                href="https://web.facebook.com/wonmediavn"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 group"
-                            >
-                                <div className="bg-blue-600 text-white p-1.5 rounded text-sm">
-                                    <FaFacebookF />
-                                </div>
-                                <div className="flex flex-col text-left leading-tight">
-                                    <span className="text-[11px] text-white/60">Fanpage</span>
-                                    <strong className="text-[13px] text-white group-hover:text-green-400 transition-colors">
-                                        Won Media
-                                    </strong>
-                                </div>
-                            </a>
-                        </Button>
-
-                        {/* User badge — desktop only, shown when logged in */}
                         {user && (
-                            <>
-                                <div className="hidden xl:block h-5 w-px bg-white/10" />
-                                <Button className="hidden xl:flex items-center gap-2 rounded-[5.28px] bg-white px-4 py-1.5 text-xs font-semibold text-black hover:bg-white/90 transition-colors">
-                                    <a
-                                        href="/admin"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 group"
-                                    >
-                                        <User size={13} />
-                                        {user.displayName ?? t.member}
-                                    </a>
-                                </Button>
-                            </>
+                            <a href="/admin" target="_blank" rel="noopener noreferrer" className="nic-user-badge">
+                                <User size={12} />
+                                {user.displayName ?? t.member}
+                            </a>
                         )}
-
-                        {/* Hamburger — mobile only */}
-                        <button
-                            className="xl:hidden rounded bg-white/10 p-2 text-green-400 hover:bg-white/20 transition-colors"
-                            onClick={() => setIsSidebarOpen(true)}
-                            aria-label={t.openMenu}
-                        >
-                            <MenuIcon size={18} />
-                        </button>
                     </div>
+
+                    {/* Hamburger — mobile */}
+                    <button
+                        className="xl:hidden ml-auto rounded-md p-2 transition-colors"
+                        style={{ background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", color: "#00A98F" }}
+                        onClick={() => setIsSidebarOpen(true)}
+                        aria-label={t.openMenu}
+                    >
+                        <MenuIcon size={18} />
+                    </button>
                 </div>
-            </nav>
+
+                {/* ── Layer 2: genre quick-tabs ── */}
+                <div
+                    className="hidden xl:flex"
+                    style={{
+                        maxWidth: 1440, margin: "0 auto", padding: "0 32px",
+                        height: 36,
+                        alignItems: "center",
+                        gap: 2,
+                        overflowX: "auto",
+                        scrollbarWidth: "none",
+                        borderTop: "1px solid rgba(0,0,0,0.06)",
+                    }}
+                >
+                    <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(0,0,0,0.55)", marginRight: 8, flexShrink: 0 }}>
+                        THỂ LOẠI
+                    </span>
+                    {GENRES.map((g) => (
+                        <Link key={g} href={`/search?q=${g}`} className="nic-genre-tab">
+                            {g}
+                        </Link>
+                    ))}
+                    <div style={{ flex: 1 }} />
+                    <Link href="/artists" className="nic-genre-tab" style={{ color: "rgba(0,169,143,0.7)" }}>
+                        Xem tất cả nghệ sĩ →
+                    </Link>
+                </div>
+            </header>
 
             <NavbarSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
         </>

@@ -12,8 +12,8 @@ const LanguageSwitcher = () => {
                 className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full border transition",
                     lang === "vi"
-                        ? "border-green-700 bg-green-700/20 scale-110"
-                        : "border-green-700/20 opacity-60 hover:opacity-100"
+                        ? "border-[#00A98F] bg-[rgba(0,169,143,0.2)] scale-110"
+                        : "border-[rgba(0,169,143,0.2)] opacity-60 hover:opacity-100"
                 )}
             >
                 <img src="/vn_flag.svg" className="h-5 w-5" />
@@ -25,8 +25,8 @@ const LanguageSwitcher = () => {
                 className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full border transition",
                     lang === "en"
-                        ? "border-green-700 bg-green-700/20 scale-110"
-                        : "border-green-700/20 opacity-60 hover:opacity-100"
+                        ? "border-[#00A98F] bg-[rgba(0,169,143,0.2)] scale-110"
+                        : "border-[rgba(0,169,143,0.2)] opacity-60 hover:opacity-100"
                 )}
             >
                 <img src="/us_flag.png" className="h-6 w-6" />

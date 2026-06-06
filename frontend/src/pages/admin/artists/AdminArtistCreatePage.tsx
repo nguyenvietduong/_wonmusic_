@@ -1,6 +1,8 @@
+'use client';
 // src/pages/admin/AdminArtistCreatePage.tsx
-import { useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     ArrowLeft, Mic2, X, Upload, Image as ImageIcon,
     Tag, CheckCircle2, XCircle,
@@ -52,13 +54,11 @@ const EMPTY_FORM: ArtistForm = {
     socialLinks: { facebook: "", instagram: "", youtube: "", tiktok: "" },
 };
 
-const API = import.meta.env.MODE === "development"
-    ? "http://localhost:2004/api"
-    : "https://wonmusic-api.up.railway.app/api";
+const API = "/api";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function AdminArtistCreatePage() {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const [saving,         setSaving]         = useState(false);
     const [error,          setError]          = useState<string | null>(null);
@@ -234,7 +234,7 @@ export default function AdminArtistCreatePage() {
             }
 
             toast.success("Tạo nghệ sĩ thành công!");
-            navigate(`/admin/artists/${newId}`);
+            router.push(`/admin/artists/${newId}`);
         } catch (e: any) {
             setError(e?.response?.data?.message ?? e?.message ?? "Tạo nghệ sĩ thất bại.");
         } finally {
@@ -433,7 +433,7 @@ export default function AdminArtistCreatePage() {
 
             {/* ── Breadcrumb ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, animation: "ahFadeUp .3s both", flexWrap: "wrap" }}>
-                <Link to="/admin/artists" className="ac-pill-btn"><ArrowLeft size={13} /> Nghệ sĩ</Link>
+                <Link href="/admin/artists" className="ac-pill-btn"><ArrowLeft size={13} /> Nghệ sĩ</Link>
                 <span style={{ color: "rgba(255,255,255,.18)", fontSize: 12 }}>/</span>
                 <span style={{ fontSize: 13, color: "#4ade80", fontWeight: 600 }}>Tạo mới</span>
             </div>
@@ -457,7 +457,7 @@ export default function AdminArtistCreatePage() {
                     </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <Link to="/admin/artists" className="ac-pill-btn"><X size={13} /> Huỷ</Link>
+                    <Link href="/admin/artists" className="ac-pill-btn"><X size={13} /> Huỷ</Link>
                     <button className="ac-create-btn" onClick={handleCreate} disabled={saving || !isValid}>
                         <Plus size={15} /> Tạo nghệ sĩ
                     </button>
@@ -867,7 +867,7 @@ export default function AdminArtistCreatePage() {
 
             {/* ── Bottom bar ── */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,.06)", animation: "ahFadeUp .5s both", flexWrap: "wrap" }}>
-                <Link to="/admin/artists" style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <Link href="/admin/artists" style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
                     <ArrowLeft size={13} /> Quay lại danh sách
                 </Link>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -876,7 +876,7 @@ export default function AdminArtistCreatePage() {
                             Còn thiếu thông tin bắt buộc
                         </span>
                     )}
-                    <Link to="/admin/artists" className="ac-pill-btn"><X size={13} /> Huỷ</Link>
+                    <Link href="/admin/artists" className="ac-pill-btn"><X size={13} /> Huỷ</Link>
                     <button className="ac-create-btn" onClick={handleCreate} disabled={saving || !isValid}>
                         <Plus size={15} /> Tạo nghệ sĩ
                     </button>

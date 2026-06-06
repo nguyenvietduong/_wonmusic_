@@ -1,6 +1,7 @@
+'use client';
 // src/pages/NotFoundPage.tsx
 import { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import SEO from "@/components/frontend/SEO";
 
 const NOTES = ["♩","♪","♫","♬","𝄞","𝄢","♭","♮","♯"];
@@ -24,7 +25,7 @@ export default function NotFoundPage() {
                 left:${Math.random() * 100}%;
                 bottom:-40px;
                 font-size:${size}px;
-                color:${Math.random() > .5 ? "rgba(74,222,128,0.5)" : "rgba(255,255,255,0.25)"};
+                color:${Math.random() > .5 ? "rgba(0,169,143,0.5)" : "rgba(255,255,255,0.25)"};
                 pointer-events:none; user-select:none;
                 animation: nfNoteRise ${dur}s linear forwards;
             `;
@@ -57,7 +58,7 @@ export default function NotFoundPage() {
                     0.3
                 ) * canvas.height * 0.9;
                 const alpha = 0.2 + Math.sin(i * 0.28 + frame * 0.04) * 0.15;
-                ctx.fillStyle = `rgba(74,222,128,${alpha})`;
+                ctx.fillStyle = `rgba(0,169,143,${alpha})`;
                 ctx.beginPath();
                 ctx.roundRect(i * bw + 1, canvas.height - h, bw - 2, h, 2);
                 ctx.fill();
@@ -105,7 +106,7 @@ export default function NotFoundPage() {
         />
         <div style={{
             minHeight:"100vh", overflow:"hidden", position:"relative",
-            background:"linear-gradient(135deg,#052e16 0%,#0a3d1f 40%,#14532d 70%,#052e16 100%)",
+            background:"linear-gradient(135deg,#242424 0%,#2E2E2E 40%,#383838 70%,#242424 100%)",
             display:"flex", alignItems:"center", justifyContent:"center",
             fontFamily:"'Be Vietnam Pro',sans-serif",
         }}>
@@ -131,14 +132,14 @@ export default function NotFoundPage() {
                 }
                 @keyframes nfGlitch2 {
                     0%,95%,100% { clip-path:inset(100% 0 0 0); transform:translate(0); }
-                    96%  { clip-path:inset(60% 0 20% 0); transform:translate(4px,-2px); color:#4ade80; }
+                    96%  { clip-path:inset(60% 0 20% 0); transform:translate(4px,-2px); color:#34D4B8; }
                     97%  { clip-path:inset(30% 0 50% 0); transform:translate(-4px,2px); }
                     98%  { clip-path:inset(10% 0 70% 0); transform:translate(2px,4px); }
-                    99%  { clip-path:inset(80% 0 10% 0); transform:translate(-2px,-4px); color:#4ade80; }
+                    99%  { clip-path:inset(80% 0 10% 0); transform:translate(-2px,-4px); color:#34D4B8; }
                 }
                 @keyframes nfPulse {
-                    0%,100% { box-shadow:0 0 24px rgba(74,222,128,.3); }
-                    50%     { box-shadow:0 0 56px rgba(74,222,128,.7); }
+                    0%,100% { box-shadow:0 0 24px rgba(0,169,143,.3); }
+                    50%     { box-shadow:0 0 56px rgba(0,169,143,.7); }
                 }
                 @keyframes nfDotBlink {
                     0%,100% { opacity:1; transform:scale(1); }
@@ -154,8 +155,8 @@ export default function NotFoundPage() {
                     100% { background-position: 200% center; }
                 }
                 @keyframes nfBtnGlow {
-                    0%,100% { box-shadow:0 4px 20px rgba(74,222,128,.3); }
-                    50%     { box-shadow:0 8px 40px rgba(74,222,128,.7); }
+                    0%,100% { box-shadow:0 4px 20px rgba(0,169,143,.3); }
+                    50%     { box-shadow:0 8px 40px rgba(0,169,143,.7); }
                 }
 
                 .nf-404-text {
@@ -163,7 +164,7 @@ export default function NotFoundPage() {
                     font-size:clamp(140px,22vw,260px);
                     line-height:.85; letter-spacing:8px;
                     color:#fff;
-                    text-shadow:0 0 80px rgba(74,222,128,.25);
+                    text-shadow:0 0 80px rgba(0,169,143,.25);
                     position:relative; user-select:none;
                 }
                 .nf-404-text::before,
@@ -174,7 +175,7 @@ export default function NotFoundPage() {
                     font-size:inherit; letter-spacing:inherit;
                 }
                 .nf-404-text::before {
-                    color:#4ade80;
+                    color:#34D4B8;
                     animation:nfGlitch1 6s ease-in-out infinite;
                 }
                 .nf-404-text::after {
@@ -185,7 +186,7 @@ export default function NotFoundPage() {
                 .nf-btn {
                     display:inline-flex; align-items:center; gap:10px;
                     padding:16px 36px; border-radius:100px;
-                    background:linear-gradient(135deg,#16a34a,#22c55e);
+                    background:linear-gradient(135deg,#00A98F,#34D4B8);
                     color:#fff; text-decoration:none;
                     font-size:15px; font-weight:600;
                     font-family:'Be Vietnam Pro',sans-serif;
@@ -207,8 +208,8 @@ export default function NotFoundPage() {
                     animation:nfFadeUp .6s .65s both;
                 }
                 .nf-outline-btn:hover {
-                    border-color:rgba(74,222,128,.5);
-                    color:#4ade80; background:rgba(74,222,128,.1);
+                    border-color:rgba(0,169,143,.5);
+                    color:#34D4B8; background:rgba(0,169,143,.1);
                     transform:translateY(-2px);
                 }
             `}</style>
@@ -223,12 +224,12 @@ export default function NotFoundPage() {
             <div style={{ position:"absolute", right:-80, bottom:-80, opacity:.08, pointerEvents:"none", zIndex:0 }}>
                 <div ref={vinylRef} style={{
                     width:480, height:480, borderRadius:"50%",
-                    background:"conic-gradient(from 0deg,#052e16,#16a34a,#1a3d2a,#052e16,#0a2214,#16a34a,#052e16)",
-                    border:"2px solid rgba(74,222,128,.3)",
+                    background:"conic-gradient(from 0deg,#242424,#00A98F,#1E1E30,#242424,#2E2E2E,#00A98F,#242424)",
+                    border:"2px solid rgba(0,169,143,.3)",
                     display:"flex", alignItems:"center", justifyContent:"center",
                 }}>
-                    <div style={{ width:160, height:160, borderRadius:"50%", background:"#16a34a", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        <div style={{ width:44, height:44, borderRadius:"50%", background:"#052e16" }} />
+                    <div style={{ width:160, height:160, borderRadius:"50%", background:"#00A98F", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <div style={{ width:44, height:44, borderRadius:"50%", background:"#242424" }} />
                     </div>
                 </div>
             </div>
@@ -237,12 +238,12 @@ export default function NotFoundPage() {
             <div style={{ position:"absolute", left:-40, top:-40, opacity:.06, pointerEvents:"none" }}>
                 <div style={{
                     width:240, height:240, borderRadius:"50%",
-                    background:"conic-gradient(from 0deg,#052e16,#4ade80,#052e16,#16a34a,#052e16)",
+                    background:"conic-gradient(from 0deg,#242424,#34D4B8,#242424,#00A98F,#242424)",
                     animation:"nfSpin 8s linear infinite",
                     display:"flex", alignItems:"center", justifyContent:"center",
                 }}>
-                    <div style={{ width:80, height:80, borderRadius:"50%", background:"#16a34a", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        <div style={{ width:22, height:22, borderRadius:"50%", background:"#052e16" }} />
+                    <div style={{ width:80, height:80, borderRadius:"50%", background:"#00A98F", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <div style={{ width:22, height:22, borderRadius:"50%", background:"#242424" }} />
                     </div>
                 </div>
             </div>
@@ -250,10 +251,10 @@ export default function NotFoundPage() {
             {/* ── Grid lines ── */}
             <div style={{ position:"absolute", inset:0, opacity:.03, pointerEvents:"none" }}>
                 {[0,1,2,3,4,5,6,7].map(i => (
-                    <div key={i} style={{ position:"absolute", left:`${i*14.28}%`, top:0, bottom:0, width:1, background:"#4ade80" }} />
+                    <div key={i} style={{ position:"absolute", left:`${i*14.28}%`, top:0, bottom:0, width:1, background:"#34D4B8" }} />
                 ))}
                 {[0,1,2,3,4].map(i => (
-                    <div key={i} style={{ position:"absolute", top:`${i*25}%`, left:0, right:0, height:1, background:"#4ade80" }} />
+                    <div key={i} style={{ position:"absolute", top:`${i*25}%`, left:0, right:0, height:1, background:"#34D4B8" }} />
                 ))}
             </div>
 
@@ -262,8 +263,8 @@ export default function NotFoundPage() {
 
                 {/* Live dot + label */}
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:20, animation:"nfFadeUp .5s both" }}>
-                    <span style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80", display:"inline-block", animation:"nfDotBlink 1.5s ease-in-out infinite" }} />
-                    <span style={{ fontSize:11, color:"#4ade80", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:600 }}>
+                    <span style={{ width:7, height:7, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"nfDotBlink 1.5s ease-in-out infinite" }} />
+                    <span style={{ fontSize:11, color:"#34D4B8", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:600 }}>
                         Won Music · Trang không tồn tại
                     </span>
                 </div>
@@ -278,7 +279,7 @@ export default function NotFoundPage() {
                     {[30,55,42,78,48,68,35,88,52,62,72,36,58,44,82,46,66,33,76,50].map((h,i) => (
                         <div key={i} style={{
                             width:4, height:`${h}%`,
-                            background:`rgba(74,222,128,${.3+i*.02})`,
+                            background:`rgba(0,169,143,${.3+i*.02})`,
                             borderRadius:2, transformOrigin:"bottom",
                             animation:`nfEq ${.36+(i%6)*.13}s ease-in-out infinite`,
                             animationDelay:`${i*.055}s`,
@@ -304,26 +305,26 @@ export default function NotFoundPage() {
                 <div style={{ margin:"28px auto", display:"flex", justifyContent:"center", animation:"nfFadeUp .5s .3s both" }}>
                     <div style={{
                         width:80, height:80, borderRadius:"50%",
-                        background:"conic-gradient(from 0deg,#0a3d1f,#16a34a,#1a3d2a,#0a3d1f,#052e16,#16a34a,#0a3d1f)",
-                        border:"2px solid rgba(74,222,128,.4)",
+                        background:"conic-gradient(from 0deg,#2E2E2E,#00A98F,#1E1E30,#2E2E2E,#242424,#00A98F,#2E2E2E)",
+                        border:"2px solid rgba(0,169,143,.4)",
                         display:"flex", alignItems:"center", justifyContent:"center",
                         animation:"nfSpin 4s linear infinite, nfPulse 2s ease-in-out infinite",
                     }}>
-                        <div style={{ width:28, height:28, borderRadius:"50%", background:"#16a34a", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <div style={{ width:8, height:8, borderRadius:"50%", background:"#052e16" }} />
+                        <div style={{ width:28, height:28, borderRadius:"50%", background:"#00A98F", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                            <div style={{ width:8, height:8, borderRadius:"50%", background:"#242424" }} />
                         </div>
                     </div>
                 </div>
 
                 {/* Buttons */}
                 <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
-                    <Link to="/" className="nf-btn">
+                    <Link href="/" className="nf-btn">
                         ♪ Về trang chủ
                     </Link>
-                    <Link to="/charts" className="nf-outline-btn">
+                    <Link href="/charts" className="nf-outline-btn">
                         🎵 Xem BXH nhạc hot
                     </Link>
-                    <Link to="/artists" className="nf-outline-btn">
+                    <Link href="/artists" className="nf-outline-btn">
                         🎤 Khám phá nghệ sĩ
                     </Link>
                 </div>

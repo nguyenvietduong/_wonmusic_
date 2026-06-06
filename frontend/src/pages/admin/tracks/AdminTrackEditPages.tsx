@@ -1,6 +1,8 @@
+'use client';
 // src/pages/admin/AdminTrackEditPage.tsx
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
     ArrowLeft, Music, Save, X, Upload, Image as ImageIcon,
     Mic2, Tag, Calendar, FileAudio,
@@ -26,9 +28,7 @@ const GENRES = [
     "Metal","Blues","Reggae","Acoustic",
 ];
 
-const API = import.meta.env.MODE === "development"
-    ? "http://localhost:2004/api"
-    : "https://wonmusic-api.up.railway.app/api";
+const API = "/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface TrackForm {
@@ -65,7 +65,8 @@ function isFormValid(form: TrackForm): boolean {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function AdminTrackEditPages() {
-    const { id } = useParams<{ id: string }>();
+    const params = useParams();
+    const id = params?.id as string;
 
     const [track,     setTrack]     = useState<any>(null);
     const [artists,   setArtists]   = useState<any[]>([]);
@@ -284,7 +285,7 @@ export default function AdminTrackEditPages() {
         <div style={{ fontFamily:"'Be Vietnam Pro',sans-serif", padding:"60px 0", textAlign:"center" }}>
             <AlertCircle size={36} color="rgba(248,113,113,.5)" style={{ margin:"0 auto 12px", display:"block" }} />
             <p style={{ color:"rgba(255,255,255,.3)", fontSize:14 }}>Không tìm thấy bài hát</p>
-            <Link to="/admin/tracks" style={{ color:"#4ade80", fontSize:13, textDecoration:"none", marginTop:10, display:"inline-block" }}>
+            <Link href="/admin/tracks" style={{ color:"#4ade80", fontSize:13, textDecoration:"none", marginTop:10, display:"inline-block" }}>
                 ← Quay lại
             </Link>
         </div>
@@ -496,7 +497,7 @@ export default function AdminTrackEditPages() {
 
             {/* ── Breadcrumb ── */}
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:22, animation:"ahFadeUp .3s both", flexWrap:"wrap" }}>
-                <Link to="/admin/tracks" className="te-pill-btn"><ArrowLeft size={13} /> Bài hát</Link>
+                <Link href="/admin/tracks" className="te-pill-btn"><ArrowLeft size={13} /> Bài hát</Link>
                 <span style={{ color:"rgba(255,255,255,.18)", fontSize:12 }}>/</span>
                 <span style={{ fontSize:13, color:"rgba(255,255,255,.4)", maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                     {track?.title ?? id}
@@ -524,7 +525,7 @@ export default function AdminTrackEditPages() {
                     </div>
                 </div>
                 <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                    <Link to="/admin/tracks" className="te-pill-btn"><X size={13} /> Huỷ</Link>
+                    <Link href="/admin/tracks" className="te-pill-btn"><X size={13} /> Huỷ</Link>
                     <SaveBtn saving={saving} saved={saved} valid={formValid} onClick={handleSave} />
                 </div>
             </div>
@@ -899,11 +900,11 @@ export default function AdminTrackEditPages() {
 
             {/* ── Bottom bar ── */}
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginTop:24, paddingTop:20, borderTop:"1px solid rgba(255,255,255,.06)", animation:"ahFadeUp .5s both", flexWrap:"wrap" }}>
-                <Link to="/admin/tracks" style={{ fontSize:13, color:"rgba(255,255,255,.3)", textDecoration:"none", display:"inline-flex", alignItems:"center", gap:5 }}>
+                <Link href="/admin/tracks" style={{ fontSize:13, color:"rgba(255,255,255,.3)", textDecoration:"none", display:"inline-flex", alignItems:"center", gap:5 }}>
                     <ArrowLeft size={13} /> Quay lại danh sách
                 </Link>
                 <div style={{ display:"flex", gap:10 }}>
-                    <Link to="/admin/tracks" className="te-pill-btn"><X size={13} /> Huỷ thay đổi</Link>
+                    <Link href="/admin/tracks" className="te-pill-btn"><X size={13} /> Huỷ thay đổi</Link>
                     <SaveBtn saving={saving} saved={saved} valid={formValid} onClick={handleSave} />
                 </div>
             </div>

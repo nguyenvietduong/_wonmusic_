@@ -4,29 +4,30 @@ export default function ScrollToTopButton() {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setVisible(window.scrollY > 200); // hiện khi cuộn xuống 200px
-        };
+        const handleScroll = () => setVisible(window.scrollY > 200);
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    };
-
     return (
         <div
-            onClick={scrollToTop}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             title="Lên đầu trang"
-            className={`
-                fixed bottom-20 right-4 w-12 h-12 bg-white text-green-700 
-                flex items-center justify-center cursor-pointer z-[9999] rounded-[9.6px] shadow-lg 
-                transition-transform transition-opacity duration-300
-                ${visible ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"}
-            `}
+            style={{
+                position: "fixed", bottom: 80, right: 16,
+                width: 44, height: 44, borderRadius: 10,
+                background: "linear-gradient(135deg,#00A98F,#34D4B8)",
+                color: "#242424",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", zIndex: 9999,
+                boxShadow: "0 4px 16px rgba(0,169,143,0.4)",
+                transition: "opacity .3s, transform .3s",
+                opacity: visible ? 1 : 0,
+                transform: visible ? "scale(1)" : "scale(0.75)",
+                pointerEvents: visible ? "auto" : "none",
+            }}
         >
-            <i className="fa-solid fa-arrow-up text-[14px] text-"></i>
+            <i className="fa-solid fa-arrow-up" style={{ fontSize: 14 }} />
         </div>
-    ); 
+    );
 }

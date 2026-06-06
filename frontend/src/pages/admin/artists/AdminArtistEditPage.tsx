@@ -1,6 +1,8 @@
+'use client';
 // src/pages/admin/AdminArtistEditPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
     ArrowLeft, Mic2, Save, X, Upload, Image as ImageIcon,
     Tag, CheckCircle2, XCircle,
@@ -43,13 +45,12 @@ const GENRES = [
     "Metal","Blues","Reggae","Acoustic",
 ];
 
-const API = import.meta.env.MODE === "development"
-    ? "http://localhost:2004/api"
-    : "https://wonmusic-api.up.railway.app/api";
+const API = "/api";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function AdminArtistEditPage() {
-    const { id } = useParams<{ id: string }>();
+    const params = useParams();
+    const id = params?.id as string;
 
     const [artist,         setArtist]         = useState<any>(null);
     const [loading,        setLoading]        = useState(true);
@@ -250,7 +251,7 @@ export default function AdminArtistEditPage() {
         <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", padding: "60px 0", textAlign: "center" }}>
             <AlertCircle size={36} color="rgba(248,113,113,.5)" style={{ margin: "0 auto 12px", display: "block" }} />
             <p style={{ color: "rgba(255,255,255,.3)", fontSize: 14 }}>Không tìm thấy nghệ sĩ</p>
-            <Link to="/admin/artists" style={{ color: "#4ade80", fontSize: 13, textDecoration: "none", marginTop: 10, display: "inline-block" }}>
+            <Link href="/admin/artists" style={{ color: "#4ade80", fontSize: 13, textDecoration: "none", marginTop: 10, display: "inline-block" }}>
                 ← Quay lại
             </Link>
         </div>
@@ -388,9 +389,9 @@ export default function AdminArtistEditPage() {
 
             {/* ── Breadcrumb ── */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, animation: "ahFadeUp .3s both", flexWrap: "wrap" }}>
-                <Link to="/admin/artists" className="ae-pill-btn"><ArrowLeft size={13} /> Nghệ sĩ</Link>
+                <Link href="/admin/artists" className="ae-pill-btn"><ArrowLeft size={13} /> Nghệ sĩ</Link>
                 <span style={{ color: "rgba(255,255,255,.18)", fontSize: 12 }}>/</span>
-                <Link to={`/admin/artists/${id}`} style={{ fontSize: 13, color: "rgba(255,255,255,.4)", textDecoration: "none", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <Link href={`/admin/artists/${id}`} style={{ fontSize: 13, color: "rgba(255,255,255,.4)", textDecoration: "none", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {artist?.name ?? id}
                 </Link>
                 <span style={{ color: "rgba(255,255,255,.18)", fontSize: 12 }}>/</span>
@@ -424,7 +425,7 @@ export default function AdminArtistEditPage() {
                     </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <Link to={`/admin/artists/${id}`} className="ae-pill-btn"><X size={13} /> Huỷ</Link>
+                    <Link href={`/admin/artists/${id}`} className="ae-pill-btn"><X size={13} /> Huỷ</Link>
                     <SaveBtn saving={saving} saved={saved} onClick={handleSave} disabled={!isValid || uploadingAvatar} />
                 </div>
             </div>
@@ -740,11 +741,11 @@ export default function AdminArtistEditPage() {
 
             {/* ── Bottom bar ── */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,.06)", animation: "ahFadeUp .5s both", flexWrap: "wrap" }}>
-                <Link to={`/admin/artists/${id}`} style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <Link href={`/admin/artists/${id}`} style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
                     <ArrowLeft size={13} /> Quay lại chi tiết
                 </Link>
                 <div style={{ display: "flex", gap: 10 }}>
-                    <Link to={`/admin/artists/${id}`} className="ae-pill-btn"><X size={13} /> Huỷ thay đổi</Link>
+                    <Link href={`/admin/artists/${id}`} className="ae-pill-btn"><X size={13} /> Huỷ thay đổi</Link>
                     <SaveBtn saving={saving} saved={saved} onClick={handleSave} disabled={!isValid || uploadingAvatar} />
                 </div>
             </div>

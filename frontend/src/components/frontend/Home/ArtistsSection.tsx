@@ -1,6 +1,6 @@
+'use client'
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import "@/styles/music-theme.css";
+import Link from "next/link";
 import { artistService, type Artist } from "@/services/artistService";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { artistsSectionText } from "@/locales/home/artistsSection";
@@ -8,10 +8,10 @@ import { artistsSectionText } from "@/locales/home/artistsSection";
 const GENRE_KEYS = ["Pop", "Indie", "EDM", "Ballad", "Hip-hop", "R&B"];
 
 const avatarColors = [
-    "linear-gradient(135deg, #0d2818, #16a34a)",
-    "linear-gradient(135deg, #0a3d1f, #4ade80)",
-    "linear-gradient(135deg, #14532d, #22c55e)",
-    "linear-gradient(135deg, #052e16, #15803d)",
+    "linear-gradient(135deg, #E8ECF8, #D8DFF0)",
+    "linear-gradient(135deg, #E0F4F0, #C8EDE8)",
+    "linear-gradient(135deg, #EEEEFB, #DDDAF8)",
+    "linear-gradient(135deg, #EAEAFB, #D4D5F8)",
 ];
 
 const getInitials = (name: string) =>
@@ -42,7 +42,7 @@ const ArtistsSection = () => {
 
     const genres = [t.all, ...GENRE_KEYS];
 
-    const [activeGenre, setActiveGenre] = useState(t.all);
+    const [activeGenre, setActiveGenre] = useState<string>(t.all);
     const [hoveredId,   setHoveredId]   = useState<string | null>(null);
     const [artists,     setArtists]     = useState<Artist[]>([]);
     const [loading,     setLoading]     = useState(true);
@@ -171,7 +171,7 @@ const ArtistsSection = () => {
                         {/* Scroll buttons — ẩn trên mobile */}
                         <button className="scroll-btn" onClick={() => scroll("left")}>‹</button>
                         <button className="scroll-btn" onClick={() => scroll("right")}>›</button>
-                        <Link to="/artists" className="btn-outline-music">
+                        <Link href="/artists" className="btn-outline-music">
                             {t.viewAll}
                         </Link>
                     </div>
@@ -217,7 +217,7 @@ const ArtistsSection = () => {
                                 )
                                 : filtered.map((artist, idx) => (
                                     <Link
-                                        to={`/artists/${artist._id}`}
+                                        href={`/artists/${artist._id}`}
                                         key={artist._id}
                                         className={`artist-card ${hoveredId === artist._id ? "hovered" : ""}`}
                                         onMouseEnter={() => setHoveredId(artist._id)}
