@@ -320,186 +320,288 @@ const PlayerBar = () => {
 
                         {/* Bar body */}
                         <div style={{
-                            height:72,
                             background:"rgba(248,248,252,.97)",
                             backdropFilter:"blur(24px)",
                             borderTop:"1px solid rgba(0,169,143,.15)",
                             boxShadow:"0 -8px 40px rgba(0,0,0,.08)",
-                            display:"flex", alignItems:"center",
-                            padding: isMobile ? "0 12px" : "0 24px", gap: isMobile ? 8 : 16,
-                            paddingBottom: isMobile ? "calc(8px + env(safe-area-inset-bottom, 0px))" : undefined,
                         }}>
 
-                            {/* ── LEFT: track info ── */}
-                            <div style={{ display:"flex", alignItems:"center", gap:12, width: isMobile ? "auto" : 260, flex: isMobile ? 1 : undefined, flexShrink:0, minWidth:0 }}>
+                        {isMobile ? (
+                            /* ══════════════════════════════════════════
+                               MOBILE: 2-row layout
+                               ══════════════════════════════════════════ */
+                            <div style={{
+                                display:"flex", flexDirection:"column",
+                                padding:"10px 14px",
+                                paddingBottom:"calc(10px + env(safe-area-inset-bottom, 0px))",
+                                gap:8,
+                            }}>
+                                {/* ── Row 1: Cover + Title/Artist + Queue + Minimize ── */}
+                                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
 
-                                {/* Cover with EQ overlay */}
-                                <div style={{ position:"relative", flexShrink:0 }}>
-                                    {/* Spinning ring when playing */}
-                                    {isPlaying && (
-                                        <div style={{ position:"absolute", inset:-5, borderRadius:"50%", border:"1.5px dashed rgba(0,169,143,.35)", animation:"pbSpin 8s linear infinite" }} />
-                                    )}
-                                    <div style={{
-                                        width:46, height:46, borderRadius:12, overflow:"hidden",
-                                        background:"rgba(0,0,0,.05)",
-                                        border: isPlaying ? "1.5px solid rgba(0,169,143,.45)" : "1px solid rgba(0,0,0,.08)",
-                                        boxShadow: isPlaying ? "0 0 18px rgba(0,169,143,.28), 0 4px 20px rgba(0,0,0,.5)" : "0 4px 16px rgba(0,0,0,.4)",
-                                        position:"relative",
-                                        transition:"all .3s",
-                                        flexShrink:0,
-                                    }}>
-                                        {currentTrack.coverUrl
-                                            ? <img src={currentTrack.coverUrl} alt={currentTrack.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                                            : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color:"#34D4B8" }}>♪</div>
-                                        }
-                                        {/* EQ bars overlay on cover */}
+                                    {/* Cover */}
+                                    <div style={{ position:"relative", flexShrink:0 }}>
                                         {isPlaying && (
-                                            <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,.5)", display:"flex", alignItems:"flex-end", justifyContent:"center", gap:2, paddingBottom:5, borderRadius:12 }}>
-                                                {EQ_H.map((h, i) => (
-                                                    <div key={i} style={{ width:3, height:`${h}%`, background:"linear-gradient(to top,#00A98F,#34D4B8)", borderRadius:2, transformOrigin:"bottom", animation:`pbEq ${.36+i*.1}s ease-in-out infinite`, animationDelay:`${i*.055}s` }} />
-                                                ))}
-                                            </div>
+                                            <div style={{ position:"absolute", inset:-4, borderRadius:"50%", border:"1.5px dashed rgba(0,169,143,.35)", animation:"pbSpin 8s linear infinite" }} />
                                         )}
+                                        <div style={{
+                                            width:40, height:40, borderRadius:10, overflow:"hidden",
+                                            background:"rgba(0,0,0,.05)", position:"relative",
+                                            border: isPlaying ? "1.5px solid rgba(0,169,143,.45)" : "1px solid rgba(0,0,0,.08)",
+                                            boxShadow: isPlaying ? "0 0 14px rgba(0,169,143,.3)" : "0 2px 8px rgba(0,0,0,.3)",
+                                            transition:"all .3s", flexShrink:0,
+                                        }}>
+                                            {currentTrack.coverUrl
+                                                ? <img src={currentTrack.coverUrl} alt={currentTrack.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                                                : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, color:"#34D4B8" }}>♪</div>
+                                            }
+                                            {isPlaying && (
+                                                <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"flex-end", justifyContent:"center", gap:1.5, paddingBottom:4, borderRadius:10 }}>
+                                                    {EQ_H.slice(0,4).map((h,i) => (
+                                                        <div key={i} style={{ width:2.5, height:`${h}%`, background:"linear-gradient(to top,#00A98F,#34D4B8)", borderRadius:2, transformOrigin:"bottom", animation:`pbEq ${.36+i*.1}s ease-in-out infinite`, animationDelay:`${i*.055}s` }} />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Title + artist */}
-                                <div style={{ flex:1, minWidth:0 }}>
-                                    <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
-                                        {isPlaying && (
-                                            <span style={{ width:5, height:5, borderRadius:"50%", background:"#34D4B8", display:"inline-block", flexShrink:0, animation:"pbDot 1.6s ease-in-out infinite" }} />
-                                        )}
-                                        <p style={{ fontSize:13, fontWeight:600, color:"#0D0D1A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", lineHeight:1.3 }}>
-                                            {currentTrack.title}
+                                    {/* Title + artist */}
+                                    <div style={{ flex:1, minWidth:0 }}>
+                                        <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:2 }}>
+                                            {isPlaying && (
+                                                <span style={{ width:5, height:5, borderRadius:"50%", background:"#34D4B8", display:"inline-block", flexShrink:0, animation:"pbDot 1.6s ease-in-out infinite" }} />
+                                            )}
+                                            <p style={{ fontSize:13, fontWeight:600, color:"#0D0D1A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", lineHeight:1.3 }}>
+                                                {currentTrack.title}
+                                            </p>
+                                        </div>
+                                        <p style={{ fontSize:11, color:"rgba(0,0,0,.45)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                                            {currentTrack.artist}
                                         </p>
                                     </div>
-                                    <p style={{ fontSize:11, color:"rgba(0,0,0,.45)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                                        {currentTrack.artist}
-                                    </p>
+
+                                    {/* Queue button */}
+                                    <div style={{ position:"relative", flexShrink:0 }}>
+                                        <button
+                                            onClick={() => setShowQueue(v => !v)}
+                                            className="pb-btn"
+                                            style={{ width:32, height:32, color: showQueue ? "#34D4B8" : "rgba(0,0,0,.45)", background: showQueue ? "rgba(0,169,143,.12)" : "transparent" }}
+                                        >
+                                            <FaListUl style={{ fontSize:12 }} />
+                                        </button>
+                                        {queue.length > 0 && (
+                                            <span style={{
+                                                position:"absolute", top:-3, right:-3,
+                                                width:14, height:14, borderRadius:"50%",
+                                                background:"linear-gradient(135deg,#00A98F,#34D4B8)",
+                                                color:"#050812", fontSize:7, fontWeight:700,
+                                                display:"flex", alignItems:"center", justifyContent:"center",
+                                                border:"2px solid rgba(248,248,252,.97)",
+                                            }}>
+                                                {queue.length > 9 ? "9+" : queue.length}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Minimize */}
+                                    <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)", flexShrink:0 }}>
+                                        <FaChevronDown style={{ fontSize:11 }} />
+                                    </button>
                                 </div>
-                            </div>
 
-                            {/* ── CENTER: controls + mini progress ── */}
-                            <div style={{ flex: isMobile ? undefined : 1, display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:0, flexShrink: isMobile ? 0 : undefined }}>
+                                {/* ── Row 2: Time + Shuffle + Prev + Play + Next + Repeat + Duration ── */}
+                                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:4 }}>
 
-                                {/* Buttons */}
-                                <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 4 : 6 }}>
-                                    {!isMobile && <button onClick={toggleShuffle} className="pb-btn" style={{ width:32, height:32, color: isShuffle ? "#34D4B8" : "rgba(0,0,0,.45)", background: isShuffle ? "rgba(0,169,143,.12)" : "transparent" }}>
-                                        <FaRandom style={{ fontSize:11 }} />
-                                    </button>}
+                                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:30, textAlign:"left", flexShrink:0 }}>
+                                        {fmt(currentTime)}
+                                    </span>
 
-                                    <button onClick={handlePrev} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
-                                        <FaStepBackward style={{ fontSize: isMobile ? 13 : 14 }} />
+                                    <button onClick={toggleShuffle} className="pb-btn" style={{ width:30, height:30, color: isShuffle ? "#34D4B8" : "rgba(0,0,0,.4)", background: isShuffle ? "rgba(0,169,143,.1)" : "transparent", flexShrink:0 }}>
+                                        <FaRandom style={{ fontSize:10 }} />
                                     </button>
 
-                                    {/* Play/Pause — gradient circle */}
+                                    <button onClick={handlePrev} className="pb-btn" style={{ width:34, height:34, color:"rgba(0,0,0,.65)", flexShrink:0 }}>
+                                        <FaStepBackward style={{ fontSize:13 }} />
+                                    </button>
+
+                                    {/* Play/Pause */}
                                     <button
                                         onClick={togglePlay}
                                         style={{
-                                            width:46, height:46, borderRadius:"50%",
+                                            width:44, height:44, borderRadius:"50%",
                                             background:"linear-gradient(135deg,#00A98F,#34D4B8)",
                                             border:"none", color:"#050812", cursor:"pointer",
                                             display:"flex", alignItems:"center", justifyContent:"center",
-                                            boxShadow:"0 0 22px rgba(0,169,143,.45), 0 4px 16px rgba(0,0,0,.4)",
-                                            transition:"all .2s",
+                                            boxShadow:"0 0 20px rgba(0,169,143,.4), 0 3px 12px rgba(0,0,0,.35)",
                                             animation: isPlaying ? "pbGlow 3s ease-in-out infinite" : "none",
-                                            flexShrink:0,
+                                            transition:"all .2s", flexShrink:0,
                                         }}
-                                        onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.08)")}
-                                        onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
                                     >
-                                        {isPlaying
-                                            ? <FaPause  style={{ fontSize:14 }} />
-                                            : <FaPlay   style={{ fontSize:14, marginLeft:2 }} />
-                                        }
+                                        {isPlaying ? <FaPause style={{ fontSize:13 }} /> : <FaPlay style={{ fontSize:13, marginLeft:2 }} />}
                                     </button>
 
-                                    <button onClick={next} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
-                                        <FaStepForward style={{ fontSize: isMobile ? 13 : 14 }} />
+                                    <button onClick={next} className="pb-btn" style={{ width:34, height:34, color:"rgba(0,0,0,.65)", flexShrink:0 }}>
+                                        <FaStepForward style={{ fontSize:13 }} />
                                     </button>
 
-                                    {!isMobile && <button onClick={cycleRepeat} className="pb-btn" style={{ width:32, height:32, color: repeatMode !== "off" ? "#34D4B8" : "rgba(0,0,0,.45)", background: repeatMode !== "off" ? "rgba(0,169,143,.12)" : "transparent", position:"relative" }}>
-                                        <FaRedo style={{ fontSize:11 }} />
+                                    <button onClick={cycleRepeat} className="pb-btn" style={{ width:30, height:30, color: repeatMode !== "off" ? "#34D4B8" : "rgba(0,0,0,.4)", background: repeatMode !== "off" ? "rgba(0,169,143,.1)" : "transparent", position:"relative", flexShrink:0 }}>
+                                        <FaRedo style={{ fontSize:10 }} />
                                         {repeatMode === "one" && (
-                                            <span style={{ position:"absolute", top:2, right:2, fontSize:7, fontWeight:700, lineHeight:1, color:"#34D4B8", fontFamily:"'Space Grotesk',sans-serif" }}>1</span>
+                                            <span style={{ position:"absolute", top:2, right:2, fontSize:6, fontWeight:700, lineHeight:1, color:"#34D4B8", fontFamily:"'Space Grotesk',sans-serif" }}>1</span>
                                         )}
-                                    </button>}
-                                </div>
+                                    </button>
 
-                                {/* Mini progress + time — hidden on mobile */}
-                                {!isMobile && <div style={{ display:"flex", alignItems:"center", gap:8, width:"100%", maxWidth:380 }}>
-                                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:32, textAlign:"right" }}>{fmt(currentTime)}</span>
-                                    <div style={{ flex:1, height:3, borderRadius:100, background:"rgba(0,0,0,.08)", overflow:"hidden" }}>
-                                        <div style={{ height:"100%", borderRadius:100, background:"linear-gradient(90deg,#00A98F,#34D4B8)", width:`${pct}%`, transition:"width .15s linear" }} />
-                                    </div>
-                                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:32 }}>{fmt(duration)}</span>
-                                </div>}
+                                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:30, textAlign:"right", flexShrink:0 }}>
+                                        {fmt(duration)}
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* Mobile minimize button — sau controls */}
-                            {isMobile && (
-                                <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)", flexShrink:0 }} title="Thu nhỏ">
-                                    <FaChevronDown style={{ fontSize:11 }} />
-                                </button>
-                            )}
+                        ) : (
+                            /* ══════════════════════════════════════════
+                               DESKTOP: 3-column layout (unchanged)
+                               ══════════════════════════════════════════ */
+                            <div style={{ height:72, display:"flex", alignItems:"center", padding:"0 24px", gap:16 }}>
 
-                            {/* ── RIGHT: queue + volume + minimize — hidden on mobile ── */}
-                            {!isMobile && <div style={{ display:"flex", alignItems:"center", gap:8, width:260, flexShrink:0, justifyContent:"flex-end" }}>
-
-                                {/* Queue */}
-                                <div style={{ position:"relative" }}>
-                                    <button
-                                        onClick={() => setShowQueue(v => !v)}
-                                        className="pb-btn"
-                                        style={{ width:32, height:32, color: showQueue ? "#34D4B8" : "rgba(0,0,0,.5)", background: showQueue ? "rgba(0,169,143,.12)" : "transparent" }}
-                                        title="Danh sách phát"
-                                    >
-                                        <FaListUl style={{ fontSize:12 }} />
-                                    </button>
-                                    {queue.length > 0 && (
-                                        <span style={{
-                                            position:"absolute", top:-3, right:-3,
-                                            width:15, height:15, borderRadius:"50%",
-                                            background:"linear-gradient(135deg,#00A98F,#34D4B8)",
-                                            color:"#050812", fontSize:8, fontWeight:700,
-                                            display:"flex", alignItems:"center", justifyContent:"center",
-                                            border:"2px solid rgba(248,248,252,.97)",
-                                            fontFamily:"'Space Grotesk',sans-serif",
+                                {/* ── LEFT: track info ── */}
+                                <div style={{ display:"flex", alignItems:"center", gap:12, width:260, flexShrink:0, minWidth:0 }}>
+                                    <div style={{ position:"relative", flexShrink:0 }}>
+                                        {isPlaying && (
+                                            <div style={{ position:"absolute", inset:-5, borderRadius:"50%", border:"1.5px dashed rgba(0,169,143,.35)", animation:"pbSpin 8s linear infinite" }} />
+                                        )}
+                                        <div style={{
+                                            width:46, height:46, borderRadius:12, overflow:"hidden",
+                                            background:"rgba(0,0,0,.05)",
+                                            border: isPlaying ? "1.5px solid rgba(0,169,143,.45)" : "1px solid rgba(0,0,0,.08)",
+                                            boxShadow: isPlaying ? "0 0 18px rgba(0,169,143,.28), 0 4px 20px rgba(0,0,0,.5)" : "0 4px 16px rgba(0,0,0,.4)",
+                                            position:"relative", transition:"all .3s", flexShrink:0,
                                         }}>
-                                            {queue.length > 9 ? "9+" : queue.length}
-                                        </span>
-                                    )}
+                                            {currentTrack.coverUrl
+                                                ? <img src={currentTrack.coverUrl} alt={currentTrack.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                                                : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color:"#34D4B8" }}>♪</div>
+                                            }
+                                            {isPlaying && (
+                                                <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,.5)", display:"flex", alignItems:"flex-end", justifyContent:"center", gap:2, paddingBottom:5, borderRadius:12 }}>
+                                                    {EQ_H.map((h,i) => (
+                                                        <div key={i} style={{ width:3, height:`${h}%`, background:"linear-gradient(to top,#00A98F,#34D4B8)", borderRadius:2, transformOrigin:"bottom", animation:`pbEq ${.36+i*.1}s ease-in-out infinite`, animationDelay:`${i*.055}s` }} />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div style={{ flex:1, minWidth:0 }}>
+                                        <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
+                                            {isPlaying && (
+                                                <span style={{ width:5, height:5, borderRadius:"50%", background:"#34D4B8", display:"inline-block", flexShrink:0, animation:"pbDot 1.6s ease-in-out infinite" }} />
+                                            )}
+                                            <p style={{ fontSize:13, fontWeight:600, color:"#0D0D1A", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", lineHeight:1.3 }}>
+                                                {currentTrack.title}
+                                            </p>
+                                        </div>
+                                        <p style={{ fontSize:11, color:"rgba(0,0,0,.45)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                                            {currentTrack.artist}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                {/* Volume */}
-                                <button onClick={toggleMute} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.5)" }}>
-                                    <VolumeIcon style={{ fontSize:13 }} />
-                                </button>
-                                <div
-                                    ref={volumeRef}
-                                    className="pb-vol"
-                                    onMouseDown={handleVolumeMouseDown}
-                                    style={{ width:80, height:4, background:"rgba(0,0,0,.1)" }}
-                                >
-                                    <div style={{ position:"absolute", left:0, top:0, height:"100%", borderRadius:100, background:"linear-gradient(90deg,#00A98F,#34D4B8)", width:`${volPct}%`, transition: isDraggingVol.current ? "none" : "width .1s" }} />
-                                    <div className="pb-vol-thumb" style={{ left:`${volPct}%` }} />
+                                {/* ── CENTER: controls + mini progress ── */}
+                                <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:0 }}>
+                                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                        <button onClick={toggleShuffle} className="pb-btn" style={{ width:32, height:32, color: isShuffle ? "#34D4B8" : "rgba(0,0,0,.45)", background: isShuffle ? "rgba(0,169,143,.12)" : "transparent" }}>
+                                            <FaRandom style={{ fontSize:11 }} />
+                                        </button>
+                                        <button onClick={handlePrev} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
+                                            <FaStepBackward style={{ fontSize:14 }} />
+                                        </button>
+                                        <button
+                                            onClick={togglePlay}
+                                            style={{
+                                                width:46, height:46, borderRadius:"50%",
+                                                background:"linear-gradient(135deg,#00A98F,#34D4B8)",
+                                                border:"none", color:"#050812", cursor:"pointer",
+                                                display:"flex", alignItems:"center", justifyContent:"center",
+                                                boxShadow:"0 0 22px rgba(0,169,143,.45), 0 4px 16px rgba(0,0,0,.4)",
+                                                transition:"all .2s",
+                                                animation: isPlaying ? "pbGlow 3s ease-in-out infinite" : "none",
+                                                flexShrink:0,
+                                            }}
+                                            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.08)")}
+                                            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+                                        >
+                                            {isPlaying ? <FaPause style={{ fontSize:14 }} /> : <FaPlay style={{ fontSize:14, marginLeft:2 }} />}
+                                        </button>
+                                        <button onClick={next} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
+                                            <FaStepForward style={{ fontSize:14 }} />
+                                        </button>
+                                        <button onClick={cycleRepeat} className="pb-btn" style={{ width:32, height:32, color: repeatMode !== "off" ? "#34D4B8" : "rgba(0,0,0,.45)", background: repeatMode !== "off" ? "rgba(0,169,143,.12)" : "transparent", position:"relative" }}>
+                                            <FaRedo style={{ fontSize:11 }} />
+                                            {repeatMode === "one" && (
+                                                <span style={{ position:"absolute", top:2, right:2, fontSize:7, fontWeight:700, lineHeight:1, color:"#34D4B8", fontFamily:"'Space Grotesk',sans-serif" }}>1</span>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div style={{ display:"flex", alignItems:"center", gap:8, width:"100%", maxWidth:380 }}>
+                                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:32, textAlign:"right" }}>{fmt(currentTime)}</span>
+                                        <div style={{ flex:1, height:3, borderRadius:100, background:"rgba(0,0,0,.08)", overflow:"hidden" }}>
+                                            <div style={{ height:"100%", borderRadius:100, background:"linear-gradient(90deg,#00A98F,#34D4B8)", width:`${pct}%`, transition:"width .15s linear" }} />
+                                        </div>
+                                        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:32 }}>{fmt(duration)}</span>
+                                    </div>
                                 </div>
-                                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.35)", minWidth:30, textAlign:"right" }}>
-                                    {Math.round(volPct)}%
-                                </span>
 
-                                {/* Minimize */}
-                                <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)" }} title="Thu nhỏ">
-                                    <FaChevronDown style={{ fontSize:11 }} />
-                                </button>
-                            </div>}
+                                {/* ── RIGHT: queue + volume + minimize ── */}
+                                <div style={{ display:"flex", alignItems:"center", gap:8, width:260, flexShrink:0, justifyContent:"flex-end" }}>
+                                    <div style={{ position:"relative" }}>
+                                        <button
+                                            onClick={() => setShowQueue(v => !v)}
+                                            className="pb-btn"
+                                            style={{ width:32, height:32, color: showQueue ? "#34D4B8" : "rgba(0,0,0,.5)", background: showQueue ? "rgba(0,169,143,.12)" : "transparent" }}
+                                            title="Danh sách phát"
+                                        >
+                                            <FaListUl style={{ fontSize:12 }} />
+                                        </button>
+                                        {queue.length > 0 && (
+                                            <span style={{
+                                                position:"absolute", top:-3, right:-3,
+                                                width:15, height:15, borderRadius:"50%",
+                                                background:"linear-gradient(135deg,#00A98F,#34D4B8)",
+                                                color:"#050812", fontSize:8, fontWeight:700,
+                                                display:"flex", alignItems:"center", justifyContent:"center",
+                                                border:"2px solid rgba(248,248,252,.97)",
+                                                fontFamily:"'Space Grotesk',sans-serif",
+                                            }}>
+                                                {queue.length > 9 ? "9+" : queue.length}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button onClick={toggleMute} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.5)" }}>
+                                        <VolumeIcon style={{ fontSize:13 }} />
+                                    </button>
+                                    <div
+                                        ref={volumeRef}
+                                        className="pb-vol"
+                                        onMouseDown={handleVolumeMouseDown}
+                                        style={{ width:80, height:4, background:"rgba(0,0,0,.1)" }}
+                                    >
+                                        <div style={{ position:"absolute", left:0, top:0, height:"100%", borderRadius:100, background:"linear-gradient(90deg,#00A98F,#34D4B8)", width:`${volPct}%`, transition: isDraggingVol.current ? "none" : "width .1s" }} />
+                                        <div className="pb-vol-thumb" style={{ left:`${volPct}%` }} />
+                                    </div>
+                                    <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.35)", minWidth:30, textAlign:"right" }}>
+                                        {Math.round(volPct)}%
+                                    </span>
+                                    <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)" }} title="Thu nhỏ">
+                                        <FaChevronDown style={{ fontSize:11 }} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         </div>
                     </div>
                 )}
                 </>
             )}
 
-            <div style={{ height: currentTrack && !minimized ? "76px" : "0", flexShrink: 0 }} />
+            <div style={{ height: currentTrack && !minimized ? (isMobile ? "114px" : "76px") : "0", flexShrink: 0 }} />
         </>
     );
 };
