@@ -37,10 +37,10 @@ const AVATAR_GRADIENTS = [
 // Rank medals for top 3
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-export default function ArtistDetailPage() {
+export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
     const isMobile = useIsMobile();
     const params = useParams();
-    const id = params?.id as string | undefined;
+    const id = artistId || (params?.id as string | undefined);
 
     const [artist,       setArtist]       = useState<Artist | null>(null);
     const [tracks,       setTracks]       = useState<Track[]>([]);
