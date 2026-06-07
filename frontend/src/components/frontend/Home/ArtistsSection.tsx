@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { artistService, type Artist } from "@/services/artistService";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { artistsSectionText } from "@/locales/home/artistsSection";
@@ -39,6 +40,7 @@ const SkeletonCard = ({ idx }: { idx: number }) => (
 const ArtistsSection = () => {
     const lang = useLanguageStore((s) => s.lang);
     const t    = artistsSectionText[lang];
+    const router = useRouter();
 
     const genres = [t.all, ...GENRE_KEYS];
 
@@ -48,6 +50,7 @@ const ArtistsSection = () => {
     const [loading,     setLoading]     = useState(true);
     const [error,       setError]       = useState<string | null>(null);
     const scrollRef                     = useRef<HTMLDivElement>(null);
+    const touchStart                    = useRef<{ x: number; y: number } | null>(null);
 
     // reset active genre label when language changes
     useEffect(() => { setActiveGenre(t.all); }, [t.all]);
@@ -231,6 +234,19 @@ const ArtistsSection = () => {
                                         onMouseEnter={() => setHoveredId(artist._id)}
                                         onMouseLeave={() => setHoveredId(null)}
                                         style={{ animationDelay: `${idx * 0.06}s` }}
+                                        onTouchStart={(e) => {
+                                            touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                                        }}
+                                        onTouchEnd={(e) => {
+                                            if (!touchStart.current) return;
+                                            const dx = Math.abs(e.changedTouches[0].clientX - touchStart.current.x);
+                                            const dy = Math.abs(e.changedTouches[0].clientY - touchStart.current.y);
+                                            touchStart.current = null;
+                                            if (dx < 10 && dy < 10) {
+                                                e.preventDefault();
+                                                router.push(`/artists/${artist._id}`);
+                                            }
+                                        }}
                                     >
                                         <div className="artist-card-glow" />
 

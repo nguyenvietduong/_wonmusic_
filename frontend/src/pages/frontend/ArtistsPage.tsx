@@ -1,6 +1,7 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { artistService, type Artist } from "@/services/artistService";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { artistsText } from "@/locales/artists";
@@ -48,6 +49,8 @@ const ArtistsPage = () => {
     const { lang } = useLanguageStore();
     const t = artistsText[lang];
     const GENRES = [t.all, ...GENRE_KEYS];
+    const router = useRouter();
+    const touchStart = useRef<{ x: number; y: number } | null>(null);
 
     const [artists,     setArtists]     = useState<Artist[]>([]);
     const [filtered,    setFiltered]    = useState<Artist[]>([]);
@@ -391,6 +394,19 @@ const ArtistsPage = () => {
                                 key={artist._id}
                                 className="ap-card"
                                 style={{ animationDelay:`${idx * .04}s`, animation:"apFadeUp .45s both" }}
+                                onTouchStart={(e) => {
+                                    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                                }}
+                                onTouchEnd={(e) => {
+                                    if (!touchStart.current) return;
+                                    const dx = Math.abs(e.changedTouches[0].clientX - touchStart.current.x);
+                                    const dy = Math.abs(e.changedTouches[0].clientY - touchStart.current.y);
+                                    touchStart.current = null;
+                                    if (dx < 10 && dy < 10) {
+                                        e.preventDefault();
+                                        router.push(`/artists/${artist._id}`);
+                                    }
+                                }}
                             >
                                 {/* Avatar */}
                                 <div style={{ position:"relative", width:100, margin:"0 auto 18px" }}>
