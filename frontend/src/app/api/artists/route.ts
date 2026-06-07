@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/mongodb'
 import { uploadToBlob } from '@/lib/blob'
 import Artist from '@/models/Artist'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 export const maxDuration = 60
 
 export async function GET(req: NextRequest) {
@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
             Artist.countDocuments(filter),
         ])
 
-        return Response.json({ success: true, data: artists, pagination: { page, limit, total } })
+        return Response.json({ success: true, data: artists, pagination: { page, limit, total } }, {
+            headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
+        })
     } catch {
         return Response.json({ success: false, message: 'Lỗi server' }, { status: 500 })
     }

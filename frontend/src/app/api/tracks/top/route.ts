@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { connectDB } from '@/lib/mongodb'
 import Track from '@/models/Track'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 120
 
 export async function GET(req: NextRequest) {
     try {
@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
             .sort({ plays: -1 })
             .limit(limit)
 
-        return Response.json({ success: true, data: tracks })
+        return Response.json({ success: true, data: tracks }, {
+            headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' },
+        })
     } catch {
         return Response.json({ success: false, message: 'Lỗi server' }, { status: 500 })
     }

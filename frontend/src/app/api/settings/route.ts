@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { uploadToBlob } from "@/lib/blob";
 import SiteSettings from "@/models/SiteSettings";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 // GET — lấy settings (tạo mới nếu chưa có)
 export async function GET() {
@@ -11,7 +11,9 @@ export async function GET() {
         await connectDB();
         let settings = await SiteSettings.findOne();
         if (!settings) settings = await SiteSettings.create({});
-        return Response.json({ success: true, data: settings });
+        return Response.json({ success: true, data: settings }, {
+            headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+        });
     } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Lỗi server";
         return Response.json({ success: false, message: msg }, { status: 500 });
