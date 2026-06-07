@@ -1,10 +1,6 @@
-'use client'
-
-import { useParams } from 'next/navigation'
 import ArtistDetailPage from '@/pages/frontend/ArtistDetailPage'
 
-export default function Page() {
-  const params = useParams()
-  const id = params?.id as string | undefined
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   return <ArtistDetailPage artistId={id} />
 }
