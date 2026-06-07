@@ -185,8 +185,13 @@ const PlayerBar = () => {
                 {/* ── Queue panel ── */}
                 {showQueue && (
                     <div id="pb-queue-panel" style={{
-                        position:"fixed", bottom:80, right:16, zIndex:51,
-                        width:320, maxHeight:430,
+                        position:"fixed",
+                        bottom: isMobile ? 126 : 80,
+                        right: isMobile ? 8 : 16,
+                        left: isMobile ? 8 : "auto",
+                        zIndex:51,
+                        width: isMobile ? "auto" : 320,
+                        maxHeight: isMobile ? "50vh" : 430,
                         background:"rgba(248,248,252,.97)",
                         backdropFilter:"blur(24px)",
                         border:"1px solid rgba(0,169,143,.18)",
