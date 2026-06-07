@@ -88,16 +88,18 @@ const ArtistsSection = () => {
                     display: flex;
                     gap: 16px;
                     overflow-x: auto;
-                    scroll-snap-type: x mandatory;
+                    scroll-snap-type: x proximity;
                     -webkit-overflow-scrolling: touch;
                     scrollbar-width: none;
                     padding-bottom: 8px;
+                    touch-action: pan-x;
                 }
                 .artists-scroll::-webkit-scrollbar { display: none; }
 
                 .artists-scroll .artist-card {
                     flex: 0 0 200px;
                     scroll-snap-align: start;
+                    scroll-snap-stop: normal;
                     width: 200px;
                 }
 

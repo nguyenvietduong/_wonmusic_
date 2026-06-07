@@ -657,6 +657,9 @@
        transition: all var(--m-transition);
        overflow: hidden;
        display: block;
+       cursor: pointer;
+       touch-action: manipulation;
+       -webkit-tap-highlight-color: transparent;
        animation: fade-in-up 0.4s both;
    }
    .artist-card:hover {

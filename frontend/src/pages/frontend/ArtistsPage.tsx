@@ -121,12 +121,15 @@ const ArtistsPage = () => {
                     position: relative;
                     overflow: hidden;
                     cursor: pointer;
+                    touch-action: manipulation;
+                    -webkit-tap-highlight-color: transparent;
                 }
                 .ap-card::before {
                     content:'';
                     position:absolute; inset:0; border-radius:20px;
                     background: radial-gradient(ellipse at 50% 0%, rgba(0,169,143,0.12) 0%, transparent 65%);
                     opacity:0; transition:opacity .35s;
+                    pointer-events: none;
                 }
                 .ap-card::after {
                     content:'';
@@ -135,6 +138,7 @@ const ArtistsPage = () => {
                     background-size:200%;
                     transform:scaleX(0); transition:transform .3s;
                     border-radius:0 0 20px 20px;
+                    pointer-events: none;
                 }
                 .ap-card:hover { border-color:rgba(0,169,143,.3); transform:translateY(-10px); box-shadow:0 24px 56px rgba(0,169,143,.12),0 8px 24px rgba(0,0,0,.4); }
                 .ap-card:hover::before { opacity:1; }
