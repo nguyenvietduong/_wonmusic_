@@ -189,7 +189,7 @@ const PlayerBar = () => {
                         bottom: isMobile ? 126 : 80,
                         right: isMobile ? 8 : 16,
                         left: isMobile ? 8 : "auto",
-                        zIndex:51,
+                        zIndex:9999,
                         width: isMobile ? "auto" : 320,
                         maxHeight: isMobile ? "50vh" : 430,
                         background:"rgba(248,248,252,.97)",
