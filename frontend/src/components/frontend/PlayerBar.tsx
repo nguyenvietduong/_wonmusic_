@@ -85,6 +85,22 @@ const PlayerBar = () => {
         window.addEventListener("mouseup",   onUp);
     }, [duration, seekTo]);
 
+    const handleProgressTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+        if (!progressRef.current || !duration) return;
+        e.preventDefault();
+        isDraggingProg.current = true;
+        const apply = (x: number) => {
+            const t = getRatio(progressRef.current!, x) * duration;
+            seekTo(t);
+            if (audioRef.current) audioRef.current.currentTime = t;
+        };
+        apply(e.touches[0].clientX);
+        const onMove = (ev: TouchEvent) => { if (isDraggingProg.current) apply(ev.touches[0].clientX); };
+        const onEnd  = () => { isDraggingProg.current = false; window.removeEventListener("touchmove", onMove); window.removeEventListener("touchend", onEnd); };
+        window.addEventListener("touchmove", onMove, { passive: false });
+        window.addEventListener("touchend",  onEnd);
+    }, [duration, seekTo]);
+
     const handleVolumeMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (!volumeRef.current) return;
         isDraggingVol.current = true;
@@ -141,11 +157,15 @@ const PlayerBar = () => {
                     @keyframes pbSpin    { to{transform:rotate(360deg)} }
 
                     /* progress scrubber */
-                    .pb-scrubber { height:4px; background:rgba(0,0,0,.07); position:relative; cursor:pointer; transition:height .18s; user-select:none; }
+                    .pb-scrubber { height:4px; background:rgba(0,0,0,.07); position:relative; cursor:pointer; transition:height .18s; user-select:none; touch-action:none; }
                     .pb-scrubber:hover { height:6px; }
                     .pb-scrubber-fill { position:absolute; left:0; top:0; height:100%; background:linear-gradient(90deg,#00A98F,#34D4B8); transition:width .15s linear; }
                     .pb-scrubber-thumb { position:absolute; top:50%; transform:translate(-50%,-50%); width:13px; height:13px; border-radius:50%; background:#E8E8F4; border:2px solid #34D4B8; box-shadow:0 0 8px rgba(0,169,143,.5); opacity:0; transition:opacity .18s; pointer-events:none; }
                     .pb-scrubber:hover .pb-scrubber-thumb { opacity:1; }
+                    @media (max-width: 768px) {
+                        .pb-scrubber { height:6px; }
+                        .pb-scrubber-thumb { opacity:1; width:16px; height:16px; }
+                    }
 
                     /* ctrl button */
                     .pb-btn { display:flex; align-items:center; justify-content:center; border-radius:50%; border:none; cursor:pointer; transition:all .2s; background:transparent; flex-shrink:0; }
@@ -292,6 +312,7 @@ const PlayerBar = () => {
                             ref={progressRef}
                             className="pb-scrubber"
                             onMouseDown={handleProgressMouseDown}
+                            onTouchStart={handleProgressTouchStart}
                         >
                             <div className="pb-scrubber-fill" style={{ width:`${pct}%` }} />
                             <div className="pb-scrubber-thumb" style={{ left:`${pct}%` }} />
@@ -305,7 +326,8 @@ const PlayerBar = () => {
                             borderTop:"1px solid rgba(0,169,143,.15)",
                             boxShadow:"0 -8px 40px rgba(0,0,0,.08)",
                             display:"flex", alignItems:"center",
-                            padding: isMobile ? "0 12px" : "0 24px", gap: isMobile ? 10 : 16,
+                            padding: isMobile ? "0 12px" : "0 24px", gap: isMobile ? 8 : 16,
+                            paddingBottom: isMobile ? "calc(8px + env(safe-area-inset-bottom, 0px))" : undefined,
                         }}>
 
                             {/* ── LEFT: track info ── */}
@@ -357,24 +379,18 @@ const PlayerBar = () => {
                                 </div>
                             </div>
 
-                            {/* Mobile minimize button */}
-                            {isMobile && (
-                                <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)", flexShrink:0 }} title="Thu nhỏ">
-                                    <FaChevronDown style={{ fontSize:11 }} />
-                                </button>
-                            )}
-
                             {/* ── CENTER: controls + mini progress ── */}
                             <div style={{ flex: isMobile ? undefined : 1, display:"flex", flexDirection:"column", alignItems:"center", gap:8, minWidth:0, flexShrink: isMobile ? 0 : undefined }}>
 
                                 {/* Buttons */}
-                                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                                <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 4 : 6 }}>
                                     {!isMobile && <button onClick={toggleShuffle} className="pb-btn" style={{ width:32, height:32, color: isShuffle ? "#34D4B8" : "rgba(0,0,0,.45)", background: isShuffle ? "rgba(0,169,143,.12)" : "transparent" }}>
                                         <FaRandom style={{ fontSize:11 }} />
                                     </button>}
-                                    {!isMobile && <button onClick={handlePrev} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
-                                        <FaStepBackward style={{ fontSize:14 }} />
-                                    </button>}
+
+                                    <button onClick={handlePrev} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
+                                        <FaStepBackward style={{ fontSize: isMobile ? 13 : 14 }} />
+                                    </button>
 
                                     {/* Play/Pause — gradient circle */}
                                     <button
@@ -398,9 +414,10 @@ const PlayerBar = () => {
                                         }
                                     </button>
 
-                                    {!isMobile && <button onClick={next} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
-                                        <FaStepForward style={{ fontSize:14 }} />
-                                    </button>}
+                                    <button onClick={next} className="pb-btn" style={{ width:36, height:36, color:"rgba(0,0,0,.7)" }}>
+                                        <FaStepForward style={{ fontSize: isMobile ? 13 : 14 }} />
+                                    </button>
+
                                     {!isMobile && <button onClick={cycleRepeat} className="pb-btn" style={{ width:32, height:32, color: repeatMode !== "off" ? "#34D4B8" : "rgba(0,0,0,.45)", background: repeatMode !== "off" ? "rgba(0,169,143,.12)" : "transparent", position:"relative" }}>
                                         <FaRedo style={{ fontSize:11 }} />
                                         {repeatMode === "one" && (
@@ -418,6 +435,13 @@ const PlayerBar = () => {
                                     <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"rgba(0,0,0,.4)", minWidth:32 }}>{fmt(duration)}</span>
                                 </div>}
                             </div>
+
+                            {/* Mobile minimize button — sau controls */}
+                            {isMobile && (
+                                <button onClick={() => setMinimized(true)} className="pb-btn" style={{ width:32, height:32, color:"rgba(0,0,0,.4)", flexShrink:0 }} title="Thu nhỏ">
+                                    <FaChevronDown style={{ fontSize:11 }} />
+                                </button>
+                            )}
 
                             {/* ── RIGHT: queue + volume + minimize — hidden on mobile ── */}
                             {!isMobile && <div style={{ display:"flex", alignItems:"center", gap:8, width:260, flexShrink:0, justifyContent:"flex-end" }}>
@@ -475,7 +499,7 @@ const PlayerBar = () => {
                 </>
             )}
 
-            <div style={{ height: currentTrack && !minimized ? "76px" : "0" }} />
+            <div style={{ height: currentTrack && !minimized ? "76px" : "0", flexShrink: 0 }} />
         </>
     );
 };
