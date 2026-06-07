@@ -177,7 +177,7 @@ const AboutSection = () => {
             </section>
 
             {/* 3. CONTACT FORM SECTION */}
-            <section style={{ padding:"80px 0", position:"relative", background:"#F4F4FC" }}>
+            <section style={{ padding:"80px 0", position:"relative", overflow:"hidden", background:"#F4F4FC" }}>
                 {/* Teal glow bg */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
                     style={{ background: "radial-gradient(ellipse,rgba(0,169,143,0.07) 0%,transparent 70%)" }} />
