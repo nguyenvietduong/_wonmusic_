@@ -242,6 +242,7 @@ const Slider: React.FC = () => {
                 {Array.from({ length: 40 }, (_, i) => {
                     const h = Math.abs(Math.sin(i * 0.55)) * 16 + 6;
                     return <motion.rect key={i} x={i * 5} y={30 - h / 2} width={3} height={h} rx={1.5} fill="#34D4B8"
+                        initial={{ height: h }}
                         animate={{ height: [h, h * 1.9, h * 0.4, h] }}
                         transition={{ duration: 1.1, delay: i * 0.04, repeat: Infinity, ease: "easeInOut" }} />;
                 })}

@@ -106,7 +106,7 @@ export default function AboutPage() {
                 const a = .2 + Math.sin(i*.28+frame*.04) * .15;
                 ctx.fillStyle = `rgba(0,169,143,${a})`;
                 ctx.beginPath();
-                ctx.roundRect(i*bw+1, canvas.height-h, bw-2, h, 2);
+                try { ctx.roundRect(i*bw+1, canvas.height-h, bw-2, h, 2); } catch { ctx.rect(i*bw+1, canvas.height-h, bw-2, h); }
                 ctx.fill();
             }
             frame++;

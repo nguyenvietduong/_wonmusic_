@@ -70,7 +70,7 @@ export default function ArtistDetailPage() {
                 const a = .18 + Math.sin(i * .28 + frame * .04) * .1;
                 ctx.fillStyle = `rgba(0,169,143,${a})`;
                 ctx.beginPath();
-                ctx.roundRect(i * bw + 1, canvas.height - h, bw - 2, h, 2);
+                try { ctx.roundRect(i * bw + 1, canvas.height - h, bw - 2, h, 2); } catch { ctx.rect(i * bw + 1, canvas.height - h, bw - 2, h); }
                 ctx.fill();
             }
             frame++;

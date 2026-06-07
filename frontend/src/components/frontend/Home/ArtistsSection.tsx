@@ -84,15 +84,21 @@ const ArtistsSection = () => {
     return (
         <section className="music-section artists-section">
             <style>{`
+                /* Override music-section's overflow:hidden so iOS touch events reach the scroll container */
+                .artists-section {
+                    overflow: visible;
+                }
+                .artists-section .music-container {
+                    overflow-x: hidden;
+                }
+
                 .artists-scroll {
                     display: flex;
                     gap: 16px;
                     overflow-x: auto;
                     scroll-snap-type: x proximity;
-                    -webkit-overflow-scrolling: touch;
                     scrollbar-width: none;
                     padding-bottom: 8px;
-                    touch-action: pan-x;
                 }
                 .artists-scroll::-webkit-scrollbar { display: none; }
 

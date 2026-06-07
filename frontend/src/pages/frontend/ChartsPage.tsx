@@ -74,7 +74,7 @@ const ChartsPage = () => {
                 const alpha = 0.2 + Math.sin(i * 0.25 + frame * 0.035) * 0.12;
                 ctx.fillStyle = `rgba(0,169,143,${alpha})`;
                 ctx.beginPath();
-                ctx.roundRect(i * bw + 1, canvas.height - h, bw - 2, h, 2);
+                try { ctx.roundRect(i * bw + 1, canvas.height - h, bw - 2, h, 2); } catch { ctx.rect(i * bw + 1, canvas.height - h, bw - 2, h); }
                 ctx.fill();
             }
             frame++;
