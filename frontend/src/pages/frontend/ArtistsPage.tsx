@@ -208,6 +208,24 @@ const ArtistsPage = () => {
                 .ap-search:focus { border-color:rgba(0,169,143,.5); background:rgba(0,0,0,.04); }
                 .ap-search::placeholder { color:rgba(0,0,0,.35); }
 
+                .ap-genre-select {
+                    flex:1 1 auto;
+                    padding:9px 36px 9px 14px;
+                    background:rgba(0,0,0,0.05);
+                    border:1px solid rgba(0,0,0,0.1);
+                    border-radius:10px;
+                    font-size:12px; font-weight:700; letter-spacing:.5px;
+                    color:#0D0D1A;
+                    font-family:'Space Grotesk',sans-serif;
+                    outline:none; cursor:pointer;
+                    appearance:none; -webkit-appearance:none;
+                    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2334D4B8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+                    background-repeat:no-repeat;
+                    background-position:right 12px center;
+                    transition:border-color .2s;
+                }
+                .ap-genre-select:focus { border-color:rgba(0,169,143,.5); background-color:rgba(0,0,0,.04); }
+
                 .ap-page-btn {
                     width:34px; height:34px; border-radius:9px;
                     border:1px solid rgba(0,0,0,.1); background:rgba(0,0,0,.04);
@@ -322,14 +340,27 @@ const ArtistsPage = () => {
                         <input className="ap-search" placeholder={t.searchPlaceholder} value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
 
-                    {/* Genre tabs */}
-                    <div style={{ display:"flex", gap:5, flexWrap:"wrap", flex:1 }}>
-                        {GENRES.map(g => (
-                            <button key={g} className={`ap-genre-btn ${activeGenre === g ? "active" : ""}`} onClick={() => setActiveGenre(g)}>
-                                {g}
-                            </button>
-                        ))}
-                    </div>
+                    {/* Genre filter — select on mobile, buttons on desktop */}
+                    {isMobile ? (
+                        <select
+                            className="ap-genre-select"
+                            value={activeGenre}
+                            onChange={e => setActiveGenre(e.target.value)}
+                            style={{ color: activeGenre !== t.all ? "#34D4B8" : "#0D0D1A", borderColor: activeGenre !== t.all ? "rgba(0,169,143,.5)" : undefined }}
+                        >
+                            {GENRES.map(g => (
+                                <option key={g} value={g}>{g}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div style={{ display:"flex", gap:5, flexWrap:"wrap", flex:1 }}>
+                            {GENRES.map(g => (
+                                <button key={g} className={`ap-genre-btn ${activeGenre === g ? "active" : ""}`} onClick={() => setActiveGenre(g)}>
+                                    {g}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.4)", flexShrink:0 }}>
                         <span style={{ color:"#34D4B8", fontWeight:700 }}>{filtered.length}</span> {t.artistCount}
