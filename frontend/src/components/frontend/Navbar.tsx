@@ -385,7 +385,18 @@ const Navbar = () => {
                         )}
                     </button>
 
-                    {/* Nav links — ẩn hoàn toàn, điều hướng qua sidebar */}
+                    {/* Nav links — chỉ hiện trên desktop (xl) */}
+                    <nav className="hidden xl:flex items-center gap-1 ml-8">
+                        {navLinks.map(({ to, label }) => (
+                            <Link
+                                key={to}
+                                href={to}
+                                className={cn("nic-nav-link", pathname === to && "active")}
+                            >
+                                {label}
+                            </Link>
+                        ))}
+                    </nav>
 
                     {/* Search — desktop, ml-auto pushes it right */}
                     <div
@@ -484,9 +495,9 @@ const Navbar = () => {
                         )}
                     </div>
 
-                    {/* Hamburger — luôn hiện */}
+                    {/* Hamburger — chỉ hiện trên mobile/tablet, ẩn desktop */}
                     <button
-                        className="ml-auto xl:ml-0 rounded-md p-2 transition-colors"
+                        className="ml-auto xl:hidden rounded-md p-2 transition-colors"
                         style={{ background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", color: "#00A98F" }}
                         onClick={() => setIsSidebarOpen(true)}
                         aria-label={t.openMenu}
