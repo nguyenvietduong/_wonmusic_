@@ -2,15 +2,21 @@
 import { FaPhoneAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { companyConfig } from "@/config/company.config";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { usePlayerStore } from "@/stores/usePlayerStore";
 
 const PhoneButton = () => {
     const router = useRouter();
+    const isMobile = useIsMobile();
+    const currentTrack = usePlayerStore(s => s.currentTrack);
+    const bottom = isMobile && currentTrack ? 124 : 80;
 
     return (
         <div
             onClick={() => router.push("/lien-he")}
             title="Liên hệ ngay"
-            className="group fixed bottom-20 left-5 z-[9999] cursor-pointer flex items-center"
+            className="group fixed left-5 z-[9999] cursor-pointer flex items-center"
+            style={{ bottom, transition: "bottom .3s" }}
         >
             {/* Ping rings */}
             <span className="absolute w-14 h-14 rounded-full animate-ping opacity-30"
