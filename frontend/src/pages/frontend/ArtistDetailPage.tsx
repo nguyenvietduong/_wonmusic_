@@ -45,6 +45,8 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
     const [artist,       setArtist]       = useState<Artist | null>(null);
     const [tracks,       setTracks]       = useState<Track[]>([]);
     const [loading,      setLoading]      = useState(true);
+    const [fetchError,   setFetchError]   = useState(false);
+    const [retryCount,   setRetryCount]   = useState(0);
     const [activeTab,    setActiveTab]    = useState<"tracks" | "about">("tracks");
     const [hoveredTrack, setHoveredTrack] = useState<string | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -85,15 +87,18 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
         (async () => {
             try {
                 setLoading(true);
+                setFetchError(false);
                 const [a, t] = await Promise.all([
                     artistService.getById(id),
                     artistService.getTracks(id, { limit: 20 }),
                 ]);
                 setArtist(a);
                 setTracks(t.data);
+            } catch {
+                setFetchError(true);
             } finally { setLoading(false); }
         })();
-    }, [id]);
+    }, [id, retryCount]);
 
     const handlePlay = (track: Track, queue?: Track[]) => {
         if (currentTrack?.id === track._id) { togglePlay(); return; }
@@ -120,6 +125,20 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                 {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} style={{ height:52, background:"rgba(0,0,0,.03)", borderRadius:12, marginBottom:8, animation:`adpP ${1.4+i*.1}s ease-in-out infinite` }} />
                 ))}
+            </div>
+        </div>
+    );
+
+    if (fetchError) return (
+        <div style={{ minHeight:"100vh", background:"#F8F8FC", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Be Vietnam Pro',sans-serif" }}>
+            <div style={{ textAlign:"center" }}>
+                <div style={{ fontSize:56, marginBottom:14, opacity:.18 }}>⚠</div>
+                <p style={{ color:"rgba(0,0,0,.45)", marginBottom:8 }}>Không thể tải thông tin nghệ sĩ</p>
+                <p style={{ color:"rgba(0,0,0,.3)", fontSize:13, marginBottom:16 }}>Vui lòng thử lại sau</p>
+                <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
+                    <button onClick={() => setRetryCount(c => c + 1)} style={{ color:"#34D4B8", background:"none", border:"1px solid #34D4B8", borderRadius:8, padding:"6px 16px", cursor:"pointer", fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700 }}>Thử lại</button>
+                    <Link href="/artists" style={{ color:"rgba(0,0,0,.45)", textDecoration:"none", fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700, lineHeight:"32px" }}>← Quay lại nghệ sĩ</Link>
+                </div>
             </div>
         </div>
     );

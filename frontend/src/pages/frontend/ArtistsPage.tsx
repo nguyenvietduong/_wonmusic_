@@ -55,6 +55,8 @@ const ArtistsPage = () => {
     const [artists,     setArtists]     = useState<Artist[]>([]);
     const [filtered,    setFiltered]    = useState<Artist[]>([]);
     const [loading,     setLoading]     = useState(true);
+    const [fetchError,  setFetchError]  = useState(false);
+    const [retryCount,  setRetryCount]  = useState(0);
     const [activeGenre, setActiveGenre] = useState(t.all);
     const [search,      setSearch]      = useState("");
     const [page,        setPage]        = useState(1);
@@ -67,12 +69,15 @@ const ArtistsPage = () => {
         (async () => {
             try {
                 setLoading(true);
+                setFetchError(false);
                 const res = await artistService.getAll({ page, limit: LIMIT });
                 setArtists(res.data);
                 setTotal(res.pagination.total);
+            } catch {
+                setFetchError(true);
             } finally { setLoading(false); }
         })();
-    }, [page]);
+    }, [page, retryCount]);
 
     useEffect(() => { setActiveGenre(t.all); }, [lang]);
 
@@ -380,6 +385,18 @@ const ArtistsPage = () => {
                 {loading ? (
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16 }}>
                         {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} idx={i} />)}
+                    </div>
+                ) : fetchError ? (
+                    <div style={{ textAlign:"center", padding:"80px 0" }}>
+                        <div style={{ fontSize:52, marginBottom:16, opacity:.2 }}>⚠</div>
+                        <p style={{ fontSize:14, color:"rgba(0,0,0,.4)", marginBottom:16 }}>Không thể tải danh sách nghệ sĩ</p>
+                        <button
+                            className="btn-outline-music"
+                            onClick={() => setRetryCount(c => c + 1)}
+                            style={{ cursor:"pointer" }}
+                        >
+                            Thử lại
+                        </button>
                     </div>
                 ) : filtered.length === 0 ? (
                     <div style={{ textAlign:"center", padding:"80px 0" }}>
