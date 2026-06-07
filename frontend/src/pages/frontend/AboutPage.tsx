@@ -239,26 +239,29 @@ export default function AboutPage() {
 
                 {/* ══════════ HERO ══════════ */}
                 <div style={{
-                    minHeight:"100vh", position:"relative", overflow:"hidden",
+                    minHeight: isMobile ? "auto" : "100vh",
+                    position:"relative", overflow:"hidden",
                     background:"linear-gradient(135deg,#F0F2FA 0%,#E8ECF8 45%,#EAEAFB 75%,#F0F2FA 100%)",
                     display:"flex", alignItems:"center",
                 }}>
                     <div ref={notesBgRef} style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }} />
-                    <canvas ref={canvasRef} style={{ position:"absolute", bottom:0, left:0, width:"100%", height:120, opacity:.35, pointerEvents:"none" }} />
+                    <canvas ref={canvasRef} style={{ position:"absolute", bottom:0, left:0, width:"100%", height: isMobile ? 60 : 120, opacity:.35, pointerEvents:"none" }} />
 
-                    {/* Vinyl BG */}
-                    <div style={{ position:"absolute", right:-100, top:"50%", transform:"translateY(-50%)", opacity:.08, pointerEvents:"none" }}>
-                        <div ref={vinylRef} style={{
-                            width:560, height:560, borderRadius:"50%",
-                            background:"conic-gradient(from 0deg,#D8DCF0,#00A98F,#C8CEE8,#D8DCF0,#D0D4EC,#00A98F,#D8DCF0)",
-                            border:"2px solid rgba(0,169,143,.3)",
-                            display:"flex", alignItems:"center", justifyContent:"center",
-                        }}>
-                            <div style={{ width:180, height:180, borderRadius:"50%", background:"#00A98F", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                <div style={{ width:50, height:50, borderRadius:"50%", background:"#F8F8FC" }} />
+                    {/* Vinyl BG — ẩn trên mobile để không che nội dung */}
+                    {!isMobile && (
+                        <div style={{ position:"absolute", right:-100, top:"50%", transform:"translateY(-50%)", opacity:.08, pointerEvents:"none" }}>
+                            <div ref={vinylRef} style={{
+                                width:560, height:560, borderRadius:"50%",
+                                background:"conic-gradient(from 0deg,#D8DCF0,#00A98F,#C8CEE8,#D8DCF0,#D0D4EC,#00A98F,#D8DCF0)",
+                                border:"2px solid rgba(0,169,143,.3)",
+                                display:"flex", alignItems:"center", justifyContent:"center",
+                            }}>
+                                <div style={{ width:180, height:180, borderRadius:"50%", background:"#00A98F", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                    <div style={{ width:50, height:50, borderRadius:"50%", background:"#F8F8FC" }} />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Grid lines */}
                     <div style={{ position:"absolute", inset:0, opacity:.03, pointerEvents:"none" }}>
@@ -267,8 +270,8 @@ export default function AboutPage() {
                         ))}
                     </div>
 
-                    <div style={{ maxWidth:1440, margin:"0 auto", padding:"120px 32px 80px", position:"relative", zIndex:2, width:"100%" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20, animation:"abFadeUp .5s both" }}>
+                    <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "96px 16px 56px" : "120px 32px 80px", position:"relative", zIndex:2, width:"100%" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom: isMobile ? 14 : 20, animation:"abFadeUp .5s both" }}>
                             <span style={{ width:6, height:6, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"abDotPulse 1.5s ease-in-out infinite" }} />
                             <span style={{ fontSize:11, color:"#34D4B8", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:600 }}>
                                 {t.hero.label}
@@ -277,24 +280,24 @@ export default function AboutPage() {
 
                         <h1 style={{
                             fontFamily: "'Be Vietnam Pro',sans-serif",
-                            fontSize:"clamp(64px,10vw,100px)",
-                            color:"#0D0D1A", lineHeight: 1, letterSpacing:4,
-                            marginBottom:24, animation:"abFadeUp .5s .1s both",
+                            fontSize: isMobile ? "clamp(34px,9vw,52px)" : "clamp(64px,10vw,100px)",
+                            color:"#0D0D1A", lineHeight: 1.05, letterSpacing: isMobile ? 1 : 4,
+                            marginBottom: isMobile ? 16 : 24, animation:"abFadeUp .5s .1s both",
                         }}>
                             {t.hero.line1}<br />
                             <span style={{ color:"#34D4B8" }}>{t.hero.highlight}</span>
                             {t.hero.line2 && <><br />{t.hero.line2}</>}
                         </h1>
 
-                        <p style={{ fontSize:16, color:"rgba(0,0,0,.65)", maxWidth:520, lineHeight:1.85, marginBottom:40, animation:"abFadeUp .5s .2s both" }}>
+                        <p style={{ fontSize: isMobile ? 14 : 16, color:"rgba(0,0,0,.65)", maxWidth:520, lineHeight:1.85, marginBottom: isMobile ? 24 : 40, animation:"abFadeUp .5s .2s both" }}>
                             {heroSubtitle}
                         </p>
 
                         {/* EQ bars */}
-                        <div style={{ display:"flex", alignItems:"flex-end", gap:3, height:48, marginBottom:40, animation:"abFadeUp .5s .3s both" }}>
-                            {[30,55,42,78,48,68,35,88,52,62,72,36,58,44,82,46,66,33,76,50,40,70,55,85,45].map((h,i) => (
+                        <div style={{ display:"flex", alignItems:"flex-end", gap: isMobile ? 2 : 3, height: isMobile ? 32 : 48, marginBottom: isMobile ? 24 : 40, animation:"abFadeUp .5s .3s both" }}>
+                            {(isMobile ? [30,55,42,78,48,68,35,88,52,62,72,36,58,44,82] : [30,55,42,78,48,68,35,88,52,62,72,36,58,44,82,46,66,33,76,50,40,70,55,85,45]).map((h,i) => (
                                 <div key={i} style={{
-                                    width:5, height:`${h}%`,
+                                    width: isMobile ? 4 : 5, height:`${h}%`,
                                     background:`rgba(0,169,143,${.25+i*.015})`,
                                     borderRadius:3, transformOrigin:"bottom",
                                     animation:`abEq ${.36+(i%6)*.13}s ease-in-out infinite`,
@@ -303,13 +306,13 @@ export default function AboutPage() {
                             ))}
                         </div>
 
-                        <div style={{ display:"flex", gap:14, flexWrap:"wrap", animation:"abFadeUp .5s .4s both" }}>
+                        <div style={{ display:"flex", gap: isMobile ? 10 : 14, flexWrap:"wrap", animation:"abFadeUp .5s .4s both" }}>
                             <Link href="/artists" style={{
                                 display:"inline-flex", alignItems:"center", gap:10,
-                                padding:"15px 32px", borderRadius:100,
+                                padding: isMobile ? "12px 24px" : "15px 32px", borderRadius:100,
                                 background:"linear-gradient(135deg,#00A98F,#34D4B8)",
                                 color:"#fff", textDecoration:"none",
-                                fontSize:14, fontWeight:600,
+                                fontSize: isMobile ? 13 : 14, fontWeight:600,
                                 boxShadow:"0 8px 28px rgba(0,169,143,.4)",
                                 transition:"all .25s",
                             }}>
@@ -317,10 +320,10 @@ export default function AboutPage() {
                             </Link>
                             <Link href="/lien-he" style={{
                                 display:"inline-flex", alignItems:"center", gap:10,
-                                padding:"14px 28px", borderRadius:100,
+                                padding: isMobile ? "11px 20px" : "14px 28px", borderRadius:100,
                                 border:"1.5px solid rgba(0,0,0,.12)",
                                 color:"rgba(0,0,0,.7)", textDecoration:"none",
-                                fontSize:14, fontWeight:500,
+                                fontSize: isMobile ? 13 : 14, fontWeight:500,
                                 background:"rgba(0,0,0,.05)", backdropFilter:"blur(8px)",
                                 transition:"all .25s",
                             }}>
@@ -331,8 +334,8 @@ export default function AboutPage() {
                 </div>
 
                 {/* ══════════ STATS ══════════ */}
-                <div style={{ background:"rgba(0,169,143,0.06)", padding:"80px 0", borderBottom:"1px solid rgba(0,169,143,.1)" }}>
-                    <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px" }}>
+                <div style={{ background:"rgba(0,169,143,0.06)", padding: isMobile ? "48px 0" : "80px 0", borderBottom:"1px solid rgba(0,169,143,.1)" }}>
+                    <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "0 16px" : "0 32px" }}>
                         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:20 }}>
                             {displayStats.map(({ value, label, icon }, i) => (
                                 <div key={label} className="ab-stat-card" style={{ animationDelay:`${i*.1}s` }}>
@@ -470,8 +473,8 @@ export default function AboutPage() {
                 </div>
 
                 {/* ══════════ SERVICES ══════════ */}
-                <div style={{ padding:"100px 0", background:"#F8F8FC" }}>
-                    <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px" }}>
+                <div style={{ padding: isMobile ? "60px 0" : "100px 0", background:"#F8F8FC" }}>
+                    <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "0 16px" : "0 32px" }}>
                         <div style={{ textAlign:"center", marginBottom:56 }}>
                             <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:14 }}>
                                 <span style={{ width:24, height:1, background:"#00A98F" }} />

@@ -274,103 +274,90 @@ export default function ArtistDetailPage() {
             {/* ══════════════════════════════════════
                 HERO BANNER
             ══════════════════════════════════════ */}
-            <div style={{ height:560, position:"relative", overflow:"hidden", background:"#F0F2FA" }}>
+            <div style={{ position:"relative", overflow:"hidden", background:"#F0F2FA",
+                height: isMobile ? "auto" : 560,
+            }}>
 
-                {/* Atmospheric blur — brighter so artist colors bleed through */}
+                {/* Atmospheric blur bg */}
                 {artist.avatar && (
-                    <img
-                        src={artist.avatar} alt="" aria-hidden="true"
-                        style={{
-                            position:"absolute", inset:0,
-                            width:"100%", height:"100%", objectFit:"cover",
-                            filter:"blur(60px) brightness(0.65) saturate(2)",
-                            transform:"scale(1.15)", zIndex:0,
-                        }}
-                    />
+                    <img src={artist.avatar} alt="" aria-hidden="true" style={{
+                        position:"absolute", inset:0,
+                        width:"100%", height:"100%", objectFit:"cover",
+                        filter:"blur(60px) brightness(0.65) saturate(2)",
+                        transform:"scale(1.15)", zIndex:0,
+                    }} />
                 )}
 
-                {/* Gradient overlays: teal glow left + indigo accent top-right + darken */}
+                {/* Gradient overlays */}
                 <div style={{ position:"absolute", inset:0, zIndex:1, background:[
                     "radial-gradient(ellipse 55% 80% at 30% 70%, rgba(0,169,143,.12) 0%, transparent 62%)",
                     "radial-gradient(ellipse 40% 50% at 72% 25%, rgba(99,102,241,.07) 0%, transparent 55%)",
                     "linear-gradient(160deg, rgba(240,242,250,.72) 0%, rgba(240,242,250,.28) 45%, rgba(240,242,250,.08) 70%)",
                 ].join(",") }} />
 
-                {/* Vinyl record — right-side music decoration */}
-                <div style={{
-                    position:"absolute", right:-70, top:"50%",
-                    width:480, height:480, borderRadius:"50%",
-                    animation:"adpVinyl 22s linear infinite",
-                    zIndex:2,
-                    background:"conic-gradient(from 0deg,#D8DCF0,#C8CEE8 5%,#D8DCF0 10%,#C8CEE8 15%,#D8DCF0 20%,#C8CEE8 25%,#D8DCF0 30%,#C8CEE8 35%,#D8DCF0 40%,#C8CEE8 45%,#D8DCF0 50%,#C8CEE8 55%,#D8DCF0 60%,#C8CEE8 65%,#D8DCF0 70%,#C8CEE8 75%,#D8DCF0 80%,#C8CEE8 85%,#D8DCF0 90%,#C8CEE8 95%,#D8DCF0)",
-                    boxShadow:"inset 0 0 80px rgba(0,0,0,.08), 0 0 0 1px rgba(0,169,143,.12), 0 0 120px rgba(0,169,143,.06)",
-                    opacity:.65,
-                }}>
-                    {/* Groove rings */}
-                    {[62,95,128,162,196,228].map(r => (
-                        <div key={r} style={{
-                            position:"absolute", top:"50%", left:"50%",
-                            transform:"translate(-50%,-50%)",
-                            width:r*2, height:r*2, borderRadius:"50%",
-                            border:"1px solid rgba(0,0,0,.1)",
-                        }} />
-                    ))}
-                    {/* Center label */}
+                {/* Vinyl record — desktop only */}
+                {!isMobile && (
                     <div style={{
-                        position:"absolute", top:"50%", left:"50%",
-                        transform:"translate(-50%,-50%)",
-                        width:128, height:128, borderRadius:"50%",
-                        background:"linear-gradient(135deg,#F0F4FC,#E8EEF8)",
-                        border:"1px solid rgba(0,169,143,.28)",
-                        boxShadow:"0 0 44px rgba(0,169,143,.22)",
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                        animation:"adpPulse 4s ease-in-out infinite",
+                        position:"absolute", right:-70, top:"50%",
+                        width:480, height:480, borderRadius:"50%",
+                        animation:"adpVinyl 22s linear infinite",
+                        zIndex:2,
+                        background:"conic-gradient(from 0deg,#D8DCF0,#C8CEE8 5%,#D8DCF0 10%,#C8CEE8 15%,#D8DCF0 20%,#C8CEE8 25%,#D8DCF0 30%,#C8CEE8 35%,#D8DCF0 40%,#C8CEE8 45%,#D8DCF0 50%,#C8CEE8 55%,#D8DCF0 60%,#C8CEE8 65%,#D8DCF0 70%,#C8CEE8 75%,#D8DCF0 80%,#C8CEE8 85%,#D8DCF0 90%,#C8CEE8 95%,#D8DCF0)",
+                        boxShadow:"inset 0 0 80px rgba(0,0,0,.08), 0 0 0 1px rgba(0,169,143,.12), 0 0 120px rgba(0,169,143,.06)",
+                        opacity:.65,
                     }}>
-                        <div style={{ width:20, height:20, borderRadius:"50%", background:"#F0F2FA", border:"2px solid rgba(0,169,143,.4)" }} />
+                        {[62,95,128,162,196,228].map(r => (
+                            <div key={r} style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:r*2, height:r*2, borderRadius:"50%", border:"1px solid rgba(0,0,0,.1)" }} />
+                        ))}
+                        <div style={{
+                            position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)",
+                            width:128, height:128, borderRadius:"50%",
+                            background:"linear-gradient(135deg,#F0F4FC,#E8EEF8)",
+                            border:"1px solid rgba(0,169,143,.28)", boxShadow:"0 0 44px rgba(0,169,143,.22)",
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                            animation:"adpPulse 4s ease-in-out infinite",
+                        }}>
+                            <div style={{ width:20, height:20, borderRadius:"50%", background:"#F0F2FA", border:"2px solid rgba(0,169,143,.4)" }} />
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* Right-side vignette so vinyl doesn't overwhelm artist info */}
-                <div style={{ position:"absolute", inset:0, zIndex:3, background:"linear-gradient(to right, transparent 50%, rgba(240,242,250,.5) 100%)" }} />
+                {/* Vignette — desktop only */}
+                {!isMobile && <div style={{ position:"absolute", inset:0, zIndex:3, background:"linear-gradient(to right, transparent 50%, rgba(240,242,250,.5) 100%)" }} />}
 
-                {/* Bottom fade to page bg */}
-                <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"80%", background:"linear-gradient(to bottom,transparent 0%,rgba(248,248,252,.9) 55%,#F8F8FC 100%)", zIndex:4 }} />
+                {/* Bottom fade */}
+                <div style={{ position:"absolute", bottom:0, left:0, right:0, height: isMobile ? "50%" : "80%", background:"linear-gradient(to bottom,transparent 0%,rgba(248,248,252,.9) 55%,#F8F8FC 100%)", zIndex:4 }} />
 
                 {/* Waveform canvas */}
-                <canvas ref={canvasRef} style={{ position:"absolute", bottom:0, left:0, width:"100%", height:90, opacity:.6, pointerEvents:"none", zIndex:5 }} />
+                <canvas ref={canvasRef} style={{ position:"absolute", bottom:0, left:0, width:"100%", height: isMobile ? 48 : 90, opacity:.5, pointerEvents:"none", zIndex:5 }} />
 
-                {/* Back link — same centering wrapper as navbar */}
-                <div style={{ position:"absolute", top:108, left:0, right:0, zIndex:20 }}>
-                    <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px" }}>
-                        <Link href="/artists" style={{
-                            display:"inline-flex", alignItems:"center", gap:8,
-                            color:"rgba(0,0,0,.6)", textDecoration:"none", fontSize:13,
-                            background:"rgba(248,248,252,.8)", backdropFilter:"blur(10px)",
-                            padding:"8px 16px", borderRadius:9,
-                            border:"1px solid rgba(0,0,0,.1)",
-                            fontFamily:"'Space Grotesk',sans-serif", fontWeight:600,
-                        }}>
-                            ← Nghệ sĩ
-                        </Link>
-                    </div>
-                </div>
+                {/* ── MOBILE HERO ── */}
+                {isMobile ? (
+                    <div style={{ position:"relative", zIndex:20, padding:"76px 16px 28px", display:"flex", flexDirection:"column", alignItems:"center" }}>
 
-                {/* Artist identity row — same centering wrapper as navbar */}
-                <div style={{ position:"absolute", bottom:0, left:0, right:0, zIndex:20, paddingBottom:36 }}>
-                    <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px" }}>
-                    <div style={{ display:"flex", alignItems:"flex-end", gap:24, flexWrap:"wrap" }}>
+                        {/* Back link */}
+                        <div style={{ alignSelf:"flex-start", marginBottom:18 }}>
+                            <Link href="/artists" style={{
+                                display:"inline-flex", alignItems:"center", gap:7,
+                                color:"rgba(0,0,0,.6)", textDecoration:"none", fontSize:12,
+                                background:"rgba(248,248,252,.85)", backdropFilter:"blur(10px)",
+                                padding:"7px 14px", borderRadius:9,
+                                border:"1px solid rgba(0,0,0,.1)",
+                                fontFamily:"'Space Grotesk',sans-serif", fontWeight:600,
+                            }}>← Nghệ sĩ</Link>
+                        </div>
 
                         {/* Avatar */}
-                        <div style={{ position:"relative", flexShrink:0, animation:"adpFadeUp .4s both" }}>
-                            <div style={{ position:"absolute", inset:-7, borderRadius:"50%", border:"1.5px dashed rgba(0,169,143,.35)", animation:"adpRing 10s linear infinite", zIndex:0 }} />
+                        <div style={{ position:"relative", marginBottom:12, animation:"adpFadeUp .4s both" }}>
+                            <div style={{ position:"absolute", inset:-6, borderRadius:"50%", border:"1.5px dashed rgba(0,169,143,.35)", animation:"adpRing 10s linear infinite", zIndex:0 }} />
                             <div style={{
-                                width:132, height:132, borderRadius:"50%",
-                                border:"3px solid rgba(0,169,143,.35)",
+                                width:96, height:96, borderRadius:"50%",
+                                border:"3px solid rgba(0,169,143,.4)",
                                 overflow:"hidden", position:"relative", zIndex:1,
                                 background:AVATAR_GRADIENTS[0],
                                 display:"flex", alignItems:"center", justifyContent:"center",
-                                fontFamily:"'Space Grotesk',sans-serif", fontSize:42, fontWeight:700, color:"#00A98F",
-                                boxShadow:"0 8px 48px rgba(0,0,0,.15),0 0 0 5px rgba(0,169,143,.12)",
+                                fontFamily:"'Space Grotesk',sans-serif", fontSize:30, fontWeight:700, color:"#00A98F",
+                                boxShadow:"0 6px 32px rgba(0,0,0,.18), 0 0 0 4px rgba(0,169,143,.13)",
                             }}>
                                 {artist.avatar
                                     ? <img src={artist.avatar} alt={artist.name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
@@ -379,64 +366,64 @@ export default function ArtistDetailPage() {
                             </div>
                             {artist.verified && (
                                 <div style={{
-                                    position:"absolute", bottom:5, right:5, zIndex:2,
-                                    width:30, height:30, borderRadius:"50%",
+                                    position:"absolute", bottom:3, right:3, zIndex:2,
+                                    width:24, height:24, borderRadius:"50%",
                                     background:"linear-gradient(135deg,#00A98F,#34D4B8)",
                                     color:"#F8F8FC", display:"flex", alignItems:"center", justifyContent:"center",
-                                    fontSize:12, fontWeight:800, border:"3px solid #F8F8FC",
-                                    boxShadow:"0 2px 14px rgba(0,169,143,.7)",
+                                    fontSize:10, fontWeight:800, border:"2px solid #F8F8FC",
+                                    boxShadow:"0 2px 10px rgba(0,169,143,.7)",
                                 }}>✓</div>
                             )}
                         </div>
 
-                        {/* Name / genre / stats */}
-                        <div style={{ flex:1, minWidth:0, animation:"adpSlideIn .5s both" }}>
-                            {artist.verified && (
-                                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:7 }}>
-                                    <span style={{ width:5, height:5, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"adpDot 1.6s ease-in-out infinite" }} />
-                                    <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"#34D4B8", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:700 }}>Nghệ sĩ xác minh</span>
-                                </div>
-                            )}
-                            <h1 style={{
-                                fontFamily:"'Be Vietnam Pro',sans-serif", fontWeight:700,
-                                fontSize:"clamp(38px,6vw,72px)", color:"#0D0D1A",
-                                lineHeight:.93, marginBottom:8,
-                                textShadow:"0 2px 12px rgba(0,0,0,.12)",
-                            }}>
-                                {artist.name}
-                            </h1>
-                            {artist.genre && (
-                                <span style={{
-                                    display:"inline-block", fontFamily:"'Space Grotesk',sans-serif",
-                                    fontSize:9, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase",
-                                    color:"#34D4B8", background:"rgba(0,169,143,.12)",
-                                    border:"1px solid rgba(0,169,143,.3)",
-                                    padding:"3px 12px", borderRadius:100, marginBottom:14,
-                                }}>
-                                    {artist.genre}
-                                </span>
-                            )}
-                            <div style={{ display:"flex", gap:24, alignItems:"center" }}>
-                                {[
-                                    { label:"Followers",    value: fmt.followers(artist.followers) },
-                                    { label:"Bài hát",      value: tracks.length },
-                                    { label:"Tổng lượt nghe", value: fmt.plays(totalPlays) },
-                                ].map(({ label, value }, i) => (
-                                    <div key={label} style={{ animation:`adpFadeUp .4s ${i*.08}s both` }}>
-                                        <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:18, fontWeight:700, color:"#0D0D1A", letterSpacing:"-0.5px" }}>{value}</div>
-                                        <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.45)", textTransform:"uppercase", letterSpacing:"1.5px" }}>{label}</div>
-                                    </div>
-                                ))}
+                        {/* Verified badge */}
+                        {artist.verified && (
+                            <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:6 }}>
+                                <span style={{ width:4, height:4, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"adpDot 1.6s ease-in-out infinite" }} />
+                                <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:8, color:"#34D4B8", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:700 }}>Nghệ sĩ xác minh</span>
                             </div>
+                        )}
+
+                        {/* Name */}
+                        <h1 style={{
+                            fontFamily:"'Be Vietnam Pro',sans-serif", fontWeight:700,
+                            fontSize:"clamp(26px,7vw,40px)", color:"#0D0D1A",
+                            lineHeight:1.05, marginBottom:8, textAlign:"center",
+                            textShadow:"0 2px 10px rgba(0,0,0,.1)",
+                        }}>{artist.name}</h1>
+
+                        {/* Genre */}
+                        {artist.genre && (
+                            <span style={{
+                                display:"inline-block", fontFamily:"'Space Grotesk',sans-serif",
+                                fontSize:9, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase",
+                                color:"#34D4B8", background:"rgba(0,169,143,.12)",
+                                border:"1px solid rgba(0,169,143,.3)",
+                                padding:"3px 12px", borderRadius:100, marginBottom:16,
+                            }}>{artist.genre}</span>
+                        )}
+
+                        {/* Stats */}
+                        <div style={{ display:"flex", gap:20, alignItems:"center", marginBottom:18 }}>
+                            {[
+                                { label:"Followers", value: fmt.followers(artist.followers) },
+                                { label:"Bài hát",   value: tracks.length },
+                                { label:"Lượt nghe", value: fmt.plays(totalPlays) },
+                            ].map(({ label, value }, i) => (
+                                <div key={label} style={{ textAlign:"center", animation:`adpFadeUp .4s ${i*.08}s both` }}>
+                                    <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:16, fontWeight:700, color:"#0D0D1A", letterSpacing:"-0.3px" }}>{value}</div>
+                                    <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:8, color:"rgba(0,0,0,.45)", textTransform:"uppercase", letterSpacing:"1.5px" }}>{label}</div>
+                                </div>
+                            ))}
                         </div>
 
                         {/* Actions */}
-                        <div style={{ display:"flex", flexDirection:"column", gap:12, alignItems:"flex-end", animation:"adpFadeUp .55s both" }}>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, animation:"adpFadeUp .55s both" }}>
                             <button className="adp-play-all" onClick={() => tracks.length && handlePlay(tracks[0])}>
-                                <span style={{ fontSize:14 }}>▶</span> Phát tất cả
+                                <span style={{ fontSize:13 }}>▶</span> Phát tất cả
                             </button>
                             {hasSocial && (
-                                <div style={{ display:"flex", gap:7 }}>
+                                <div style={{ display:"flex", gap:8 }}>
                                     {artist.socialLinks?.facebook  && <a href={artist.socialLinks.facebook}  target="_blank" rel="noreferrer" className="adp-social-icon" title="Facebook"><FaFacebookF  size={11}/></a>}
                                     {artist.socialLinks?.instagram && <a href={artist.socialLinks.instagram} target="_blank" rel="noreferrer" className="adp-social-icon" title="Instagram"><FaInstagram size={11}/></a>}
                                     {artist.socialLinks?.youtube   && <a href={artist.socialLinks.youtube}   target="_blank" rel="noreferrer" className="adp-social-icon" title="YouTube"><FaYoutube    size={11}/></a>}
@@ -445,14 +432,126 @@ export default function ArtistDetailPage() {
                             )}
                         </div>
                     </div>
-                    </div>
-                </div>
+
+                ) : (
+                    /* ── DESKTOP HERO ── */
+                    <>
+                        {/* Back link */}
+                        <div style={{ position:"absolute", top:108, left:0, right:0, zIndex:20 }}>
+                            <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px" }}>
+                                <Link href="/artists" style={{
+                                    display:"inline-flex", alignItems:"center", gap:8,
+                                    color:"rgba(0,0,0,.6)", textDecoration:"none", fontSize:13,
+                                    background:"rgba(248,248,252,.8)", backdropFilter:"blur(10px)",
+                                    padding:"8px 16px", borderRadius:9,
+                                    border:"1px solid rgba(0,0,0,.1)",
+                                    fontFamily:"'Space Grotesk',sans-serif", fontWeight:600,
+                                }}>
+                                    ← Nghệ sĩ
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Artist identity row */}
+                        <div style={{ position:"absolute", bottom:0, left:0, right:0, zIndex:20, paddingBottom:36 }}>
+                            <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px" }}>
+                            <div style={{ display:"flex", alignItems:"flex-end", gap:24, flexWrap:"wrap" }}>
+
+                                {/* Avatar */}
+                                <div style={{ position:"relative", flexShrink:0, animation:"adpFadeUp .4s both" }}>
+                                    <div style={{ position:"absolute", inset:-7, borderRadius:"50%", border:"1.5px dashed rgba(0,169,143,.35)", animation:"adpRing 10s linear infinite", zIndex:0 }} />
+                                    <div style={{
+                                        width:132, height:132, borderRadius:"50%",
+                                        border:"3px solid rgba(0,169,143,.35)",
+                                        overflow:"hidden", position:"relative", zIndex:1,
+                                        background:AVATAR_GRADIENTS[0],
+                                        display:"flex", alignItems:"center", justifyContent:"center",
+                                        fontFamily:"'Space Grotesk',sans-serif", fontSize:42, fontWeight:700, color:"#00A98F",
+                                        boxShadow:"0 8px 48px rgba(0,0,0,.15),0 0 0 5px rgba(0,169,143,.12)",
+                                    }}>
+                                        {artist.avatar
+                                            ? <img src={artist.avatar} alt={artist.name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                                            : getInitials(artist.name)
+                                        }
+                                    </div>
+                                    {artist.verified && (
+                                        <div style={{
+                                            position:"absolute", bottom:5, right:5, zIndex:2,
+                                            width:30, height:30, borderRadius:"50%",
+                                            background:"linear-gradient(135deg,#00A98F,#34D4B8)",
+                                            color:"#F8F8FC", display:"flex", alignItems:"center", justifyContent:"center",
+                                            fontSize:12, fontWeight:800, border:"3px solid #F8F8FC",
+                                            boxShadow:"0 2px 14px rgba(0,169,143,.7)",
+                                        }}>✓</div>
+                                    )}
+                                </div>
+
+                                {/* Name / genre / stats */}
+                                <div style={{ flex:1, minWidth:0, animation:"adpSlideIn .5s both" }}>
+                                    {artist.verified && (
+                                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:7 }}>
+                                            <span style={{ width:5, height:5, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"adpDot 1.6s ease-in-out infinite" }} />
+                                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"#34D4B8", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:700 }}>Nghệ sĩ xác minh</span>
+                                        </div>
+                                    )}
+                                    <h1 style={{
+                                        fontFamily:"'Be Vietnam Pro',sans-serif", fontWeight:700,
+                                        fontSize:"clamp(38px,6vw,72px)", color:"#0D0D1A",
+                                        lineHeight:.93, marginBottom:8,
+                                        textShadow:"0 2px 12px rgba(0,0,0,.12)",
+                                    }}>
+                                        {artist.name}
+                                    </h1>
+                                    {artist.genre && (
+                                        <span style={{
+                                            display:"inline-block", fontFamily:"'Space Grotesk',sans-serif",
+                                            fontSize:9, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase",
+                                            color:"#34D4B8", background:"rgba(0,169,143,.12)",
+                                            border:"1px solid rgba(0,169,143,.3)",
+                                            padding:"3px 12px", borderRadius:100, marginBottom:14,
+                                        }}>
+                                            {artist.genre}
+                                        </span>
+                                    )}
+                                    <div style={{ display:"flex", gap:24, alignItems:"center" }}>
+                                        {[
+                                            { label:"Followers",    value: fmt.followers(artist.followers) },
+                                            { label:"Bài hát",      value: tracks.length },
+                                            { label:"Tổng lượt nghe", value: fmt.plays(totalPlays) },
+                                        ].map(({ label, value }, i) => (
+                                            <div key={label} style={{ animation:`adpFadeUp .4s ${i*.08}s both` }}>
+                                                <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:18, fontWeight:700, color:"#0D0D1A", letterSpacing:"-0.5px" }}>{value}</div>
+                                                <div style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.45)", textTransform:"uppercase", letterSpacing:"1.5px" }}>{label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div style={{ display:"flex", flexDirection:"column", gap:12, alignItems:"flex-end", animation:"adpFadeUp .55s both" }}>
+                                    <button className="adp-play-all" onClick={() => tracks.length && handlePlay(tracks[0])}>
+                                        <span style={{ fontSize:14 }}>▶</span> Phát tất cả
+                                    </button>
+                                    {hasSocial && (
+                                        <div style={{ display:"flex", gap:7 }}>
+                                            {artist.socialLinks?.facebook  && <a href={artist.socialLinks.facebook}  target="_blank" rel="noreferrer" className="adp-social-icon" title="Facebook"><FaFacebookF  size={11}/></a>}
+                                            {artist.socialLinks?.instagram && <a href={artist.socialLinks.instagram} target="_blank" rel="noreferrer" className="adp-social-icon" title="Instagram"><FaInstagram size={11}/></a>}
+                                            {artist.socialLinks?.youtube   && <a href={artist.socialLinks.youtube}   target="_blank" rel="noreferrer" className="adp-social-icon" title="YouTube"><FaYoutube    size={11}/></a>}
+                                            {artist.socialLinks?.tiktok    && <a href={artist.socialLinks.tiktok}    target="_blank" rel="noreferrer" className="adp-social-icon" title="TikTok"><FaTiktok      size={11}/></a>}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* ══════════════════════════════════════
                 BODY
             ══════════════════════════════════════ */}
-            <div style={{ maxWidth:1440, margin:"0 auto", padding:"32px 32px 80px" }}>
+            <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "24px 16px 100px" : "32px 32px 80px" }}>
 
                 {/* Tabs */}
                 <div style={{ display:"flex", gap:8, marginBottom:36 }}>
