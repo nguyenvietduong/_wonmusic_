@@ -1,12 +1,14 @@
 'use client';
 import { bannerSectionText } from "@/locales/contact/bannerSection";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const EQ_H = [38, 72, 52, 88, 44, 78, 58, 92, 46, 68, 55, 82, 40, 76, 62];
 
 const PageBannerSection = () => {
     const { lang } = useLanguageStore();
     const t = bannerSectionText[lang];
+    const isMobile = useIsMobile();
 
     return (
         <div style={{ position:"relative", overflow:"hidden", background:"#F0F2FA" }}>
@@ -61,7 +63,7 @@ const PageBannerSection = () => {
             <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80, background:"linear-gradient(to bottom, transparent, #F8F8FC)", pointerEvents:"none" }} />
 
             {/* ── Content ── */}
-            <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px", position:"relative", zIndex:2, paddingTop:148, paddingBottom:72 }}>
+            <div style={{ maxWidth:1440, margin:"0 auto", padding:`0 ${isMobile ? "16px" : "32px"}`, position:"relative", zIndex:2, paddingTop: isMobile ? 96 : 148, paddingBottom: isMobile ? 48 : 72 }}>
                 {/* Label */}
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:18, animation:"ctFadeUp .35s both" }}>
                     <span style={{ width:6, height:6, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"ctDot 1.6s ease-in-out infinite" }} />

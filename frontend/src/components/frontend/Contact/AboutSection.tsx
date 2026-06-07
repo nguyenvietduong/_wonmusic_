@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { sendMail } from '@/services/sendMail';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
     Phone, Mail, MapPin, MessageCircle,
     ArrowUpRight, Send, User, Edit3, AlertCircle
@@ -25,6 +26,7 @@ interface FormErrors {
 const AboutSection = () => {
     const { lang } = useLanguageStore();
     const { fetch: fetchSettings, loaded: settingsLoaded } = useSettingsStore();
+    const isMobile = useIsMobile();
     const t = footerText[lang].footer;
 
     // Đảm bảo settings (EmailJS keys) đã load trước khi user submit form
@@ -115,7 +117,7 @@ const AboutSection = () => {
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: "linear-gradient(rgba(52,212,184,1) 1px,transparent 1px),linear-gradient(90deg,rgba(52,212,184,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-                <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px", position:"relative", zIndex:10 }}>
+                <div style={{ maxWidth:1440, margin:"0 auto", padding:`0 ${isMobile ? "16px" : "32px"}`, position:"relative", zIndex:10 }}>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         {/* Contact info */}
                         <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
@@ -179,17 +181,17 @@ const AboutSection = () => {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
                     style={{ background: "radial-gradient(ellipse,rgba(0,169,143,0.07) 0%,transparent 70%)" }} />
 
-                <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px", position:"relative", zIndex:10 }}>
+                <div style={{ maxWidth:1440, margin:"0 auto", padding:`0 ${isMobile ? "16px" : "32px"}`, position:"relative", zIndex:10 }}>
                     <div className="overflow-hidden flex flex-col md:flex-row rounded-2xl"
                         style={{ border: "1px solid rgba(0,169,143,0.18)", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(16px)", boxShadow:"0 24px 64px rgba(0,0,0,.12)" }}>
 
                         {/* Sidebar */}
-                        <div className="md:w-2/5 p-12 flex flex-col justify-between relative overflow-hidden"
+                        <div className="md:w-2/5 p-8 md:p-12 flex flex-col justify-between relative overflow-hidden"
                             style={{ background: "linear-gradient(135deg,#00A98F 0%,#007D69 100%)" }}>
                             <div className="absolute top-0 right-0 w-48 h-48 rounded-full -mr-16 -mt-16"
                                 style={{ background: "rgba(255,255,255,0.08)", filter: "blur(40px)" }} />
                             <div className="relative z-10 text-left">
-                                <h2 className="text-4xl font-black leading-tight mb-6 uppercase" style={{ color: "#fff" }}>
+                                <h2 className="text-2xl md:text-4xl font-black leading-tight mb-6 uppercase" style={{ color: "#fff" }}>
                                     {lang === 'vi' ? "Gửi tin nhắn cho chúng tôi" : "Get in touch with us"}
                                 </h2>
                                 <p className="leading-relaxed font-medium mb-8" style={{ color: "rgba(255,255,255,0.75)" }}>

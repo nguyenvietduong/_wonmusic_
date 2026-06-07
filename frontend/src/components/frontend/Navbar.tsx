@@ -370,7 +370,7 @@ const Navbar = () => {
                             <img
                                 src={logoUrl}
                                 alt={siteName}
-                                style={{ height: 80, width: "auto", objectFit: "contain", maxWidth: 120 }}
+                                style={{ height: 44, width: "auto", objectFit: "contain", maxWidth: 120 }}
                             />
                         ) : (
                             <div className="nic-logo-mark">W</div>

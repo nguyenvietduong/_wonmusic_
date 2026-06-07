@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { footerText } from "@/locales/footer";
 import { companyConfig } from "@/config/company.config";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const EQ_HEIGHTS = [40, 70, 55, 85, 45, 75, 60, 90, 50, 65];
 
@@ -18,6 +19,7 @@ const SOCIAL = [
 const Footer = () => {
     const { lang } = useLanguageStore();
     const t = footerText[lang].footer;
+    const isMobile = useIsMobile();
 
     const navLinks = [
         { to: "/gioi-thieu", label: t.introduction },
@@ -64,7 +66,7 @@ const Footer = () => {
                     background: "linear-gradient(90deg, transparent, #00A98F 30%, #34D4B8 50%, #00A98F 70%, transparent)",
                 }} />
 
-                <div style={{ maxWidth: 1440, margin: "0 auto", padding: "56px 32px 28px" }}>
+                <div style={{ maxWidth: 1440, margin: "0 auto", padding: isMobile ? "40px 20px 24px" : "56px 32px 28px" }}>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 40, paddingBottom: 40 }}>
 
                         {/* ── Col 1: Brand ── */}
