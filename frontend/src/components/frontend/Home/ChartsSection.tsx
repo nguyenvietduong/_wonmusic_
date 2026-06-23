@@ -95,7 +95,7 @@ const ChartsSection = () => {
             try {
                 setLoading(true);
                 setHasError(false);
-                const data = await trackService.getTop(limits[period]);
+                const data = await trackService.getTop(currentLimit);
                 setTracks(data);
             } catch {
                 setHasError(true);
@@ -104,7 +104,7 @@ const ChartsSection = () => {
             }
         };
         fetchTracks();
-    }, [period, limits, retryCount]);
+    }, [period, currentLimit, retryCount]);
 
     const maxPlays = tracks.length > 0 ? tracks[0].plays : 1;
 

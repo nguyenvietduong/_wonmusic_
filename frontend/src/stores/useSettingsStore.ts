@@ -230,10 +230,13 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         try {
             const res = await axios.get("/api/settings");
             if (res.data?.success) {
-                set({ ...res.data.data, loaded: true });
+                set({ ...res.data.data, loaded: true, loading: false });
+            } else {
+                set({ loaded: true, loading: false });
             }
-        } catch { /* keep defaults */ }
-        finally { set({ loading: false }); }
+        } catch {
+            set({ loaded: true, loading: false });
+        }
     },
 
     update: (data) => set(data),
