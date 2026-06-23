@@ -12,7 +12,6 @@ import { useLanguageStore } from '@/stores/useLanguageStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { footerText } from '@/locales/footer';
 import { aboutSectionText } from '@/locales/contact/aboutSection';
-import { bannerSectionText } from "@/locales/contact/bannerSection";
 import { companyConfig } from "@/config/company.config";
 import Breadcrumb from '../Breadcrumb';
 import { toast } from 'sonner';
@@ -26,14 +25,39 @@ interface FormErrors {
 
 const AboutSection = () => {
     const { lang } = useLanguageStore();
-    const { fetch: fetchSettings, loaded: settingsLoaded } = useSettingsStore();
+    const {
+        fetch: fetchSettings, loaded: settingsLoaded,
+        contactEmail, contactPhone, contactAddress,
+        contactAddressEn, contactMapUrl, contactWorkingHours,
+        contactLocationLabelVi, contactLocationLabelEn,
+        contactLocationHeadingVi, contactLocationHeadingEn,
+        contactLocationHighlightVi, contactLocationHighlightEn,
+        contactFormLabelVi, contactFormLabelEn,
+        contactFormHeadingVi, contactFormHeadingEn,
+        contactFormHighlightVi, contactFormHighlightEn,
+    } = useSettingsStore();
     const isMobile = useIsMobile();
     const t = footerText[lang].footer;
 
-    // Đảm bảo settings (EmailJS keys) đã load trước khi user submit form
     useEffect(() => { if (!settingsLoaded) fetchSettings(); }, [settingsLoaded, fetchSettings]);
+
+    const isEn = lang === "en";
+    const displayPhone   = contactPhone   || companyConfig.hotline;
+    const displayEmail   = contactEmail   || companyConfig.email.contact;
+    const displayAddress = isEn
+        ? (contactAddressEn || contactAddress || companyConfig.address.headquarter.en)
+        : (contactAddress   || companyConfig.address.headquarter.vi);
+    const displayMapUrl  = contactMapUrl  || companyConfig.urlMapGoogle;
+    const displayHours   = contactWorkingHours || companyConfig.workingHours[lang];
+
+    const displayLocationLabel     = (isEn ? contactLocationLabelEn     : contactLocationLabelVi)     || (isEn ? "Our Office"    : "Văn phòng");
+    const displayLocationHeading   = (isEn ? contactLocationHeadingEn   : contactLocationHeadingVi)   || (isEn ? "Find"          : "Địa chỉ");
+    const displayLocationHighlight = (isEn ? contactLocationHighlightEn : contactLocationHighlightVi) || (isEn ? "our location"  : "của chúng tôi");
+    const displayFormLabel         = (isEn ? contactFormLabelEn         : contactFormLabelVi)         || (isEn ? "Contact"       : "Liên hệ");
+    const displayFormHeading       = (isEn ? contactFormHeadingEn       : contactFormHeadingVi)       || (isEn ? "Send us"       : "Gửi");
+    const displayFormHighlight     = (isEn ? contactFormHighlightEn     : contactFormHighlightVi)     || (isEn ? "a message"     : "tin nhắn cho chúng tôi");
+
     const aboutSection = aboutSectionText[lang];
-    const bannerSection = bannerSectionText[lang];
 
     const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
     const [errors, setErrors] = useState<FormErrors>({});
@@ -110,65 +134,78 @@ const AboutSection = () => {
     const inputNormal = `${inputBase} pl-12 pr-4 border-[rgba(0,0,0,0.08)] focus:border-[#00A98F] focus:bg-[rgba(0,169,143,0.06)]`;
     const inputError  = `${inputBase} pl-12 pr-4 border-red-500/50 ring-2 ring-red-500/20`;
 
-    return (
-        <div style={{ background: "#F8F8FC", color: "#0D0D1A", minHeight: "100vh" }}>
-            {/* 2. OFFICE LOCATION & MAP */}
-            <section style={{ paddingBottom:80, position:"relative", overflow:"hidden", background:"#F8F8FC" }}>
-                {/* Subtle grid lines */}
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                    style={{ backgroundImage: "linear-gradient(rgba(52,212,184,1) 1px,transparent 1px),linear-gradient(90deg,rgba(52,212,184,1) 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
+    const SectionHead = ({ label, title, highlight, dark = false }: { label: string; title: string; highlight: string; dark?: boolean }) => (
+        <div style={{ marginBottom: 36 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                <span style={{ width:24, height:2, background: dark ? "#34D4B8" : "#00A98F", borderRadius:2 }} />
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase", color: dark ? "#34D4B8" : "#00A98F", fontFamily:"'Space Grotesk',sans-serif" }}>{label}</span>
+            </div>
+            <h2 style={{ fontSize:"clamp(20px,2.5vw,30px)", fontWeight:800, lineHeight:1.2, letterSpacing:"-0.4px", margin:0, color: dark ? "#fff" : "#0D0D1A" }}>
+                {title} <span style={{ color: dark ? "#34D4B8" : "#00A98F" }}>{highlight}</span>
+            </h2>
+        </div>
+    );
 
-                <div style={{ maxWidth:1440, margin:"0 auto", padding:`0 ${isMobile ? "16px" : "32px"}`, position:"relative", zIndex:10 }}>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                        {/* Contact info */}
-                        <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-[#242424]"
-                                    style={{ background: "linear-gradient(135deg,#00A98F,#34D4B8)", boxShadow: "0 8px 24px rgba(0,169,143,0.35)" }}>
-                                    <MapPin size={28} />
+    return (
+        <div style={{ color: "#0D0D1A" }}>
+
+            {/* ══ LOCATION & MAP ══ */}
+            <section style={{ padding: isMobile ? "48px 0 56px" : "64px 0 72px", background:"var(--m-bg)" }}>
+                <div style={{ maxWidth:1440, margin:"0 auto", padding:`0 ${isMobile ? "20px" : "32px"}` }}>
+                    <SectionHead
+                        label={displayLocationLabel}
+                        title={displayLocationHeading}
+                        highlight={displayLocationHighlight}
+                    />
+
+                    <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 32 : 48, alignItems:"start" }}>
+                        {/* Info cards */}
+                        <motion.div initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                            {/* Address */}
+                            <div style={{ display:"flex", gap:14, padding:"20px", background:"var(--m-surface-1)", border:"1px solid var(--m-border)", borderRadius:14 }}>
+                                <div style={{ width:42, height:42, borderRadius:10, background:"rgba(0,169,143,0.1)", border:"1px solid rgba(0,169,143,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                    <MapPin size={18} color="#00A98F" />
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: "#34D4B8" }}>{t.headquarterLabel}</p>
-                                    <h3 className="text-2xl md:text-3xl font-black uppercase" style={{ color: "#0D0D1A" }}>{t.hcmBranchLabel}</h3>
+                                    <p style={{ fontSize:10, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"var(--m-muted)", marginBottom:6 }}>{t.officeAddress}</p>
+                                    <p style={{ fontSize:14, fontWeight:500, color:"var(--m-text)", lineHeight:1.6 }}>{displayAddress}</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-8 pl-8 ml-7 text-left border-l-2" style={{ borderColor: "rgba(0,169,143,0.25)" }}>
-                                <div className="space-y-2">
-                                    <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(0,0,0,.4)" }}>{t.officeAddress}</p>
-                                    <p className="text-lg leading-relaxed font-medium" style={{ color: "rgba(0,0,0,.6)" }}>{companyConfig.address.headquarter[lang]}</p>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(0,0,0,.4)" }}>Email</p>
-                                        <p className="font-bold flex items-center gap-2" style={{ color: "#0D0D1A" }}>
-                                            <Mail size={16} style={{ color: "#34D4B8" }} /> {companyConfig.email.contact}
-                                        </p>
+                            {/* Phone + Email */}
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                                <div style={{ display:"flex", gap:12, padding:"16px", background:"var(--m-surface-1)", border:"1px solid var(--m-border)", borderRadius:14, alignItems:"center" }}>
+                                    <div style={{ width:36, height:36, borderRadius:9, background:"rgba(0,169,143,0.1)", border:"1px solid rgba(0,169,143,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                        <Phone size={15} color="#00A98F" />
                                     </div>
-                                    <div className="space-y-2">
-                                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(0,0,0,.4)" }}>Hotline</p>
-                                        <p className="font-bold flex items-center gap-2" style={{ color: "#0D0D1A" }}>
-                                            <Phone size={16} style={{ color: "#34D4B8" }} /> {companyConfig.hotline}
-                                        </p>
+                                    <div>
+                                        <p style={{ fontSize:9, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"var(--m-muted)", marginBottom:3 }}>Hotline</p>
+                                        <p style={{ fontSize:13, fontWeight:700, color:"var(--m-text)" }}>{displayPhone}</p>
                                     </div>
                                 </div>
-                                <div className="pt-4">
-                                    <a href={companyConfig.urlMapGoogle} target="_blank" rel="noreferrer"
-                                        className="inline-flex items-center gap-3 px-6 py-3 text-[#242424] text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-300"
-                                        style={{ background: "linear-gradient(135deg,#00A98F,#34D4B8)", boxShadow: "0 8px 24px rgba(0,169,143,0.3)" }}>
-                                        {aboutSection.openGoogleMaps} <ArrowUpRight size={16} />
-                                    </a>
+                                <div style={{ display:"flex", gap:12, padding:"16px", background:"var(--m-surface-1)", border:"1px solid var(--m-border)", borderRadius:14, alignItems:"center" }}>
+                                    <div style={{ width:36, height:36, borderRadius:9, background:"rgba(0,169,143,0.1)", border:"1px solid rgba(0,169,143,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                                        <Mail size={15} color="#00A98F" />
+                                    </div>
+                                    <div style={{ minWidth:0 }}>
+                                        <p style={{ fontSize:9, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"var(--m-muted)", marginBottom:3 }}>Email</p>
+                                        <p style={{ fontSize:12, fontWeight:700, color:"var(--m-text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{displayEmail}</p>
+                                    </div>
                                 </div>
                             </div>
+
+                            <a href={displayMapUrl} target="_blank" rel="noreferrer"
+                                style={{ display:"inline-flex", alignItems:"center", gap:8, background:"linear-gradient(135deg,#00A98F,#34D4B8)", color:"#fff", padding:"11px 22px", borderRadius:100, fontSize:13, fontWeight:700, textDecoration:"none", boxShadow:"0 6px 20px rgba(0,169,143,0.3)", alignSelf:"flex-start" }}>
+                                <MapPin size={14} /> {aboutSection.openGoogleMaps} <ArrowUpRight size={14} />
+                            </a>
                         </motion.div>
 
                         {/* Map */}
-                        <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-                            className="relative h-[400px] w-full rounded-[32px] overflow-hidden"
-                            style={{ border: "2px solid rgba(0,169,143,0.25)", boxShadow: "0 24px 64px rgba(0,0,0,0.12)" }}>
+                        <motion.div initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:0.1 }}
+                            style={{ borderRadius:16, overflow:"hidden", border:"1px solid var(--m-border)", boxShadow:"0 8px 32px rgba(0,0,0,0.08)", height: isMobile ? 280 : 360 }}>
                             <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.4602324225!2d106.6648812758832!3d10.776019359198188!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752edca2695555%3A0x6e9a66d8e8412e84!2sCompany%20Name!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s"
-                                className="absolute inset-0 w-full h-full border-none"
+                                src={displayMapUrl.includes("maps/embed") ? displayMapUrl : "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.4602324225!2d106.6648812758832!3d10.776019359198188!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752edca2695555%3A0x6e9a66d8e8412e84!2sCompany%20Name!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s"}
+                                style={{ width:"100%", height:"100%", border:"none", display:"block" }}
                                 allowFullScreen loading="lazy" title="office-map"
                             />
                         </motion.div>
@@ -176,151 +213,117 @@ const AboutSection = () => {
                 </div>
             </section>
 
-            {/* 3. CONTACT FORM SECTION */}
-            <section style={{ padding:"80px 0", position:"relative", overflow:"hidden", background:"#F4F4FC" }}>
-                {/* Teal glow bg */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
-                    style={{ background: "radial-gradient(ellipse,rgba(0,169,143,0.07) 0%,transparent 70%)" }} />
+            {/* ══ CONTACT FORM ══ */}
+            <section style={{ padding: isMobile ? "56px 0" : "80px 0", background:"#0a1220", position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:"linear-gradient(90deg,#00A98F,#34D4B8,#00A98F)" }} />
+                <div style={{ position:"absolute", top:"-20%", right:"-5%", width:480, height:480, borderRadius:"50%", background:"radial-gradient(circle,rgba(0,169,143,0.09),transparent 65%)", pointerEvents:"none" }} />
+                <div style={{ position:"absolute", bottom:"-15%", left:"5%", width:360, height:360, borderRadius:"50%", background:"radial-gradient(circle,rgba(52,211,184,0.06),transparent 65%)", pointerEvents:"none" }} />
 
-                <div style={{ maxWidth:1440, margin:"0 auto", padding:`0 ${isMobile ? "16px" : "32px"}`, position:"relative", zIndex:10 }}>
-                    <div className="overflow-hidden flex flex-col md:flex-row rounded-2xl"
-                        style={{ border: "1px solid rgba(0,169,143,0.18)", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(16px)", boxShadow:"0 24px 64px rgba(0,0,0,.12)" }}>
+                <div style={{ maxWidth:1440, margin:"0 auto", padding:`0 ${isMobile ? "20px" : "32px"}`, position:"relative", zIndex:1 }}>
+                    <SectionHead
+                        label={displayFormLabel}
+                        title={displayFormHeading}
+                        highlight={displayFormHighlight}
+                        dark
+                    />
 
-                        {/* Sidebar */}
-                        <div className="md:w-2/5 p-8 md:p-12 flex flex-col justify-between relative overflow-hidden"
-                            style={{ background: "linear-gradient(135deg,#00A98F 0%,#007D69 100%)" }}>
-                            <div className="absolute top-0 right-0 w-48 h-48 rounded-full -mr-16 -mt-16"
-                                style={{ background: "rgba(255,255,255,0.08)", filter: "blur(40px)" }} />
-                            <div className="relative z-10 text-left">
-                                <h2 className="text-2xl md:text-4xl font-black leading-tight mb-6 uppercase" style={{ color: "#fff" }}>
-                                    {lang === 'vi' ? "Gửi tin nhắn cho chúng tôi" : "Get in touch with us"}
-                                </h2>
-                                <p className="leading-relaxed font-medium mb-8" style={{ color: "rgba(255,255,255,0.75)" }}>
-                                    {lang === 'vi'
-                                        ? "Đừng ngần ngại liên hệ! Chúng tôi luôn sẵn sàng lắng nghe và hợp tác cùng bạn."
-                                        : "Don't hesitate to reach out! We are ready to listen and collaborate."}
-                                </p>
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)" }}>
-                                            <MessageCircle size={20} color="#fff" />
-                                        </div>
-                                        <p className="text-sm font-bold text-white">{lang === 'vi' ? "Hỗ trợ 24/7" : "Support 24/7"}</p>
+                    <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 2fr", gap: isMobile ? 32 : 48, alignItems:"start" }}>
+
+                        {/* Left: quick info */}
+                        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                            {[
+                                { icon: <Phone size={16} />, label: "Hotline", value: displayPhone },
+                                { icon: <Mail size={16} />, value: displayEmail, label: "Email" },
+                                { icon: <MapPin size={16} />, value: displayAddress, label: lang === "vi" ? "Địa chỉ" : "Address" },
+                                { icon: <MessageCircle size={16} />, value: displayHours, label: lang === "vi" ? "Giờ làm việc" : "Working Hours" },
+                            ].map(({ icon, label, value }, i) => (
+                                <div key={i} style={{ display:"flex", gap:12, padding:"16px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, alignItems:"flex-start" }}>
+                                    <div style={{ width:36, height:36, borderRadius:9, background:"rgba(0,169,143,0.12)", border:"1px solid rgba(0,169,143,0.2)", display:"flex", alignItems:"center", justifyContent:"center", color:"#34D4B8", flexShrink:0 }}>
+                                        {icon}
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize:9, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"rgba(255,255,255,0.35)", marginBottom:4 }}>{label}</p>
+                                        <p style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.8)", lineHeight:1.5 }}>{value}</p>
                                     </div>
                                 </div>
-                            </div>
-                            {/* EQ decoration */}
-                            <div className="flex items-flex-end gap-[3px] h-10 mt-8">
-                                {[35,55,42,78,48,68,35,88,52,62].map((h, i) => (
-                                    <div key={i} style={{
-                                        width: 4, height: `${h}%`,
-                                        background: "rgba(255,255,255,0.35)",
-                                        borderRadius: 2, alignSelf: "flex-end",
-                                    }} />
-                                ))}
-                            </div>
+                            ))}
                         </div>
 
-                        {/* Form */}
-                        <div className="md:w-3/5 p-8 md:p-12">
-                            <form onSubmit={handleSubmit} className="space-y-5 text-left">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: "rgba(0,0,0,.45)" }}>Họ và tên</label>
-                                        <div className="relative">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" size={18}
-                                                style={{ color: errors.name ? "#f87171" : "rgba(0,0,0,.4)" }} />
-                                            <input
-                                                type="text"
-                                                value={formData.name}
-                                                placeholder="Nguyễn Văn A"
-                                                className={errors.name ? inputError : inputNormal}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, name: e.target.value });
-                                                    if (errors.name) setErrors({ ...errors, name: undefined });
-                                                }}
+                        {/* Right: form */}
+                        <motion.div initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+                            style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding: isMobile ? "24px" : "36px" }}>
+                            <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:18 }}>
+                                <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:16 }}>
+                                    <div>
+                                        <label style={{ display:"block", fontSize:10, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"rgba(255,255,255,0.4)", marginBottom:8 }}>
+                                            {lang === "vi" ? "Họ và tên" : "Full name"}
+                                        </label>
+                                        <div style={{ position:"relative" }}>
+                                            <User size={15} style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color: errors.name ? "#f87171" : "rgba(255,255,255,0.3)" }} />
+                                            <input type="text" value={formData.name} placeholder="Nguyễn Văn A"
+                                                style={{ width:"100%", padding:"11px 14px 11px 40px", background:"rgba(255,255,255,0.05)", border:`1px solid ${errors.name ? "rgba(248,113,113,0.5)" : "rgba(255,255,255,0.1)"}`, borderRadius:10, color:"#fff", fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
+                                                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (errors.name) setErrors({ ...errors, name: undefined }); }}
                                             />
                                         </div>
                                         <ErrorLabel message={errors.name} />
                                     </div>
-
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: "rgba(0,0,0,.45)" }}>Email</label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" size={18}
-                                                style={{ color: errors.email ? "#f87171" : "rgba(0,0,0,.4)" }} />
-                                            <input
-                                                type="email"
-                                                value={formData.email}
-                                                placeholder="example@gmail.com"
-                                                className={errors.email ? inputError : inputNormal}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, email: e.target.value });
-                                                    if (errors.email) setErrors({ ...errors, email: undefined });
-                                                }}
+                                    <div>
+                                        <label style={{ display:"block", fontSize:10, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"rgba(255,255,255,0.4)", marginBottom:8 }}>Email</label>
+                                        <div style={{ position:"relative" }}>
+                                            <Mail size={15} style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color: errors.email ? "#f87171" : "rgba(255,255,255,0.3)" }} />
+                                            <input type="email" value={formData.email} placeholder="example@gmail.com"
+                                                style={{ width:"100%", padding:"11px 14px 11px 40px", background:"rgba(255,255,255,0.05)", border:`1px solid ${errors.email ? "rgba(248,113,113,0.5)" : "rgba(255,255,255,0.1)"}`, borderRadius:10, color:"#fff", fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
+                                                onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors({ ...errors, email: undefined }); }}
                                             />
                                         </div>
                                         <ErrorLabel message={errors.email} />
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: "rgba(0,0,0,.45)" }}>Chủ đề</label>
-                                    <div className="relative">
-                                        <Edit3 className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors" size={18}
-                                            style={{ color: errors.subject ? "#f87171" : "rgba(0,0,0,.4)" }} />
-                                        <input
-                                            type="text"
-                                            value={formData.subject}
-                                            placeholder={lang === 'vi' ? "Tôi muốn hợp tác..." : "I want to collaborate..."}
-                                            className={errors.subject ? inputError : inputNormal}
-                                            onChange={(e) => {
-                                                setFormData({ ...formData, subject: e.target.value });
-                                                if (errors.subject) setErrors({ ...errors, subject: undefined });
-                                            }}
+                                <div>
+                                    <label style={{ display:"block", fontSize:10, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"rgba(255,255,255,0.4)", marginBottom:8 }}>
+                                        {lang === "vi" ? "Chủ đề" : "Subject"}
+                                    </label>
+                                    <div style={{ position:"relative" }}>
+                                        <Edit3 size={15} style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color: errors.subject ? "#f87171" : "rgba(255,255,255,0.3)" }} />
+                                        <input type="text" value={formData.subject}
+                                            placeholder={lang === "vi" ? "Tôi muốn hợp tác..." : "I want to collaborate..."}
+                                            style={{ width:"100%", padding:"11px 14px 11px 40px", background:"rgba(255,255,255,0.05)", border:`1px solid ${errors.subject ? "rgba(248,113,113,0.5)" : "rgba(255,255,255,0.1)"}`, borderRadius:10, color:"#fff", fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
+                                            onChange={(e) => { setFormData({ ...formData, subject: e.target.value }); if (errors.subject) setErrors({ ...errors, subject: undefined }); }}
                                         />
                                     </div>
                                     <ErrorLabel message={errors.subject} />
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: "rgba(0,0,0,.45)" }}>Lời nhắn</label>
-                                    <textarea
-                                        rows={4}
-                                        value={formData.message}
-                                        placeholder={lang === 'vi' ? "Nội dung chi tiết..." : "How can we help?"}
-                                        className={`${errors.message
-                                            ? "w-full p-4 bg-[rgba(0,0,0,0.04)] border border-red-500/50 ring-2 ring-red-500/20 rounded-2xl focus:outline-none transition-all resize-none text-[#0D0D1A] placeholder:text-[rgba(0,0,0,0.35)]"
-                                            : "w-full p-4 bg-[rgba(0,0,0,0.04)] border border-[rgba(0,0,0,0.08)] rounded-2xl focus:outline-none focus:border-[#00A98F] focus:bg-[rgba(0,169,143,0.06)] transition-all resize-none text-[#0D0D1A] placeholder:text-[rgba(0,0,0,0.35)]"
-                                        }`}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, message: e.target.value });
-                                            if (errors.message) setErrors({ ...errors, message: undefined });
-                                        }}
+                                <div>
+                                    <label style={{ display:"block", fontSize:10, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase", color:"rgba(255,255,255,0.4)", marginBottom:8 }}>
+                                        {lang === "vi" ? "Lời nhắn" : "Message"}
+                                    </label>
+                                    <textarea rows={5} value={formData.message}
+                                        placeholder={lang === "vi" ? "Nội dung chi tiết..." : "How can we help?"}
+                                        style={{ width:"100%", padding:"12px 14px", background:"rgba(255,255,255,0.05)", border:`1px solid ${errors.message ? "rgba(248,113,113,0.5)" : "rgba(255,255,255,0.1)"}`, borderRadius:10, color:"#fff", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", boxSizing:"border-box", lineHeight:1.6 }}
+                                        onChange={(e) => { setFormData({ ...formData, message: e.target.value }); if (errors.message) setErrors({ ...errors, message: undefined }); }}
                                     />
                                     <ErrorLabel message={errors.message} />
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting || countdown > 0}
-                                    className="group w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all duration-300 flex items-center justify-center gap-3"
-                                    style={
-                                        (isSubmitting || countdown > 0)
-                                            ? { background: "rgba(0,0,0,0.07)", color: "rgba(0,0,0,.4)", cursor: "not-allowed" }
-                                            : { background: "linear-gradient(135deg,#00A98F,#34D4B8)", color: "#242424", boxShadow: "0 8px 28px rgba(0,169,143,0.35)" }
-                                    }
-                                >
-                                    {isSubmitting
-                                        ? (lang === 'vi' ? "Đang xử lý..." : "Processing...")
-                                        : countdown > 0
-                                            ? (lang === 'vi' ? `Chờ ${countdown}s` : `Wait ${countdown}s`)
-                                            : (lang === 'vi' ? "Gửi yêu cầu ngay" : "Send Message")}
-                                    {!isSubmitting && countdown === 0 &&
-                                        <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
+                                <button type="submit" disabled={isSubmitting || countdown > 0}
+                                    style={{
+                                        display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                                        padding:"13px 28px", borderRadius:100, fontSize:13, fontWeight:700,
+                                        border:"none", cursor: (isSubmitting || countdown > 0) ? "not-allowed" : "pointer",
+                                        background: (isSubmitting || countdown > 0) ? "rgba(255,255,255,0.08)" : "linear-gradient(135deg,#00A98F,#34D4B8)",
+                                        color: (isSubmitting || countdown > 0) ? "rgba(255,255,255,0.3)" : "#fff",
+                                        boxShadow: (isSubmitting || countdown > 0) ? "none" : "0 6px 20px rgba(0,169,143,0.35)",
+                                        transition:"all .25s",
+                                    }}>
+                                    {isSubmitting ? (lang === "vi" ? "Đang gửi..." : "Sending...")
+                                        : countdown > 0 ? (lang === "vi" ? `Chờ ${countdown}s` : `Wait ${countdown}s`)
+                                        : (lang === "vi" ? "Gửi tin nhắn" : "Send Message")}
+                                    {!isSubmitting && countdown === 0 && <Send size={15} />}
                                 </button>
                             </form>
-                        </div>
+                        </motion.div>
                     </div>
                 </div>
             </section>

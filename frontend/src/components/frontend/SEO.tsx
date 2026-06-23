@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 
-const DEFAULT_IMAGE = "https://www.wonmusic.vn/og-image.jpg";
+const DEFAULT_IMAGE = "/og-image.jpg";
 const SITE_NAME     = "Won Music";
 const LOGO_URL      = "https://www.wonmusic.vn/logo.png";
 const TWITTER_SITE  = "@wonmusic_vn";

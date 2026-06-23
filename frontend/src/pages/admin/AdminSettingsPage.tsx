@@ -1,12 +1,13 @@
 'use client';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import axios from "axios";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import {
     Settings, Image as ImageIcon, Globe, Facebook,
     Instagram, Youtube, Share2, Mail, Phone, MapPin,
     Search, Save, CheckCircle, AlertCircle, Upload, Loader2,
-    Info, Users, BarChart2, FileText, KeyRound, Eye, EyeOff,
+    KeyRound, Eye, EyeOff,
 } from "lucide-react";
 
 // ─── types ──────────────────────────────────────────────────────────────────
@@ -25,41 +26,40 @@ interface SiteSettings {
     contactEmail:      string;
     contactPhone:      string;
     contactAddress:    string;
-    aboutHeroSubtitle:    string;
-    aboutMissionP1:       string;
-    aboutMissionP2:       string;
-    aboutCtaSubtitle:     string;
-    aboutHeroSubtitleEn:  string;
-    aboutMissionP1En:     string;
-    aboutMissionP2En:     string;
-    aboutCtaSubtitleEn:   string;
-    aboutStats:           string;
-    aboutTeam:            string;
-    emailjsServiceId:     string;
-    emailjsTemplateId:    string;
-    emailjsPublicKey:     string;
-    emailjsToEmail:       string;
+    wonmediaUrl:       string;
+    emailjsServiceId:  string;
+    emailjsTemplateId: string;
+    emailjsPublicKey:  string;
+    emailjsToEmail:    string;
+    // Artists page SEO
+    artistsSeoTitleVi: string;
+    artistsSeoTitleEn: string;
+    artistsSeoDescVi:  string;
+    artistsSeoDescEn:  string;
+    // Charts page SEO
+    chartsSeoTitleVi:  string;
+    chartsSeoTitleEn:  string;
+    chartsSeoDescVi:   string;
+    chartsSeoDescEn:   string;
 }
 
 const EMPTY: SiteSettings = {
     siteName: "", tagline: "", logoUrl: "", logoBlackUrl: "", faviconUrl: "",
     facebook: "", instagram: "", youtube: "", tiktok: "",
     metaTitle: "", metaDescription: "",
-    contactEmail: "", contactPhone: "", contactAddress: "",
-    aboutHeroSubtitle: "", aboutMissionP1: "", aboutMissionP2: "", aboutCtaSubtitle: "",
-    aboutHeroSubtitleEn: "", aboutMissionP1En: "", aboutMissionP2En: "", aboutCtaSubtitleEn: "",
-    aboutStats: "", aboutTeam: "",
+    contactEmail: "", contactPhone: "", contactAddress: "", wonmediaUrl: "",
     emailjsServiceId: "", emailjsTemplateId: "", emailjsPublicKey: "", emailjsToEmail: "",
+    artistsSeoTitleVi: "", artistsSeoTitleEn: "", artistsSeoDescVi: "", artistsSeoDescEn: "",
+    chartsSeoTitleVi: "",  chartsSeoTitleEn: "",  chartsSeoDescVi: "",  chartsSeoDescEn: "",
 };
 
-type Tab = "branding" | "social" | "seo" | "contact" | "about" | "email";
+type Tab = "branding" | "social" | "seo" | "contact" | "email";
 
 const TABS: { key: Tab; label: string; Icon: any }[] = [
     { key: "branding", label: "Thương hiệu", Icon: ImageIcon },
     { key: "social",   label: "Mạng xã hội", Icon: Share2    },
     { key: "seo",      label: "SEO",          Icon: Search    },
     { key: "contact",  label: "Liên hệ",      Icon: Mail      },
-    { key: "about",    label: "Về chúng tôi", Icon: Info      },
     { key: "email",    label: "Email / SMTP",  Icon: KeyRound  },
 ];
 
@@ -148,13 +148,15 @@ function LogoUpload({
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
-export default function AdminSettingsPage() {
+function AdminSettingsPageInner() {
     const updateStore = useSettingsStore(s => s.update);
     const [form,         setForm]         = useState<SiteSettings>(EMPTY);
-    const [activeTab,    setActiveTab]    = useState<Tab>("branding");
+    const searchParams   = useSearchParams();
+    const router         = useRouter();
+    const activeTab      = (searchParams?.get('tab') as Tab) ?? 'branding';
+    const setActiveTab   = (t: Tab) => router.replace(`?tab=${t}`, { scroll: false });
     const [loading,      setLoading]      = useState(true);
     const [saving,       setSaving]       = useState(false);
-    const [aboutLang,    setAboutLang]    = useState<"vi" | "en">("vi");
     const [toast,        setToast]        = useState<{ type: "success" | "error"; msg: string } | null>(null);
     // cache-bust timestamp — append to image src after save to force browser reload
     const [bust,         setBust]         = useState(() => Date.now());
@@ -406,6 +408,46 @@ export default function AdminSettingsPage() {
                                     {form.metaDescription || "Mô tả trang sẽ hiển thị ở đây..."}
                                 </div>
                             </div>
+
+                            <div className="pt-1 border-t border-gray-100" />
+                            <SectionTitle Icon={Search} title="SEO trang Nghệ sĩ" desc="Tiêu đề và mô tả cho trang /artists" />
+
+                            <Field label="Tiêu đề (Tiếng Việt)" hint="50–60 ký tự">
+                                <Input value={form.artistsSeoTitleVi} onChange={set("artistsSeoTitleVi")} placeholder="Nghệ Sĩ – Won Music" />
+                                <p className={`text-[11px] mt-1 ${form.artistsSeoTitleVi.length > 60 ? "text-red-500" : "text-gray-400"}`}>{form.artistsSeoTitleVi.length} / 60</p>
+                            </Field>
+                            <Field label="Tiêu đề (English)" hint="50–60 chars">
+                                <Input value={form.artistsSeoTitleEn} onChange={set("artistsSeoTitleEn")} placeholder="Artists – Won Music" />
+                                <p className={`text-[11px] mt-1 ${form.artistsSeoTitleEn.length > 60 ? "text-red-500" : "text-gray-400"}`}>{form.artistsSeoTitleEn.length} / 60</p>
+                            </Field>
+                            <Field label="Mô tả (Tiếng Việt)" hint="120–160 ký tự">
+                                <Textarea rows={3} value={form.artistsSeoDescVi} onChange={set("artistsSeoDescVi")} placeholder="Khám phá danh sách nghệ sĩ tại Won Music..." />
+                                <p className={`text-[11px] mt-1 ${form.artistsSeoDescVi.length > 160 ? "text-red-500" : "text-gray-400"}`}>{form.artistsSeoDescVi.length} / 160</p>
+                            </Field>
+                            <Field label="Mô tả (English)" hint="120–160 chars">
+                                <Textarea rows={3} value={form.artistsSeoDescEn} onChange={set("artistsSeoDescEn")} placeholder="Discover artists on Won Music..." />
+                                <p className={`text-[11px] mt-1 ${form.artistsSeoDescEn.length > 160 ? "text-red-500" : "text-gray-400"}`}>{form.artistsSeoDescEn.length} / 160</p>
+                            </Field>
+
+                            <div className="pt-1 border-t border-gray-100" />
+                            <SectionTitle Icon={Search} title="SEO trang Bảng xếp hạng" desc="Tiêu đề và mô tả cho trang /charts" />
+
+                            <Field label="Tiêu đề (Tiếng Việt)" hint="50–60 ký tự">
+                                <Input value={form.chartsSeoTitleVi} onChange={set("chartsSeoTitleVi")} placeholder="Bảng Xếp Hạng – Won Music" />
+                                <p className={`text-[11px] mt-1 ${form.chartsSeoTitleVi.length > 60 ? "text-red-500" : "text-gray-400"}`}>{form.chartsSeoTitleVi.length} / 60</p>
+                            </Field>
+                            <Field label="Tiêu đề (English)" hint="50–60 chars">
+                                <Input value={form.chartsSeoTitleEn} onChange={set("chartsSeoTitleEn")} placeholder="Charts – Won Music" />
+                                <p className={`text-[11px] mt-1 ${form.chartsSeoTitleEn.length > 60 ? "text-red-500" : "text-gray-400"}`}>{form.chartsSeoTitleEn.length} / 60</p>
+                            </Field>
+                            <Field label="Mô tả (Tiếng Việt)" hint="120–160 ký tự">
+                                <Textarea rows={3} value={form.chartsSeoDescVi} onChange={set("chartsSeoDescVi")} placeholder="Top bài hát hot nhất theo ngày, tuần, tháng trên Won Music..." />
+                                <p className={`text-[11px] mt-1 ${form.chartsSeoDescVi.length > 160 ? "text-red-500" : "text-gray-400"}`}>{form.chartsSeoDescVi.length} / 160</p>
+                            </Field>
+                            <Field label="Mô tả (English)" hint="120–160 chars">
+                                <Textarea rows={3} value={form.chartsSeoDescEn} onChange={set("chartsSeoDescEn")} placeholder="Top trending songs by day, week, month on Won Music..." />
+                                <p className={`text-[11px] mt-1 ${form.chartsSeoDescEn.length > 160 ? "text-red-500" : "text-gray-400"}`}>{form.chartsSeoDescEn.length} / 160</p>
+                            </Field>
                         </>
                     )}
 
@@ -452,106 +494,31 @@ export default function AdminSettingsPage() {
                                         />
                                     </div>
                                 </Field>
+
+                                <div className="pt-2 border-t border-gray-100" />
+
+                                <Field
+                                    label="Wonmedia URL"
+                                    hint="Đường dẫn hiển thị phía trên nút điện thoại góc trái màn hình. Để trống → ẩn."
+                                >
+                                    <div className="relative">
+                                        <Globe size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" />
+                                        <input
+                                            type="url"
+                                            value={form.wonmediaUrl}
+                                            onChange={e => set("wonmediaUrl")(e.target.value)}
+                                            placeholder="https://wonmedia.vn"
+                                            className="w-full pl-9 pr-4 py-2.5 text-sm text-gray-800 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder:text-gray-400 transition-all"
+                                        />
+                                    </div>
+                                    {form.wonmediaUrl && (
+                                        <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-50 border border-purple-100 text-xs text-purple-600 font-medium">
+                                            <Globe size={11} />
+                                            Xem trước: <span className="font-semibold truncate">{form.wonmediaUrl}</span>
+                                        </div>
+                                    )}
+                                </Field>
                             </div>
-                        </>
-                    )}
-
-                    {/* ── Về chúng tôi ── */}
-                    {activeTab === "about" && (
-                        <>
-                            <SectionTitle Icon={Info} title="Về chúng tôi" desc="Nội dung trang Giới thiệu — để trống sẽ dùng văn bản mặc định" />
-
-                            {/* Language toggle */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 font-medium">Ngôn ngữ:</span>
-                                {(["vi", "en"] as const).map(l => (
-                                    <button
-                                        key={l}
-                                        type="button"
-                                        onClick={() => setAboutLang(l)}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer
-                                            ${aboutLang === l
-                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
-                                                : "bg-white border-gray-200 text-gray-500 hover:border-indigo-300 hover:text-indigo-600"
-                                            }`}
-                                    >
-                                        <span>{l === "vi" ? "🇻🇳" : "🇬🇧"}</span>
-                                        {l === "vi" ? "Tiếng Việt" : "English"}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <Field
-                                label="Hero subtitle"
-                                hint="Mô tả ngắn hiển thị dưới tiêu đề trang hero"
-                            >
-                                <Textarea
-                                    rows={3}
-                                    value={aboutLang === "vi" ? form.aboutHeroSubtitle : form.aboutHeroSubtitleEn}
-                                    onChange={aboutLang === "vi" ? set("aboutHeroSubtitle") : set("aboutHeroSubtitleEn")}
-                                    placeholder={aboutLang === "vi"
-                                        ? "Nền tảng âm nhạc trực tuyến hàng đầu Việt Nam..."
-                                        : "Vietnam's leading online music platform..."}
-                                />
-                            </Field>
-
-                            <div className="pt-1 border-t border-gray-100" />
-
-                            <SectionTitle Icon={FileText} title="Sứ mệnh" desc="Hai đoạn văn trong phần Mission" />
-
-                            <Field label={aboutLang === "vi" ? "Đoạn 1" : "Paragraph 1"}>
-                                <Textarea
-                                    rows={4}
-                                    value={aboutLang === "vi" ? form.aboutMissionP1 : form.aboutMissionP1En}
-                                    onChange={aboutLang === "vi" ? set("aboutMissionP1") : set("aboutMissionP1En")}
-                                    placeholder={aboutLang === "vi"
-                                        ? "Won Music ra đời với sứ mệnh..."
-                                        : "Won Music was founded with the mission..."}
-                                />
-                            </Field>
-
-                            <Field label={aboutLang === "vi" ? "Đoạn 2" : "Paragraph 2"}>
-                                <Textarea
-                                    rows={4}
-                                    value={aboutLang === "vi" ? form.aboutMissionP2 : form.aboutMissionP2En}
-                                    onChange={aboutLang === "vi" ? set("aboutMissionP2") : set("aboutMissionP2En")}
-                                    placeholder={aboutLang === "vi"
-                                        ? "Chúng tôi tin rằng..."
-                                        : "We believe that..."}
-                                />
-                            </Field>
-
-                            <div className="pt-1 border-t border-gray-100" />
-
-                            <SectionTitle Icon={BarChart2} title="Thống kê nổi bật" desc="4 chỉ số hiển thị trong phần Stats — dùng chung cả hai ngôn ngữ" />
-                            <StatsEditor
-                                value={form.aboutStats}
-                                onChange={v => setForm(f => ({ ...f, aboutStats: v }))}
-                            />
-
-                            <div className="pt-1 border-t border-gray-100" />
-
-                            <SectionTitle Icon={Users} title="Đội ngũ" desc="Để trống → ẩn phần Đội ngũ trên trang client" />
-                            <TeamEditor
-                                value={form.aboutTeam}
-                                onChange={v => setForm(f => ({ ...f, aboutTeam: v }))}
-                            />
-
-                            <div className="pt-1 border-t border-gray-100" />
-
-                            <Field
-                                label="CTA subtitle"
-                                hint="Mô tả trong phần Call-to-Action cuối trang"
-                            >
-                                <Textarea
-                                    rows={3}
-                                    value={aboutLang === "vi" ? form.aboutCtaSubtitle : form.aboutCtaSubtitleEn}
-                                    onChange={aboutLang === "vi" ? set("aboutCtaSubtitle") : set("aboutCtaSubtitleEn")}
-                                    placeholder={aboutLang === "vi"
-                                        ? "Hãy cùng chúng tôi xây dựng nền âm nhạc Việt Nam..."
-                                        : "Join us in building Vietnam's music ecosystem..."}
-                                />
-                            </Field>
                         </>
                     )}
 
@@ -669,103 +636,6 @@ export default function AdminSettingsPage() {
 }
 
 // ─── Stats row editor ────────────────────────────────────────────────────────
-const DEFAULT_STATS = [
-    { value: "500+", label: "Bài hát",     icon: "🎵" },
-    { value: "200+", label: "Nghệ sĩ",     icon: "🎤" },
-    { value: "50K+", label: "Người dùng",  icon: "👥" },
-    { value: "1M+",  label: "Lượt nghe",   icon: "🎧" },
-];
-
-function StatsEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-    let rows: typeof DEFAULT_STATS;
-    try { rows = value ? JSON.parse(value) : DEFAULT_STATS; }
-    catch { rows = DEFAULT_STATS; }
-    while (rows.length < 4) rows.push({ value: "", label: "", icon: "" });
-    rows = rows.slice(0, 4);
-
-    const update = (i: number, field: string, v: string) => {
-        const next = rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r);
-        onChange(JSON.stringify(next));
-    };
-
-    return (
-        <div className="space-y-2.5">
-            <div className="grid grid-cols-[16px_48px_1fr_1fr] gap-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                <span>#</span><span>Icon</span><span>Số / Giá trị</span><span>Nhãn</span>
-            </div>
-            {rows.map((row, i) => (
-                <div key={i} className="grid grid-cols-[16px_48px_1fr_1fr] gap-2 items-center p-3 rounded-xl bg-gray-50 border border-gray-100">
-                    <span className="text-xs text-gray-300 font-mono">{i + 1}</span>
-                    <input
-                        value={row.icon} onChange={e => update(i, "icon", e.target.value)}
-                        placeholder="🎵"
-                        className="w-full px-1.5 py-2 text-center text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                    <input
-                        value={row.value} onChange={e => update(i, "value", e.target.value)}
-                        placeholder="500+"
-                        className="w-full px-3 py-2 text-sm text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                    <input
-                        value={row.label} onChange={e => update(i, "label", e.target.value)}
-                        placeholder="Bài hát"
-                        className="w-full px-3 py-2 text-sm text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                </div>
-            ))}
-        </div>
-    );
-}
-
-// ─── Team row editor ─────────────────────────────────────────────────────────
-const DEFAULT_TEAM = [
-    { name: "Nguyễn Văn Minh", role: "CEO & Founder",  initials: "NM" },
-    { name: "Trần Thị Lan",    role: "Head of Music",   initials: "TL" },
-    { name: "Lê Quang Hùng",  role: "Lead Producer",   initials: "LH" },
-    { name: "Phạm Thùy Dung", role: "Artist Manager",  initials: "PD" },
-];
-
-function TeamEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-    let rows: typeof DEFAULT_TEAM;
-    try { rows = value ? JSON.parse(value) : DEFAULT_TEAM; }
-    catch { rows = DEFAULT_TEAM; }
-    while (rows.length < 4) rows.push({ name: "", role: "", initials: "" });
-    rows = rows.slice(0, 4);
-
-    const update = (i: number, field: string, v: string) => {
-        const next = rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r);
-        onChange(JSON.stringify(next));
-    };
-
-    return (
-        <div className="space-y-2.5">
-            <div className="grid grid-cols-[16px_56px_1fr_1fr] gap-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                <span>#</span><span>Viết tắt</span><span>Họ và tên</span><span>Vai trò</span>
-            </div>
-            {rows.map((row, i) => (
-                <div key={i} className="grid grid-cols-[16px_56px_1fr_1fr] gap-2 items-center p-3 rounded-xl bg-gray-50 border border-gray-100">
-                    <span className="text-xs text-gray-300 font-mono">{i + 1}</span>
-                    <input
-                        value={row.initials} onChange={e => update(i, "initials", e.target.value.toUpperCase())}
-                        placeholder="NM" maxLength={3}
-                        className="w-full px-1.5 py-2 text-center text-sm font-bold text-indigo-600 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white uppercase"
-                    />
-                    <input
-                        value={row.name} onChange={e => update(i, "name", e.target.value)}
-                        placeholder="Họ và tên"
-                        className="w-full px-3 py-2 text-sm text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                    <input
-                        value={row.role} onChange={e => update(i, "role", e.target.value)}
-                        placeholder="CEO & Founder"
-                        className="w-full px-3 py-2 text-sm text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                    />
-                </div>
-            ))}
-        </div>
-    );
-}
-
 // ─── Section title ───────────────────────────────────────────────────────────
 function SectionTitle({ Icon, title, desc }: { Icon: any; title: string; desc: string }) {
     return (
@@ -778,5 +648,13 @@ function SectionTitle({ Icon, title, desc }: { Icon: any; title: string; desc: s
                 <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
             </div>
         </div>
+    );
+}
+
+export default function AdminSettingsPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center py-24"><div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /></div>}>
+            <AdminSettingsPageInner />
+        </Suspense>
     );
 }

@@ -17,10 +17,10 @@ export const authService = {
         return res.data;
     },
 
-    signIn: async (username: string, password: string) => {
+    signIn: async (email: string, password: string) => {
         const res = await api.post(
             "auth/signin",
-            { username, password },
+            { email, password },
             { withCredentials: true }
         );
         return res.data; // access token

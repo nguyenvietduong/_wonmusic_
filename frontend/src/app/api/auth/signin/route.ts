@@ -10,15 +10,15 @@ const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000 // 14 ngày
 
 export async function POST(req: NextRequest) {
     try {
-        const { username, password } = await req.json()
+        const { email, password } = await req.json()
 
-        if (!username || !password) {
-            return Response.json({ message: 'Thiếu Username hoặc password.' }, { status: 400 })
+        if (!email || !password) {
+            return Response.json({ message: 'Thiếu email hoặc password.' }, { status: 400 })
         }
 
         await connectDB()
 
-        const user = await User.findOne({ username })
+        const user = await User.findOne({ email: email.toLowerCase().trim() })
         if (!user) {
             return Response.json(
                 { message: 'Username hoặc password không chính xác' },

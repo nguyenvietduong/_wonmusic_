@@ -13,6 +13,8 @@ import {
 import axios from "axios";
 import { trackService } from "@/services/trackService";
 import { artistService } from "@/services/artistService";
+import { genreService } from "@/services/genreService";
+import { SearchableSelect } from "@/components/admin/SearchableSelect";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (s: number) =>
@@ -21,12 +23,6 @@ const fmt = (s: number) =>
 const WAVE = Array.from({ length: 48 }, (_, i) =>
     18 + Math.abs(Math.sin(i * 0.38) * 50 + Math.cos(i * 0.71) * 22)
 );
-
-const GENRES = [
-    "Pop","R&B","Hip-Hop","Rock","Electronic","Jazz","Classical",
-    "Folk","Indie","Country","Dance","Soul","Ballad","Lofi","EDM",
-    "Metal","Blues","Reggae","Acoustic",
-];
 
 const API = "/api";
 
@@ -70,6 +66,7 @@ export default function AdminTrackEditPages() {
 
     const [track,     setTrack]     = useState<any>(null);
     const [artists,   setArtists]   = useState<any[]>([]);
+    const [genreList, setGenreList] = useState<string[]>([]);
     const [loading,   setLoading]   = useState(true);
     const [saving,    setSaving]    = useState(false);
     const [saved,     setSaved]     = useState(false);
@@ -130,15 +127,17 @@ export default function AdminTrackEditPages() {
         (async () => {
             try {
                 setLoading(true);
-                const [trackRes, artistRes] = await Promise.all([
+                const [trackRes, artistRes, genreRes] = await Promise.all([
                     trackService.getById(id),
                     artistService.getAll({ limit: 100 }),
+                    genreService.getAll(),
                 ]);
 
                 const data       = trackRes;
                 const artistList = artistRes?.data ?? [];
 
                 setArtists(artistList);
+                setGenreList(genreRes.map(g => g.name));
 
                 if (data) {
                     setTrack(data);
@@ -610,18 +609,16 @@ export default function AdminTrackEditPages() {
                         {/* Artist */}
                         <div className="te-field">
                             <label className="te-label"><Mic2 size={10} /> Nghệ sĩ <span className="te-req">*</span></label>
-                            <div style={{ position:"relative" }}>
-                                <select
-                                    className={`te-select ${fieldErr("artistId") ? "err" : ""}`}
-                                    value={form.artistId}
-                                    onChange={e => { set("artistId", e.target.value); touch("artistId"); }}
-                                    onBlur={() => touch("artistId")}
-                                >
-                                    <option value="">-- Chọn nghệ sĩ --</option>
-                                    {artists.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
-                                </select>
-                                <ChevronDown size={13} color="rgba(255,255,255,.3)" style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} />
-                            </div>
+                            <SearchableSelect
+                                options={artists.map(a => ({ value: a._id, label: a.name }))}
+                                value={form.artistId}
+                                onChange={v => { set("artistId", v); touch("artistId"); }}
+                                onBlur={() => touch("artistId")}
+                                placeholder="-- Chọn nghệ sĩ --"
+                                searchPlaceholder="Tìm nghệ sĩ..."
+                                hasError={!!fieldErr("artistId")}
+                                theme="dark"
+                            />
                             {fieldErr("artistId") && (
                                 <p className="te-field-err">
                                     <AlertCircle size={10} /> {fieldErr("artistId")}
@@ -632,13 +629,14 @@ export default function AdminTrackEditPages() {
                         {/* Genre */}
                         <div className="te-field">
                             <label className="te-label"><Tag size={10} /> Thể loại</label>
-                            <div style={{ position:"relative" }}>
-                                <select className="te-select" value={form.genre} onChange={e => set("genre", e.target.value)}>
-                                    <option value="">-- Chọn thể loại --</option>
-                                    {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                                </select>
-                                <ChevronDown size={13} color="rgba(255,255,255,.3)" style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} />
-                            </div>
+                            <SearchableSelect
+                                options={genreList.map(g => ({ value: g, label: g }))}
+                                value={form.genre}
+                                onChange={v => set("genre", v)}
+                                placeholder="-- Chọn thể loại --"
+                                searchPlaceholder="Tìm thể loại..."
+                                theme="dark"
+                            />
                         </div>
 
                         {/* Release year */}

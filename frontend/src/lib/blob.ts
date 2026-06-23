@@ -1,9 +1,27 @@
-import { put } from '@vercel/blob'
+import { v2 as cloudinary } from 'cloudinary'
 
-const MIME_TO_EXT: Record<string, string> = {
-    'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/wav': 'wav',
-    'audio/flac': 'flac', 'audio/ogg': 'ogg', 'audio/aac': 'aac',
-    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+const AUDIO_MIMES = new Set([
+    'audio/mpeg', 'audio/mp3', 'audio/wav',
+    'audio/flac', 'audio/ogg', 'audio/aac', 'audio/x-m4a',
+])
+
+function uploadStream(
+    buffer: Buffer,
+    options: Record<string, unknown>,
+): Promise<{ secure_url: string }> {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
+            if (err || !result) reject(err ?? new Error('Cloudinary upload failed'))
+            else resolve(result as { secure_url: string })
+        })
+        stream.end(buffer)
+    })
 }
 
 export async function uploadToBlob(
@@ -11,8 +29,15 @@ export async function uploadToBlob(
     folder: string,
     name: string,
 ): Promise<string> {
-    const ext = MIME_TO_EXT[file.type] ?? (file.type.includes('audio') ? 'mp3' : 'jpg')
-    const pathname = `${folder}/${name}.${ext}`
-    const blob = await put(pathname, file, { access: 'public' })
-    return blob.url
+    const isAudio = AUDIO_MIMES.has(file.type) || file.type.startsWith('audio/')
+    const buffer  = Buffer.from(await file.arrayBuffer())
+
+    const result = await uploadStream(buffer, {
+        folder,
+        public_id:     name,
+        resource_type: isAudio ? 'video' : 'image',
+        overwrite:     true,
+    })
+
+    return result.secure_url
 }

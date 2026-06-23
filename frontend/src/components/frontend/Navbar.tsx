@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Search, X, User, MenuIcon } from "lucide-react";
+import { Search, X, User, MenuIcon, LogOut } from "lucide-react";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { navbarText } from "@/locales/navbar";
 import NavbarSidebar from "./NavbarSidebar";
@@ -98,7 +98,12 @@ const ArtistItem = ({ artist, artistsLabel, onClick }: ArtistItemProps) => (
                 {artist.name}
                 {artist.verified && <span style={{ color: "#34D4B8", fontSize: 11, marginLeft: 4 }}>✓</span>}
             </p>
-            <p className="text-xs mt-0.5" style={{ color: "rgba(0,0,0,0.45)" }}>{artist.genre ?? artistsLabel}</p>
+            <p className="text-xs mt-0.5" style={{ color: "rgba(0,0,0,0.45)" }}>
+                {(() => {
+                    const gs: string[] = artist.genres?.length ? artist.genres : (artist.genre ? [artist.genre] : []);
+                    return gs.length > 0 ? gs.slice(0, 2).join(" · ") : artistsLabel;
+                })()}
+            </p>
         </div>
         <span style={{ fontSize: 12, color: "rgba(0,0,0,0.3)" }}>→</span>
     </Link>
@@ -109,7 +114,8 @@ const ArtistItem = ({ artist, artistsLabel, onClick }: ArtistItemProps) => (
 const Navbar = () => {
     const pathname = usePathname();
     const router = useRouter();
-    const user = useAuthStore((s) => s.user);
+    const user     = useAuthStore((s) => s.user);
+    const signOut  = useAuthStore((s) => s.signOut);
     const { lang } = useLanguageStore();
     const { siteName, logoUrl, fetch: fetchSettings, loaded: settingsLoaded } = useSettingsStore();
 
@@ -123,6 +129,19 @@ const Navbar = () => {
     const [tracks, setTracks] = useState<Track[]>([]);
     const [artists, setArtists] = useState<Artist[]>([]);
     const [searching, setSearching] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+
+    const isHome = pathname === "/";
+    const isLightHeroPage = pathname === "/gioi-thieu" || pathname === "/lien-he" || pathname === "/artists" || (pathname ?? "").startsWith("/artists/");
+    const isTransparent = (isHome || isLightHeroPage) && !scrolled;
+    const isLightHero = isLightHeroPage && !scrolled;
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 40);
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
 
     const searchRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -133,6 +152,7 @@ const Navbar = () => {
         { to: "/",            label: t.home },
         { to: "/gioi-thieu", label: t.about },
         { to: "/artists",    label: t.artists },
+        { to: "/charts",     label: t.charts },
         { to: "/lien-he",    label: t.contact },
     ];
 
@@ -176,12 +196,13 @@ const Navbar = () => {
                 setSearching(true);
                 const [tracksRes, artistsRes] = await Promise.all([
                     trackService.search(query, 5),
-                    artistService.getAll({ limit: 3 }),
+                    artistService.getAll({ search: query, limit: 3 }),
                 ]);
                 setTracks(tracksRes);
-                setArtists(artistsRes.data.filter((a) =>
-                    a.name.toLowerCase().includes(query.toLowerCase())
-                ).slice(0, 3));
+                setArtists(artistsRes.data);
+            } catch {
+                setTracks([]);
+                setArtists([]);
             } finally {
                 setSearching(false);
             }
@@ -215,6 +236,19 @@ const Navbar = () => {
     return (
         <>
             <style>{`
+                /* ── Transparent mode — dark hero (home) ── */
+                .nav-transparent .nic-nav-link { color: rgba(255,255,255,0.85); }
+                .nav-transparent .nic-nav-link:hover,
+                .nav-transparent .nic-nav-link.active { color: #34D4B8; }
+                .nav-transparent .nic-genre-tab { color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.22); }
+                .nav-transparent .nic-genre-tab:hover { color: #34D4B8; border-color: #34D4B8; background: rgba(255,255,255,0.08); }
+
+                /* ── Transparent mode — light hero (about) ── */
+                .nav-transparent-light .nic-nav-link { color: rgba(0,0,0,0.75); }
+                .nav-transparent-light .nic-nav-link:hover,
+                .nav-transparent-light .nic-nav-link.active { color: #00A98F; }
+                .nav-transparent-light .nic-nav-link::after { background: #00A98F; }
+
                 /* ── Nav link ── */
                 .nic-nav-link {
                     position: relative;
@@ -247,21 +281,23 @@ const Navbar = () => {
 
                 /* ── Genre tab (row 2) ── */
                 .nic-genre-tab {
-                    padding: 4px 14px;
-                    border-radius: 100px;
+                    padding: 5px 14px;
+                    border-radius: 20px;
                     font-family: 'Space Grotesk', sans-serif;
-                    font-size: 10px; font-weight: 700;
-                    letter-spacing: 2px; text-transform: uppercase;
-                    color: rgba(0,0,0,0.68);
+                    font-size: 12px; font-weight: 600;
+                    letter-spacing: 0.04em;
+                    color: rgba(0,0,0,0.65);
                     background: transparent;
-                    border: none; cursor: pointer;
+                    border: 1px solid rgba(0,0,0,0.15);
+                    cursor: pointer;
                     transition: all 0.2s;
                     white-space: nowrap;
                     text-decoration: none;
                 }
                 .nic-genre-tab:hover {
-                    background: rgba(0,169,143,0.12);
+                    border-color: #34D4B8;
                     color: #34D4B8;
+                    background: rgba(0,169,143,0.06);
                 }
 
                 /* ── Search input ── */
@@ -347,18 +383,37 @@ const Navbar = () => {
                     letter-spacing: 0.5px;
                 }
                 .nic-user-badge:hover { border-color: rgba(0,169,143,0.4); color: #34D4B8; }
+
+                /* ── Logout button ── */
+                .nic-logout-btn {
+                    display: flex; align-items: center; gap: 6px;
+                    padding: 6px 14px; border-radius: 6px;
+                    background: rgba(239,68,68,0.08);
+                    border: 1px solid rgba(239,68,68,0.2);
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 11px; font-weight: 700;
+                    color: rgba(239,68,68,0.8);
+                    letter-spacing: 0.5px;
+                    cursor: pointer; transition: all 0.2s;
+                }
+                .nic-logout-btn:hover {
+                    background: rgba(239,68,68,0.14);
+                    border-color: rgba(239,68,68,0.45);
+                    color: rgb(239,68,68);
+                }
             `}</style>
 
             {/* ═══════════════════════════════════════════════════════
                 HEADER WRAPPER — fixed, 2-layer
             ═══════════════════════════════════════════════════════ */}
             <header
-                className="fixed inset-x-0 top-0 z-40"
+                className={`fixed inset-x-0 top-0 z-[9999]${isTransparent ? (isLightHero ? " nav-transparent-light" : " nav-transparent") : ""}`}
                 style={{
-                    background: "rgba(248,248,252,0.96)",
-                    backdropFilter: "saturate(180%) blur(12px)",
-                    borderBottom: "1px solid rgba(0,169,143,0.15)",
-                    boxShadow: "0 1px 0 rgba(0,169,143,0.05), 0 4px 16px -8px rgba(0,0,0,0.08)",
+                    background: isTransparent ? "transparent" : "rgba(248,248,252,0.96)",
+                    backdropFilter: isTransparent ? "none" : "saturate(180%) blur(12px)",
+                    borderBottom: isTransparent ? "none" : "1px solid rgba(0,169,143,0.15)",
+                    boxShadow: isTransparent ? "none" : "0 1px 0 rgba(0,169,143,0.05), 0 4px 16px -8px rgba(0,0,0,0.08)",
+                    transition: "background 0.3s, backdrop-filter 0.3s, border-color 0.3s, box-shadow 0.3s",
                 }}
             >
                 {/* ── Layer 1: brand + main nav + utils ── */}
@@ -377,10 +432,10 @@ const Navbar = () => {
                         )}
                         {!logoUrl && (
                             <div style={{ textAlign: "left", lineHeight: 1.2 }}>
-                                <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 800, color: "#0D0D1A", letterSpacing: "-0.3px" }}>
+                                <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 13, fontWeight: 800, color: (isTransparent && !isLightHero) ? "#fff" : "#0D0D1A", letterSpacing: "-0.3px", transition: "color 0.3s" }}>
                                     {siteName || "WON MUSIC"}
                                 </div>
-                                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "rgba(0,0,0,0.38)", letterSpacing: "1.5px", textTransform: "uppercase" }}>MUSIC PLATFORM</div>
+                                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: (isTransparent && !isLightHero) ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.38)", letterSpacing: "1.5px", textTransform: "uppercase", transition: "color 0.3s" }}>MUSIC PLATFORM</div>
                             </div>
                         )}
                     </button>
@@ -409,8 +464,10 @@ const Navbar = () => {
                             onClick={() => setSearchOpen(true)}
                             style={{
                                 display: "flex", alignItems: "center", gap: 8,
-                                background: searchOpen ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
-                                border: `1px solid ${searchOpen ? "rgba(0,169,143,0.4)" : "rgba(0,0,0,0.08)"}`,
+                                background: isTransparent
+                                    ? (isLightHero ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.12)")
+                                    : (searchOpen ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)"),
+                                border: `1px solid ${isTransparent ? (isLightHero ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.2)") : (searchOpen ? "rgba(0,169,143,0.4)" : "rgba(0,0,0,0.08)")}`,
                                 borderRadius: 8, padding: "7px 14px",
                                 cursor: "text", transition: "all 0.25s",
                             }}
@@ -488,10 +545,20 @@ const Navbar = () => {
                         <LanguageSwitcher />
 
                         {user && (
-                            <a href="/admin" target="_blank" rel="noopener noreferrer" className="nic-user-badge">
-                                <User size={12} />
-                                {user.displayName ?? t.member}
-                            </a>
+                            <>
+                                <a href="/admin" target="_blank" rel="noopener noreferrer" className="nic-user-badge">
+                                    <User size={12} />
+                                    {user.displayName ?? t.member}
+                                </a>
+                                <button
+                                    onClick={() => signOut()}
+                                    className="nic-logout-btn"
+                                    title={t.logout}
+                                >
+                                    <LogOut size={12} />
+                                    {t.logout}
+                                </button>
+                            </>
                         )}
                     </div>
 
@@ -506,32 +573,6 @@ const Navbar = () => {
                     </button>
                 </div>
 
-                {/* ── Layer 2: genre quick-tabs ── */}
-                <div
-                    className="hidden xl:flex"
-                    style={{
-                        maxWidth: 1440, margin: "0 auto", padding: "0 32px",
-                        height: 36,
-                        alignItems: "center",
-                        gap: 2,
-                        overflowX: "auto",
-                        scrollbarWidth: "none",
-                        borderTop: "1px solid rgba(0,0,0,0.06)",
-                    }}
-                >
-                    <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(0,0,0,0.55)", marginRight: 8, flexShrink: 0 }}>
-                        THỂ LOẠI
-                    </span>
-                    {GENRES.map((g) => (
-                        <Link key={g} href={`/search?q=${g}`} className="nic-genre-tab">
-                            {g}
-                        </Link>
-                    ))}
-                    <div style={{ flex: 1 }} />
-                    <Link href="/artists" className="nic-genre-tab" style={{ color: "rgba(0,169,143,0.7)" }}>
-                        Xem tất cả nghệ sĩ →
-                    </Link>
-                </div>
             </header>
 
             <NavbarSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />

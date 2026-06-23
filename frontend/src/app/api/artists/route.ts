@@ -12,11 +12,16 @@ export async function GET(req: NextRequest) {
         const page = Number(searchParams.get('page') ?? 1)
         const limit = Number(searchParams.get('limit') ?? 20)
         const genre = searchParams.get('genre')
+        const search = searchParams.get('search')
 
         await connectDB()
 
         const filter: Record<string, unknown> = {}
-        if (genre) filter.genre = { $regex: genre, $options: 'i' }
+        if (genre) filter.$or = [
+            { genres: { $in: [genre] } },
+            { genre: { $regex: genre, $options: 'i' } },
+        ]
+        if (search) filter.name = { $regex: search, $options: 'i' }
 
         const [artists, total] = await Promise.all([
             Artist.find(filter)
@@ -29,8 +34,9 @@ export async function GET(req: NextRequest) {
         return Response.json({ success: true, data: artists, pagination: { page, limit, total } }, {
             headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' },
         })
-    } catch {
-        return Response.json({ success: false, message: 'Lỗi server' }, { status: 500 })
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        return Response.json({ success: false, message: msg }, { status: 500 })
     }
 }
 

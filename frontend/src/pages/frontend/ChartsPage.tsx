@@ -4,6 +4,7 @@ import Link from "next/link";
 import { trackService, type Track } from "@/services/trackService";
 import { usePlayerStore } from "@/stores/usePlayerStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 import { chartsText } from "@/locales/charts";
 import SEO from "@/components/frontend/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -17,7 +18,6 @@ const formatTime = (sec: number) =>
     `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
 
 type Period = "day" | "week" | "month";
-const PERIOD_LIMITS: Record<Period, number> = { day:10, week:20, month:15 };
 const MEDAL: Record<number, string> = { 0:"🥇", 1:"🥈", 2:"🥉" };
 
 const SkeletonRow = ({ idx }: { idx: number }) => (
@@ -41,6 +41,13 @@ const ChartsPage = () => {
     const isMobile = useIsMobile();
     const { lang } = useLanguageStore();
     const t = chartsText[lang];
+
+    const { chartsLimitDay, chartsLimitWeek, chartsLimitMonth, chartsSeoTitleVi, chartsSeoTitleEn, chartsSeoDescVi, chartsSeoDescEn } = useSettingsStore();
+    const PERIOD_LIMITS: Record<Period, number> = {
+        day:   chartsLimitDay   || 10,
+        week:  chartsLimitWeek  || 20,
+        month: chartsLimitMonth || 15,
+    };
 
     const [period,    setPeriod]    = useState<Period>("week");
     const [tracks,    setTracks]    = useState<Track[]>([]);
@@ -119,8 +126,8 @@ const ChartsPage = () => {
     return (
         <>
         <SEO
-            title="Bảng Xếp Hạng – Won Music"
-            description="Top bài hát hot nhất theo ngày, tuần, tháng trên Won Music."
+            title={(lang === "en" ? chartsSeoTitleEn : chartsSeoTitleVi) || "Bảng Xếp Hạng – Won Music"}
+            description={(lang === "en" ? chartsSeoDescEn : chartsSeoDescVi) || "Top bài hát hot nhất theo ngày, tuần, tháng trên Won Music."}
             canonical="https://www.wonmusic.vn/charts"
         />
         <div style={{ minHeight:"100vh", background:"#F8F8FC", fontFamily:"'Be Vietnam Pro',sans-serif", color:"#0D0D1A" }}>

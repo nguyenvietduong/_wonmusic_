@@ -9,6 +9,8 @@ export const artistsText = {
         artistCount: "nghệ sĩ",
         viewArtist: "▶ Xem nghệ sĩ",
         noArtists: "Không tìm thấy nghệ sĩ nào",
+        error: "Không thể tải danh sách nghệ sĩ",
+        retry: "Thử lại",
     },
     en: {
         label: "Won Music · Artists",
@@ -20,5 +22,7 @@ export const artistsText = {
         artistCount: "artists",
         viewArtist: "▶ View Artist",
         noArtists: "No artists found",
+        error: "Unable to load artist list",
+        retry: "Try again",
     },
 };

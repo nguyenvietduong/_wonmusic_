@@ -1,36 +1,27 @@
 'use client';
-// src/pages/admin/tracks/Admintrackcreatepage.tsx
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-    ArrowLeft, Music, X, Upload, Image as ImageIcon,
+    ChevronLeft, Music, Upload, Image as ImageIcon,
     Mic2, Tag, Calendar, FileAudio,
     CheckCircle2, XCircle, Eye, EyeOff,
     Loader2, AlertCircle, ChevronDown, Play, Pause,
-    Volume2, VolumeX, Plus, Sparkles,
+    Volume2, VolumeX, Plus, Link2, X,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { artistService } from "@/services/artistService";
+import { genreService } from "@/services/genreService";
+import { SearchableSelect, type SelectOption } from "@/components/admin/SearchableSelect";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (s: number) =>
     `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-const WAVE = Array.from({ length: 48 }, (_, i) =>
+const WAVE = Array.from({ length: 40 }, (_, i) =>
     18 + Math.abs(Math.sin(i * 0.38) * 50 + Math.cos(i * 0.71) * 22)
 );
 
-const GENRES = [
-    "Pop", "R&B", "Hip-Hop", "Rock", "Electronic", "Jazz", "Classical",
-    "Folk", "Indie", "Country", "Dance", "Soul", "Ballad", "Lofi", "EDM",
-    "Metal", "Blues", "Reggae", "Acoustic",
-];
-
-const API = "/api";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 interface TrackForm {
     title: string;
     artistId: string;
@@ -42,10 +33,9 @@ interface TrackForm {
     coverUrl: string;
 }
 
-type Tab = "basic" | "media";
 type SourceMode = "upload" | "url";
 
-const EMPTY_FORM: TrackForm = {
+const EMPTY: TrackForm = {
     title: "", artistId: "",
     duration: 0, genre: "",
     releaseYear: String(new Date().getFullYear()),
@@ -53,43 +43,58 @@ const EMPTY_FORM: TrackForm = {
     audioUrl: "", coverUrl: "",
 };
 
-// ─── Component ───────────────────────────────────────────────────────────────
+const inputCls = "w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-900 placeholder-gray-400 bg-white transition-shadow";
+const selectCls = `${inputCls} appearance-none pr-10 cursor-pointer`;
+
 export default function AdminTrackCreatePages() {
     const router = useRouter();
 
-    const [artists, setArtists] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<Tab>("basic");
+    const [artists, setArtists]             = useState<any[]>([]);
+    const [loadingArtists, setLoadingArtists] = useState(true);
+    const [genreList, setGenreList]         = useState<string[]>([]);
+    const [saving, setSaving]         = useState(false);
+    const [error, setError]           = useState<string | null>(null);
     const [sourceMode, setSourceMode] = useState<SourceMode>("upload");
 
-    // ── Audio player state ──
-    const audioRef = useRef<HTMLAudioElement>(null);
-    const rafRef = useRef<number>(0);
-    const [playing, setPlaying] = useState(false);
-    const [muted, setMuted] = useState(false);
-    const [progress, setProgress] = useState(0);
+    // ── audio player ──
+    const audioRef  = useRef<HTMLAudioElement>(null);
+    const rafRef    = useRef<number>(0);
+    const [playing, setPlaying]       = useState(false);
+    const [muted, setMuted]           = useState(false);
+    const [progress, setProgress]     = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
-    const [volume, setVolume] = useState(80);
+    const [volume, setVolume]         = useState(80);
 
-    // ── Upload / preview state ──
-    const [coverDrag, setCoverDrag] = useState(false);
-    const [audioDrag, setAudioDrag] = useState(false);
-    const [uploadingCover, setUploadingCover] = useState(false);
-    const [uploadingAudio, setUploadingAudio] = useState(false);
-    const [coverPreview, setCoverPreview] = useState<string>("");
-    const [audioPreview, setAudioPreview] = useState<string>("");
+    // ── files ──
+    const [coverDrag, setCoverDrag]   = useState(false);
+    const [audioDrag, setAudioDrag]   = useState(false);
+    const [coverPreview, setCoverPreview] = useState("");
+    const [audioPreview, setAudioPreview] = useState("");
     const coverInputRef = useRef<HTMLInputElement>(null);
     const audioInputRef = useRef<HTMLInputElement>(null);
-
-    // ── Pending files (upload AFTER track created) ──
     const pendingCoverFile = useRef<File | null>(null);
     const pendingAudioFile = useRef<File | null>(null);
-    const coverBlobUrl     = useRef<string>("");
-    const audioBlobUrl     = useRef<string>("");
+    const coverBlobUrl     = useRef("");
+    const audioBlobUrl     = useRef("");
 
-    // Cleanup blob URLs on unmount to prevent memory leak
+    // ── form ──
+    const [form, setForm]     = useState<TrackForm>(EMPTY);
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+    const set   = (k: keyof TrackForm, v: any) => setForm(p => ({ ...p, [k]: v }));
+    const touch = (k: string) => setTouched(p => ({ ...p, [k]: true }));
+
+    // ── validation ──
+    const titleOk  = !!form.title.trim();
+    const artistOk = !!form.artistId;
+    const audioOk  = sourceMode === "url" ? !!form.audioUrl.trim() : !!pendingAudioFile.current;
+    const isValid  = titleOk && artistOk && audioOk;
+
+    const missing = [
+        !titleOk  && "tên bài hát",
+        !artistOk && "nghệ sĩ",
+        !audioOk  && "audio",
+    ].filter(Boolean) as string[];
+
     useEffect(() => {
         return () => {
             if (coverBlobUrl.current) URL.revokeObjectURL(coverBlobUrl.current);
@@ -97,75 +102,47 @@ export default function AdminTrackCreatePages() {
         };
     }, []);
 
-    // ── Form & Validation state ──
-    const [form, setForm] = useState<TrackForm>(EMPTY_FORM);
-    const set = (field: keyof TrackForm, value: any) =>
-        setForm(prev => ({ ...prev, [field]: value }));
-
-    // Track which fields the user has interacted with
-    const [touched, setTouched] = useState<Record<string, boolean>>({});
-    const touch = (field: string) =>
-        setTouched(prev => ({ ...prev, [field]: true }));
-
-    // ── Derived validation ──
-    const titleValid = !!form.title.trim();
-    const artistValid = !!form.artistId;
-    const audioValid = sourceMode === "url" ? !!form.audioUrl.trim() : !!pendingAudioFile.current;
-    const isValid = titleValid && artistValid && audioValid;
-
-    const missingFields = [
-        !titleValid && "tên bài hát",
-        !artistValid && "nghệ sĩ",
-        !audioValid && "file audio",
-    ].filter(Boolean) as string[];
-
-    // ── Load artists ──
     useEffect(() => {
-        (async () => {
-            try {
-                const res = await artistService.getAll({ limit: 200 });
-                setArtists(Array.isArray(res) ? res : res?.data ?? []);
-            } catch {
-                // non-critical
-            } finally {
-                setLoading(false);
-            }
-        })();
+        artistService.getAll({ limit: 200 })
+            .then(res => setArtists(Array.isArray(res) ? res : res?.data ?? []))
+            .catch(() => {})
+            .finally(() => setLoadingArtists(false));
+
+        genreService.getAll()
+            .then(list => setGenreList(list.map(g => g.name)))
+            .catch(() => {});
     }, []);
 
-    // ── Sync audio volume / mute ──
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
         audio.volume = volume / 100;
-        audio.muted = muted;
+        audio.muted  = muted;
     }, [volume, muted]);
 
-    // ── Player ──
     const tick = () => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        setCurrentTime(audio.currentTime);
-        setProgress((audio.currentTime / (audio.duration || 1)) * 100);
+        const a = audioRef.current;
+        if (!a) return;
+        setCurrentTime(a.currentTime);
+        setProgress((a.currentTime / (a.duration || 1)) * 100);
         rafRef.current = requestAnimationFrame(tick);
     };
 
     const togglePlay = () => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        if (playing) { audio.pause(); cancelAnimationFrame(rafRef.current); }
-        else { audio.play(); rafRef.current = requestAnimationFrame(tick); }
+        const a = audioRef.current;
+        if (!a) return;
+        if (playing) { a.pause(); cancelAnimationFrame(rafRef.current); }
+        else { a.play(); rafRef.current = requestAnimationFrame(tick); }
         setPlaying(p => !p);
     };
 
     const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        audio.currentTime = ((e.clientX - rect.left) / rect.width) * (audio.duration || 0);
+        const a = audioRef.current;
+        if (!a) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        a.currentTime = ((e.clientX - r.left) / r.width) * (a.duration || 0);
     };
 
-    // ── Select file → local preview only ──
     const handleFileSelect = (file: File, type: "cover" | "audio") => {
         if (type === "cover") {
             pendingCoverFile.current = file;
@@ -181,820 +158,614 @@ export default function AdminTrackCreatePages() {
             audioBlobUrl.current = url;
             setAudioPreview(url);
             touch("audio");
-            // Auto-read duration
             const tmp = new Audio(url);
             tmp.onloadedmetadata = () => {
-                const dur = Math.round(tmp.duration);
-                if (dur && isFinite(dur)) set("duration", dur);
+                if (tmp.duration && isFinite(tmp.duration))
+                    set("duration", Math.round(tmp.duration));
             };
             setPlaying(false); setProgress(0); setCurrentTime(0);
             cancelAnimationFrame(rafRef.current);
         }
     };
 
-    // ── Validate ──
-    const validate = (): string | null => {
-        if (!form.title.trim()) return "Tên bài hát không được để trống.";
-        if (!form.artistId) return "Vui lòng chọn nghệ sĩ.";
-        if (sourceMode === "url" && !form.audioUrl.trim()) return "Vui lòng nhập URL audio.";
-        if (sourceMode === "upload" && !pendingAudioFile.current) return "Vui lòng chọn file âm thanh.";
-        return null;
-    };
-
-    // ── Create ──
     const handleCreate = async () => {
         setTouched({ title: true, artistId: true, audio: true });
-        const err = validate();
-        if (err) { setError(err); return; }
+        if (!titleOk)  { setError("Tên bài hát không được để trống."); return; }
+        if (!artistOk) { setError("Vui lòng chọn nghệ sĩ."); return; }
+        if (!audioOk)  { setError(sourceMode === "url" ? "Vui lòng nhập URL audio." : "Vui lòng chọn file âm thanh."); return; }
 
-        setSaving(true);
-        setError(null);
-
+        setSaving(true); setError(null);
         try {
             let res;
-
             if (sourceMode === "url") {
-                // ── URL mode: gửi JSON, không upload Cloudinary ──
-                res = await axios.post(`${API}/tracks`, {
-                    title:       form.title,
-                    artistId:    form.artistId,
-                    duration:    form.duration,
-                    genre:       form.genre,
+                res = await axios.post("/api/tracks", {
+                    title: form.title, artistId: form.artistId,
+                    duration: form.duration, genre: form.genre,
                     releaseYear: form.releaseYear || undefined,
                     isPublished: form.isPublished,
-                    audioUrl:    form.audioUrl,
-                    coverUrl:    form.coverUrl || undefined,
+                    audioUrl: form.audioUrl,
+                    coverUrl: form.coverUrl || undefined,
                 });
             } else {
-                // ── Upload mode: multipart/form-data → Cloudinary ──
-                const formData = new FormData();
-                formData.append("title", form.title);
-                formData.append("artistId", form.artistId);
-                formData.append("duration", String(form.duration));
-                formData.append("genre", form.genre);
-                formData.append("isPublished", String(form.isPublished));
-                if (form.releaseYear) formData.append("releaseYear", form.releaseYear);
-                if (pendingAudioFile.current) formData.append("audio", pendingAudioFile.current);
-                if (pendingCoverFile.current) formData.append("cover", pendingCoverFile.current);
-
-                setUploadingAudio(true);
-                res = await axios.post(`${API}/tracks`, formData, {
+                const fd = new FormData();
+                fd.append("title", form.title);
+                fd.append("artistId", form.artistId);
+                fd.append("duration", String(form.duration));
+                fd.append("genre", form.genre);
+                fd.append("isPublished", String(form.isPublished));
+                if (form.releaseYear) fd.append("releaseYear", form.releaseYear);
+                if (pendingAudioFile.current) fd.append("audio", pendingAudioFile.current);
+                if (pendingCoverFile.current) fd.append("cover", pendingCoverFile.current);
+                res = await axios.post("/api/tracks", fd, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
-                setUploadingAudio(false);
             }
-
             toast.success("Tạo bài hát thành công!");
             router.push(`/admin/tracks/${res.data.data._id}`);
-
         } catch (e: any) {
             setError(e?.response?.data?.message ?? "Tạo bài hát thất bại. Vui lòng thử lại.");
         } finally {
             setSaving(false);
-            setUploadingAudio(false);
-            setUploadingCover(false);
         }
     };
 
-    // ── Derived ──
-    const activeAudioSrc = audioPreview;
-    const activeCoverSrc = coverPreview;
-
     const steps = [
-        { label: "Tên bài hát", done: titleValid },
-        { label: "Nghệ sĩ", done: artistValid },
-        { label: "File audio", done: audioValid },
-        { label: "Ảnh bìa", done: !!pendingCoverFile.current },
+        { label: "Tên bài hát", done: titleOk,  required: true  },
+        { label: "Nghệ sĩ",     done: artistOk, required: true  },
+        { label: "Audio",        done: audioOk,  required: true  },
+        { label: "Ảnh bìa",     done: !!pendingCoverFile.current || !!form.coverUrl, required: false },
     ];
-    const doneCount = steps.filter(s => s.done).length;
 
-    // ── Saving overlay label ──
-    const savingLabel = uploadingCover
-        ? "Đang upload ảnh bìa..."
-        : uploadingAudio
-            ? "Đang upload audio..."
-            : "Đang tạo bài hát...";
+    // ── Saving overlay ──
+    if (saving) return (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-5">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
+                <Loader2 size={28} className="text-indigo-600 animate-spin" />
+            </div>
+            <div className="text-center">
+                <p className="text-base font-semibold text-gray-800">Đang tạo bài hát...</p>
+                <p className="text-sm text-gray-400 mt-1">Vui lòng không đóng trang</p>
+            </div>
+        </div>
+    );
 
     return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", maxWidth: 900, paddingBottom: 80 }}>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+        <div className="min-h-full pb-10">
 
-                @keyframes ahFadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes ahPulse  { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.35)} 50%{box-shadow:0 0 0 6px rgba(74,222,128,0)} }
-                @keyframes ahSpin   { to{transform:rotate(360deg)} }
-                @keyframes ahEq     { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
-                @keyframes shake    { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
-                @keyframes stepIn   { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
-                @keyframes errFade  { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
-
-                .tc-card {
-                    border-radius:18px;
-                    border:1px solid rgba(255,255,255,.07);
-                    background:rgba(255,255,255,.025);
-                }
-                .tc-input, .tc-select {
-                    width:100%; box-sizing:border-box;
-                    background:rgba(255,255,255,.04);
-                    border:1px solid rgba(255,255,255,.08);
-                    border-radius:11px; padding:11px 14px;
-                    color:#fff; font-size:14px; font-weight:500;
-                    font-family:'Be Vietnam Pro',sans-serif; outline:none;
-                    transition:border-color .18s, background .18s, box-shadow .18s;
-                }
-                .tc-input:focus, .tc-select:focus {
-                    border-color:rgba(74,222,128,.45);
-                    background:rgba(74,222,128,.04);
-                    box-shadow:0 0 0 3px rgba(74,222,128,.08);
-                }
-                .tc-input::placeholder { color:rgba(255,255,255,.22); font-weight:400; }
-                .tc-input.err, .tc-select.err {
-                    border-color:rgba(248,113,113,.5)!important;
-                    box-shadow:0 0 0 3px rgba(248,113,113,.08)!important;
-                    animation: shake .3s ease;
-                }
-                .tc-select { padding-right:38px; -webkit-appearance:none; appearance:none; cursor:pointer; }
-                .tc-select option { background:#141a14; }
-
-                .tc-label {
-                    display:flex; align-items:center; gap:5px;
-                    font-size:11px; font-weight:700; color:rgba(255,255,255,.3);
-                    letter-spacing:1.8px; text-transform:uppercase; margin-bottom:7px;
-                }
-                .tc-field-err {
-                    font-size:11px; color:#f87171; margin-top:5px;
-                    display:flex; align-items:center; gap:4px;
-                    animation: errFade .2s ease;
-                }
-                .tc-field { margin-bottom:18px; position:relative; }
-                .tc-req   { color:#f87171; }
-
-                .tc-pill-btn {
-                    display:inline-flex; align-items:center; gap:7px;
-                    padding:8px 15px; border-radius:100px;
-                    border:1px solid rgba(255,255,255,.09);
-                    background:rgba(255,255,255,.03);
-                    color:rgba(255,255,255,.5); font-size:13px; font-weight:500;
-                    text-decoration:none; cursor:pointer;
-                    font-family:'Be Vietnam Pro',sans-serif; transition:all .18s;
-                }
-                .tc-pill-btn:hover { background:rgba(255,255,255,.07); color:#fff; border-color:rgba(255,255,255,.15); }
-
-                .tc-tab {
-                    padding:8px 20px; border-radius:100px;
-                    font-size:13px; font-weight:600; cursor:pointer;
-                    border:1px solid transparent; transition:all .18s;
-                    font-family:'Be Vietnam Pro',sans-serif;
-                    color:rgba(255,255,255,.38); background:transparent;
-                }
-                .tc-tab:hover { color:rgba(255,255,255,.7); }
-                .tc-tab.active { color:#4ade80; border-color:rgba(74,222,128,.22); background:rgba(74,222,128,.07); }
-
-                .tc-drop {
-                    border:2px dashed rgba(255,255,255,.1); border-radius:14px;
-                    padding:30px 20px; text-align:center; cursor:pointer;
-                    transition:all .2s; background:rgba(255,255,255,.02);
-                }
-                .tc-drop:hover, .tc-drop.drag { border-color:rgba(74,222,128,.45); background:rgba(74,222,128,.05); }
-                .tc-drop.err-drop { border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.03); }
-
-                .tc-toggle {
-                    position:relative; width:46px; height:26px;
-                    background:rgba(255,255,255,.1); border-radius:100px;
-                    cursor:pointer; transition:background .22s;
-                    flex-shrink:0; border:none; outline:none;
-                }
-                .tc-toggle::after {
-                    content:''; position:absolute; top:4px; left:4px;
-                    width:18px; height:18px; border-radius:50%;
-                    background:rgba(255,255,255,.45); transition:all .22s;
-                }
-                .tc-toggle.on { background:linear-gradient(135deg,#16a34a,#4ade80); animation:ahPulse 1.5s ease 1; }
-                .tc-toggle.on::after { left:24px; background:#fff; }
-
-                .tc-create-btn {
-                    display:inline-flex; align-items:center; gap:8px;
-                    padding:12px 30px; border-radius:12px;
-                    font-size:14px; font-weight:700; cursor:pointer;
-                    font-family:'Be Vietnam Pro',sans-serif; border:none; transition:all .2s;
-                    background:linear-gradient(135deg,#16a34a,#4ade80);
-                    color:#071207; box-shadow:0 4px 20px rgba(74,222,128,.3);
-                    position: relative;
-                }
-                .tc-create-btn:hover:not(:disabled) { transform:translateY(-2px); filter:brightness(1.08); box-shadow:0 8px 28px rgba(74,222,128,.4); }
-                .tc-create-btn:disabled {
-                    opacity:.35; cursor:not-allowed; transform:none!important;
-                    background: rgba(255,255,255,.08);
-                    color: rgba(255,255,255,.3);
-                    box-shadow: none;
-                    border: 1px solid rgba(255,255,255,.08);
-                }
-
-                .tc-stitle {
-                    font-size:11px; color:rgba(255,255,255,.28);
-                    letter-spacing:2px; text-transform:uppercase; font-weight:700;
-                    margin-bottom:20px; display:flex; align-items:center; gap:8px;
-                }
-                .tc-stitle::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.05); }
-
-                .tc-progress { position:relative; height:32px; cursor:pointer; border-radius:6px; overflow:hidden; }
-                .tc-thumb {
-                    position:absolute; top:50%; width:10px; height:10px;
-                    border-radius:50%; background:#4ade80;
-                    transform:translate(-50%,-50%);
-                    box-shadow:0 0 6px rgba(74,222,128,.5);
-                    pointer-events:none; transition:left .05s linear;
-                }
-                .tc-vol {
-                    -webkit-appearance:none; appearance:none;
-                    width:68px; height:3px; border-radius:3px; cursor:pointer; outline:none;
-                    background:linear-gradient(90deg,#4ade80 var(--v),rgba(255,255,255,.1) var(--v));
-                }
-                .tc-vol::-webkit-slider-thumb {
-                    -webkit-appearance:none; width:10px; height:10px;
-                    border-radius:50%; background:#4ade80; cursor:pointer;
-                }
-
-                .tc-step-dot {
-                    width:22px; height:22px; border-radius:50%;
-                    display:flex; align-items:center; justify-content:center;
-                    font-size:10px; font-weight:700; flex-shrink:0; transition:all .25s;
-                }
-                .tc-step-dot.done { background:rgba(74,222,128,.15); border:1.5px solid #4ade80; color:#4ade80; animation:stepIn .25s ease; }
-                .tc-step-dot.pending { background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.1); color:rgba(255,255,255,.25); }
-                .tc-step-dot.required { background:rgba(248,113,113,.08); border:1.5px solid rgba(248,113,113,.3); color:rgba(248,113,113,.6); }
-
-                .tc-prog-bar { height:3px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,.06); margin-top:6px; }
-                .tc-prog-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#16a34a,#4ade80); transition:width .4s cubic-bezier(.4,0,.2,1); }
-
-                .tc-saving-overlay {
-                    position:fixed; inset:0; z-index:9999;
-                    background:rgba(0,0,0,.7); backdrop-filter:blur(6px);
-                    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-                }
-
-                .tc-missing-badge {
-                    display:inline-flex; align-items:center; gap:5px;
-                    padding:5px 12px; border-radius:100px;
-                    background:rgba(248,113,113,.08);
-                    border:1px solid rgba(248,113,113,.2);
-                    font-size:11px; color:rgba(248,113,113,.8); font-weight:600;
-                    animation: errFade .25s ease;
-                }
-            `}</style>
-
-            {/* Hidden audio player */}
-            {activeAudioSrc && (
-                <audio
-                    ref={audioRef}
-                    src={activeAudioSrc}
-                    onEnded={() => {
-                        setPlaying(false); setProgress(0); setCurrentTime(0);
-                        cancelAnimationFrame(rafRef.current);
-                    }}
+            {/* Hidden audio + file inputs */}
+            {audioPreview && (
+                <audio ref={audioRef} src={audioPreview}
+                    onEnded={() => { setPlaying(false); setProgress(0); setCurrentTime(0); cancelAnimationFrame(rafRef.current); }}
                 />
             )}
-
-            {/* Hidden file inputs */}
-            <input ref={coverInputRef} type="file" accept="image/*" style={{ display: "none" }}
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f, "cover"); e.target.value = ""; }} />
-            <input ref={audioInputRef} type="file" accept="audio/*" style={{ display: "none" }}
+            <input ref={audioInputRef} type="file" accept="audio/*" className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f, "audio"); e.target.value = ""; }} />
 
-            {/* ── Saving overlay ── */}
-            {saving && (
-                <div className="tc-saving-overlay">
-                    <div style={{ width: 64, height: 64, borderRadius: 18, background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Loader2 size={28} color="#4ade80" style={{ animation: "ahSpin .7s linear infinite" }} />
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                        <p style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22, color: "#fff", letterSpacing: 1.5, marginBottom: 4 }}>
-                            {savingLabel}
-                        </p>
-                        <p style={{ fontSize: 12, color: "rgba(255,255,255,.35)" }}>Vui lòng không đóng trang</p>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                        {[
-                            { label: "Tạo bài hát", done: !!(uploadingCover || uploadingAudio) },
-                            { label: "Upload ảnh bìa", done: !!uploadingAudio, active: uploadingCover },
-                            { label: "Upload audio", done: false, active: uploadingAudio },
-                        ].map((s, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 100, background: s.active ? "rgba(74,222,128,.12)" : s.done ? "rgba(74,222,128,.06)" : "rgba(255,255,255,.04)", border: `1px solid ${s.active ? "rgba(74,222,128,.3)" : s.done ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.07)"}` }}>
-                                {s.active
-                                    ? <Loader2 size={11} color="#4ade80" style={{ animation: "ahSpin .7s linear infinite" }} />
-                                    : s.done
-                                        ? <CheckCircle2 size={11} color="#4ade80" />
-                                        : <div style={{ width: 11, height: 11, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,.2)" }} />
-                                }
-                                <span style={{ fontSize: 11, color: s.active ? "#4ade80" : s.done ? "rgba(74,222,128,.7)" : "rgba(255,255,255,.3)", fontWeight: s.active ? 700 : 400 }}>
-                                    {s.label}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* ── Breadcrumb ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, animation: "ahFadeUp .3s both", flexWrap: "wrap" }}>
-                <Link href="/admin/tracks" className="tc-pill-btn"><ArrowLeft size={13} /> Bài hát</Link>
-                <span style={{ color: "rgba(255,255,255,.18)", fontSize: 12 }}>/</span>
-                <span style={{ fontSize: 13, color: "#4ade80", fontWeight: 600 }}>Tạo mới</span>
-            </div>
-
-            {/* ── Header ── */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, animation: "ahFadeUp .35s both", flexWrap: "wrap", gap: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ width: 54, height: 54, borderRadius: 13, overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#052e16,#14532d)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid rgba(74,222,128,.15)" }}>
-                        {activeCoverSrc
-                            ? <img src={activeCoverSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            : <Sparkles size={20} color="rgba(74,222,128,.35)" />
-                        }
-                    </div>
+            {/* ── Page header ── */}
+            <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
+                <div className="flex items-center gap-4">
+                    <Link href="/admin/tracks"
+                        className="w-9 h-9 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-all shadow-sm">
+                        <ChevronLeft size={18} />
+                    </Link>
                     <div>
-                        <p style={{ fontSize: 11, color: "#4ade80", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 4 }}>
-                            Tạo bài hát mới
-                        </p>
-                        <h1 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 30, color: "#fff", letterSpacing: 2, lineHeight: 1 }}>
-                            {form.title || <span style={{ color: "rgba(255,255,255,.2)" }}>Chưa có tên...</span>}
+                        <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+                            <Link href="/admin/tracks" className="hover:text-indigo-600 transition-colors">Bài hát</Link>
+                            <span>/</span>
+                            <span className="text-gray-700 font-medium">Tạo mới</span>
+                        </nav>
+                        <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+                            {form.title || <span className="text-gray-300 font-normal">Chưa có tên...</span>}
                         </h1>
                     </div>
                 </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    <Link href="/admin/tracks" className="tc-pill-btn"><X size={13} /> Huỷ</Link>
-
-                    {/* Missing fields hint next to button */}
-                    {!isValid && missingFields.length > 0 && (
-                        <span className="tc-missing-badge">
-                            <AlertCircle size={10} />
-                            Thiếu: {missingFields.join(", ")}
+                <div className="flex items-center gap-3">
+                    {!isValid && missing.length > 0 && (
+                        <span className="hidden sm:flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+                            <AlertCircle size={12} /> Thiếu: {missing.join(", ")}
                         </span>
                     )}
-
+                    <Link href="/admin/tracks"
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                        Huỷ
+                    </Link>
                     <button
-                        className="tc-create-btn"
                         onClick={handleCreate}
-                        disabled={saving || !isValid}
-                        title={!isValid ? `Vui lòng điền đủ: ${missingFields.join(", ")}` : ""}
+                        disabled={!isValid}
+                        className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
                     >
                         <Plus size={15} /> Tạo bài hát
                     </button>
                 </div>
             </div>
 
-            {/* ── Completion progress ── */}
-            <div style={{ marginBottom: 22, animation: "ahFadeUp .38s both" }}>
-                <div className="tc-card" style={{ padding: "14px 18px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, color: "rgba(255,255,255,.3)", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" }}>
-                            Tiến độ điền thông tin
-                        </span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: isValid ? "#4ade80" : "rgba(255,255,255,.5)" }}>
-                            {doneCount}/4
-                            {isValid && <span style={{ marginLeft: 6, fontSize: 12 }}>✓ Sẵn sàng tạo</span>}
-                        </span>
-                    </div>
-                    <div className="tc-prog-bar">
-                        <div className="tc-prog-fill" style={{ width: `${(doneCount / 4) * 100}%` }} />
-                    </div>
-                    <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
-                        {steps.map(s => {
-                            // Show as required-error if touched and not done and it's a required field
-                            const isRequired = s.label !== "Ảnh bìa";
-                            const showErr = isRequired && !s.done && touched[
-                                s.label === "Tên bài hát" ? "title" : s.label === "Nghệ sĩ" ? "artistId" : "audio"
-                            ];
-                            return (
-                                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                    <div className={`tc-step-dot ${s.done ? "done" : showErr ? "required" : "pending"}`}>
-                                        {s.done ? "✓" : showErr ? "!" : "·"}
-                                    </div>
-                                    <span style={{ fontSize: 12, color: s.done ? "rgba(255,255,255,.6)" : showErr ? "rgba(248,113,113,.7)" : "rgba(255,255,255,.25)", fontWeight: s.done ? 600 : 400, transition: "color .2s" }}>
-                                        {s.label}
-                                        {isRequired && !s.done && <span style={{ color: "#f87171", marginLeft: 2 }}>*</span>}
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Error banner ── */}
+            {/* ── Error ── */}
             {error && (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 12, background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", marginBottom: 18, animation: "shake .35s ease" }}>
-                    <AlertCircle size={15} color="#f87171" style={{ flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: "#f87171", flex: 1 }}>{error}</span>
-                    <button onClick={() => setError(null)} style={{ background: "none", border: "none", color: "rgba(248,113,113,.5)", cursor: "pointer", padding: 0 }}>
+                <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-6">
+                    <AlertCircle size={15} className="flex-shrink-0" />
+                    <span className="flex-1">{error}</span>
+                    <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 cursor-pointer">
                         <X size={14} />
                     </button>
                 </div>
             )}
 
-            {/* ── Tabs ── */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 20, animation: "ahFadeUp .4s both" }}>
-                {(["basic", "media"] as Tab[]).map(tab => (
-                    <button key={tab} className={`tc-tab ${activeTab === tab ? "active" : ""}`} onClick={() => setActiveTab(tab)}>
-                        {{ basic: "Thông tin cơ bản", media: "Media & Audio" }[tab]}
-                        {/* Red dot — required fields missing */}
-                        {tab === "basic" && (!titleValid || !artistValid) && (
-                            <span style={{ marginLeft: 6, width: 6, height: 6, borderRadius: "50%", background: "#f87171", display: "inline-block", verticalAlign: "middle" }} />
-                        )}
-                        {tab === "media" && !audioValid && (
-                            <span style={{ marginLeft: 6, width: 6, height: 6, borderRadius: "50%", background: "#fb923c", display: "inline-block", verticalAlign: "middle" }} />
-                        )}
-                    </button>
-                ))}
-            </div>
+            {/* ── Content grid ── */}
+            <div className="grid grid-cols-3 gap-7 items-start">
 
-            {/* ════════ Tab: Basic ════════ */}
-            {activeTab === "basic" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, animation: "ahFadeUp .3s both" }}>
+                {/* ══════ Left: form (2/3) ══════ */}
+                <div className="col-span-2 space-y-5">
 
-                    {/* Left */}
-                    <div className="tc-card" style={{ padding: "22px 24px" }}>
-                        <p className="tc-stitle">Thông tin bài hát</p>
-
-                        {/* Title */}
-                        <div className="tc-field">
-                            <label className="tc-label"><Music size={10} /> Tên bài hát <span className="tc-req">*</span></label>
-                            <div style={{ position: "relative" }}>
-                                <input
-                                    className={`tc-input ${touched.title && !titleValid ? "err" : ""}`}
-                                    value={form.title}
-                                    onChange={e => set("title", e.target.value)}
-                                    onBlur={() => touch("title")}
-                                    placeholder="Nhập tên bài hát..."
-                                    maxLength={120}
-                                    autoFocus
-                                />
-                                <span style={{ position: "absolute", right: 12, bottom: 11, fontSize: 10, color: "rgba(255,255,255,.18)", pointerEvents: "none" }}>
-                                    {form.title.length}/120
-                                </span>
-                            </div>
-                            {touched.title && !titleValid && (
-                                <p className="tc-field-err">
-                                    <AlertCircle size={10} /> Tên bài hát không được để trống
-                                </p>
-                            )}
+                    {/* Section: thông tin cơ bản */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-indigo-600 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Thông tin bài hát</h2>
                         </div>
+                        <div className="px-6 py-6 space-y-5">
 
-                        {/* Artist */}
-                        <div className="tc-field">
-                            <label className="tc-label"><Mic2 size={10} /> Nghệ sĩ <span className="tc-req">*</span></label>
-                            <div style={{ position: "relative" }}>
-                                <select
-                                    className={`tc-select ${touched.artistId && !artistValid ? "err" : ""}`}
-                                    value={form.artistId}
-                                    onChange={e => set("artistId", e.target.value)}
-                                    onBlur={() => touch("artistId")}
-                                    disabled={loading}
-                                >
-                                    <option value="">{loading ? "Đang tải..." : "-- Chọn nghệ sĩ --"}</option>
-                                    {artists.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
-                                </select>
-                                {loading
-                                    ? <Loader2 size={13} color="rgba(255,255,255,.3)" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", animation: "ahSpin .7s linear infinite", pointerEvents: "none" }} />
-                                    : <ChevronDown size={13} color="rgba(255,255,255,.3)" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                                }
-                            </div>
-                            {touched.artistId && !artistValid && (
-                                <p className="tc-field-err">
-                                    <AlertCircle size={10} /> Vui lòng chọn nghệ sĩ
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Genre */}
-                        <div className="tc-field">
-                            <label className="tc-label"><Tag size={10} /> Thể loại</label>
-                            <div style={{ position: "relative" }}>
-                                <select className="tc-select" value={form.genre} onChange={e => set("genre", e.target.value)}>
-                                    <option value="">-- Chọn thể loại --</option>
-                                    {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                                </select>
-                                <ChevronDown size={13} color="rgba(255,255,255,.3)" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-                            </div>
-                        </div>
-
-                        {/* Release year */}
-                        <div className="tc-field" style={{ marginBottom: 0 }}>
-                            <label className="tc-label"><Calendar size={10} /> Năm phát hành</label>
-                            <input
-                                className="tc-input" type="number"
-                                value={form.releaseYear}
-                                onChange={e => set("releaseYear", e.target.value)}
-                                placeholder={String(new Date().getFullYear())}
-                                min={1900} max={new Date().getFullYear() + 1}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Right */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-                        {/* Published toggle */}
-                        <div className="tc-card" style={{ padding: "20px 22px" }}>
-                            <p className="tc-stitle">Trạng thái</p>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, background: form.isPublished ? "rgba(74,222,128,.1)" : "rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .2s" }}>
-                                        {form.isPublished ? <Eye size={16} color="#4ade80" /> : <EyeOff size={16} color="rgba(255,255,255,.28)" />}
-                                    </div>
-                                    <div>
-                                        <p style={{ fontSize: 13, fontWeight: 700, color: form.isPublished ? "#fff" : "rgba(255,255,255,.45)", marginBottom: 3, transition: "color .2s" }}>
-                                            {form.isPublished ? "Xuất bản ngay" : "Lưu nháp"}
-                                        </p>
-                                        <p style={{ fontSize: 11, color: "rgba(255,255,255,.25)" }}>
-                                            {form.isPublished ? "Bài hát sẽ hiển thị với người dùng" : "Bài hát sẽ ẩn sau khi tạo"}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button className={`tc-toggle ${form.isPublished ? "on" : ""}`} onClick={() => set("isPublished", !form.isPublished)} />
-                            </div>
-                            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", gap: 6 }}>
-                                {form.isPublished
-                                    ? <><CheckCircle2 size={13} color="#4ade80" /><span style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>Sẽ xuất bản ngay sau khi tạo</span></>
-                                    : <><XCircle size={13} color="#f87171" /><span style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>Lưu dưới dạng nháp</span></>
-                                }
-                            </div>
-                        </div>
-
-                        {/* Notes */}
-                        <div className="tc-card" style={{ padding: "18px 20px", flex: 1 }}>
-                            <p className="tc-stitle">Lưu ý</p>
-                            {[
-                                "File audio và ảnh bìa sẽ tự động upload lên Cloudinary sau khi tạo.",
-                                "Thời lượng được tự động đọc khi bạn chọn file audio.",
-                                "Sau khi tạo, bạn có thể chỉnh sửa thêm từ trang chi tiết.",
-                                "Track ID sẽ được cấp bởi hệ thống sau khi tạo.",
-                            ].map((note, i) => (
-                                <div key={i} style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: i < 3 ? "1px solid rgba(255,255,255,.04)" : "none" }}>
-                                    <span style={{ fontSize: 11, color: "rgba(74,222,128,.4)", flexShrink: 0, marginTop: 1 }}>→</span>
-                                    <span style={{ fontSize: 12, color: "rgba(255,255,255,.38)", lineHeight: 1.55 }}>{note}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ════════ Tab: Media ════════ */}
-            {activeTab === "media" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, animation: "ahFadeUp .3s both" }}>
-
-                    {/* ── Cover ── */}
-                    <div className="tc-card" style={{ padding: "22px 24px" }}>
-                        <p className="tc-stitle">Ảnh bìa</p>
-
-                        {/* Preview */}
-                        <div style={{ position: "relative", marginBottom: 16, borderRadius: 14, overflow: "hidden", height: 200, background: "linear-gradient(135deg,#052e16,#14532d)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {activeCoverSrc
-                                ? <>
-                                    <img src={activeCoverSrc} alt="cover" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    <button
-                                        onClick={() => coverInputRef.current?.click()}
-                                        style={{ position: "absolute", bottom: 10, right: 10, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 100, background: "rgba(0,0,0,.6)", border: "1px solid rgba(255,255,255,.15)", color: "rgba(255,255,255,.8)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Be Vietnam Pro',sans-serif", backdropFilter: "blur(4px)" }}
-                                    >
-                                        <Upload size={11} /> Đổi ảnh
-                                    </button>
-                                </>
-                                : <div style={{ textAlign: "center" }}>
-                                    <ImageIcon size={36} color="rgba(74,222,128,.22)" style={{ margin: "0 auto 10px", display: "block" }} />
-                                    <p style={{ fontSize: 13, color: "rgba(255,255,255,.25)", marginBottom: 4 }}>Chưa có ảnh bìa</p>
-                                    <p style={{ fontSize: 11, color: "rgba(255,255,255,.15)" }}>Kéo thả hoặc chọn file bên dưới</p>
-                                </div>
-                            }
-                        </div>
-
-                        {/* Drop zone */}
-                        <div
-                            className={`tc-drop ${coverDrag ? "drag" : ""}`}
-                            onClick={() => coverInputRef.current?.click()}
-                            onDragOver={e => { e.preventDefault(); setCoverDrag(true); }}
-                            onDragLeave={() => setCoverDrag(false)}
-                            onDrop={e => { e.preventDefault(); setCoverDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f, "cover"); }}
-                        >
-                            <Upload size={22} color={coverDrag ? "#4ade80" : "rgba(255,255,255,.2)"} style={{ margin: "0 auto 10px", display: "block", transition: "color .2s" }} />
-                            <p style={{ fontSize: 13, color: coverDrag ? "#4ade80" : "rgba(255,255,255,.3)", fontWeight: 500, transition: "color .2s" }}>
-                                Kéo thả hoặc <span style={{ color: "#4ade80" }}>chọn file ảnh</span>
-                            </p>
-                            <p style={{ fontSize: 11, color: "rgba(255,255,255,.18)", marginTop: 5 }}>JPG, PNG, WEBP · tối đa 5MB</p>
-                            {pendingCoverFile.current && (
-                                <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 100, background: "rgba(74,222,128,.1)", border: "1px solid rgba(74,222,128,.2)" }}>
-                                    <CheckCircle2 size={11} color="#4ade80" />
-                                    <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 600 }}>{pendingCoverFile.current.name}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ── Audio ── */}
-                    <div className="tc-card" style={{ padding: "22px 24px" }}>
-                        {/* Source mode toggle */}
-                        <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
-                            {(["upload", "url"] as SourceMode[]).map(mode => (
-                                <button
-                                    key={mode}
-                                    onClick={() => setSourceMode(mode)}
-                                    style={{
-                                        flex: 1, padding: "8px 0", borderRadius: 10, fontSize: 12, fontWeight: 700,
-                                        fontFamily: "'Be Vietnam Pro',sans-serif", cursor: "pointer", transition: "all .18s",
-                                        border: sourceMode === mode ? "1px solid rgba(0,169,143,.4)" : "1px solid rgba(255,255,255,.08)",
-                                        background: sourceMode === mode ? "rgba(0,169,143,.12)" : "rgba(255,255,255,.03)",
-                                        color: sourceMode === mode ? "#34D4B8" : "rgba(255,255,255,.35)",
-                                    }}
-                                >
-                                    {mode === "upload" ? "⬆ Upload file" : "🔗 URL trực tiếp"}
-                                </button>
-                            ))}
-                        </div>
-
-                        <p className="tc-stitle">
-                            {sourceMode === "upload" ? "File âm thanh" : "URL âm thanh"}
-                            <span className="tc-req" style={{ fontSize: 10 }}>*</span>
-                        </p>
-
-                        {/* ── URL mode inputs ── */}
-                        {sourceMode === "url" && (
-                            <div style={{ marginBottom: 16 }}>
-                                <div className="tc-field">
-                                    <label className="tc-label">🔗 URL audio <span className="tc-req">*</span></label>
+                            {/* Title */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tên bài hát <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
                                     <input
-                                        className={`tc-input ${touched.audio && !audioValid ? "err" : ""}`}
-                                        value={form.audioUrl}
-                                        onChange={e => {
-                                            set("audioUrl", e.target.value);
-                                            // tự đọc duration nếu là URL hợp lệ
-                                            if (e.target.value.trim()) {
-                                                const tmp = new Audio(e.target.value.trim());
-                                                tmp.onloadedmetadata = () => {
-                                                    if (tmp.duration && isFinite(tmp.duration))
-                                                        set("duration", Math.round(tmp.duration));
-                                                };
-                                            }
-                                        }}
-                                        onBlur={() => touch("audio")}
-                                        placeholder="/audio/tenfile.mp3  hoặc  https://res.cloudinary.com/..."
+                                        type="text"
+                                        autoFocus
+                                        value={form.title}
+                                        onChange={e => set("title", e.target.value)}
+                                        onBlur={() => touch("title")}
+                                        placeholder="Nhập tên bài hát..."
+                                        maxLength={120}
+                                        className={`${inputCls} ${touched.title && !titleOk ? "border-red-400 ring-2 ring-red-100" : ""}`}
                                     />
-                                    <p style={{ fontSize: 11, color: "rgba(255,255,255,.2)", marginTop: 5 }}>
-                                        Local: <code style={{ color: "rgba(0,169,143,.7)" }}>/audio/tentrac.mp3</code> · Cloudinary/SoundCloud/bất kỳ URL public
+                                    <span className="absolute right-3 bottom-3 text-[10px] text-gray-300 pointer-events-none">
+                                        {form.title.length}/120
+                                    </span>
+                                </div>
+                                {touched.title && !titleOk && (
+                                    <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5">
+                                        <AlertCircle size={10} /> Tên bài hát không được để trống
                                     </p>
-                                    {touched.audio && !audioValid && (
-                                        <p className="tc-field-err"><AlertCircle size={10} /> Vui lòng nhập URL audio</p>
+                                )}
+                            </div>
+
+                            {/* Artist + Genre */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Nghệ sĩ <span className="text-red-500">*</span>
+                                    </label>
+                                    {loadingArtists ? (
+                                        <div className={`${inputCls} flex items-center gap-2 text-gray-400`}>
+                                            <Loader2 size={13} className="animate-spin" /> Đang tải...
+                                        </div>
+                                    ) : (
+                                        <SearchableSelect
+                                            options={artists.map(a => ({ value: a._id, label: a.name }))}
+                                            value={form.artistId}
+                                            onChange={v => { set("artistId", v); touch("artistId"); }}
+                                            onBlur={() => touch("artistId")}
+                                            placeholder="-- Chọn nghệ sĩ --"
+                                            searchPlaceholder="Tìm nghệ sĩ..."
+                                            hasError={touched.artistId && !artistOk}
+                                            theme="light"
+                                        />
+                                    )}
+                                    {touched.artistId && !artistOk && (
+                                        <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5">
+                                            <AlertCircle size={10} /> Vui lòng chọn nghệ sĩ
+                                        </p>
                                     )}
                                 </div>
-                                <div className="tc-field" style={{ marginBottom: 0 }}>
-                                    <label className="tc-label">🖼 URL ảnh bìa</label>
-                                    <input
-                                        className="tc-input"
-                                        value={form.coverUrl}
-                                        onChange={e => set("coverUrl", e.target.value)}
-                                        placeholder="/covers/tenfile.jpg  hoặc  https://..."
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Thể loại
+                                    </label>
+                                    <SearchableSelect
+                                        options={genreList.map(g => ({ value: g, label: g }))}
+                                        value={form.genre}
+                                        onChange={v => set("genre", v)}
+                                        placeholder="-- Chọn thể loại --"
+                                        searchPlaceholder="Tìm thể loại..."
+                                        theme="light"
                                     />
                                 </div>
                             </div>
-                        )}
 
-                        {/* ── Upload mode: mini player ── */}
-                        {sourceMode === "upload" && activeAudioSrc && (
-                            <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 14, background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.12)" }}>
-                                {pendingAudioFile.current && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "5px 10px", borderRadius: 8, background: "rgba(74,222,128,.08)" }}>
-                                        <span style={{ fontSize: 11 }}>📎</span>
-                                        <span style={{ fontSize: 11, color: "rgba(74,222,128,.85)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                                            {pendingAudioFile.current.name}
-                                        </span>
-                                        <span style={{ fontSize: 10, color: "rgba(255,255,255,.28)", flexShrink: 0 }}>
-                                            {(pendingAudioFile.current.size / 1024 / 1024).toFixed(1)} MB
+                            {/* Release year */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Năm phát hành</label>
+                                    <input
+                                        type="number"
+                                        value={form.releaseYear}
+                                        onChange={e => set("releaseYear", e.target.value)}
+                                        placeholder={String(new Date().getFullYear())}
+                                        min={1900} max={new Date().getFullYear() + 1}
+                                        className={inputCls}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Thời lượng (giây)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={form.duration || ""}
+                                            onChange={e => set("duration", Number(e.target.value))}
+                                            placeholder="Tự động khi chọn file..."
+                                            min={1}
+                                            className={inputCls}
+                                        />
+                                        {form.duration > 0 && (
+                                            <span className="absolute right-3 bottom-3 text-xs font-mono text-indigo-500 pointer-events-none">
+                                                {fmt(form.duration)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section: audio */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-indigo-600 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">
+                                File âm thanh <span className="text-red-500">*</span>
+                            </h2>
+                            {/* Source mode toggle */}
+                            <div className="ml-auto flex items-center rounded-lg border border-gray-200 overflow-hidden">
+                                {(["upload", "url"] as SourceMode[]).map(mode => (
+                                    <button
+                                        key={mode}
+                                        type="button"
+                                        onClick={() => setSourceMode(mode)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${sourceMode === mode ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                                    >
+                                        {mode === "upload" ? <><Upload size={11} /> Upload</> : <><Link2 size={11} /> URL</>}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="px-6 py-6">
+
+                            {/* URL mode */}
+                            {sourceMode === "url" && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            URL Audio <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={form.audioUrl}
+                                            onChange={e => {
+                                                set("audioUrl", e.target.value);
+                                                if (e.target.value.trim()) {
+                                                    const tmp = new Audio(e.target.value.trim());
+                                                    tmp.onloadedmetadata = () => {
+                                                        if (tmp.duration && isFinite(tmp.duration))
+                                                            set("duration", Math.round(tmp.duration));
+                                                    };
+                                                }
+                                            }}
+                                            onBlur={() => touch("audio")}
+                                            placeholder="https://... hoặc /audio/tenfile.mp3"
+                                            className={`${inputCls} ${touched.audio && !audioOk ? "border-red-400 ring-2 ring-red-100" : ""}`}
+                                        />
+                                        {touched.audio && !audioOk && (
+                                            <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5">
+                                                <AlertCircle size={10} /> Vui lòng nhập URL audio
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">URL Ảnh bìa <span className="text-gray-400 text-xs font-normal">(tuỳ chọn)</span></label>
+                                        <input
+                                            type="text"
+                                            value={form.coverUrl}
+                                            onChange={e => set("coverUrl", e.target.value)}
+                                            placeholder="https://..."
+                                            className={inputCls}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Upload mode */}
+                            {sourceMode === "upload" && (
+                                <div className="space-y-4">
+                                    {/* Audio drop zone */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            File âm thanh <span className="text-red-500">*</span>
+                                        </label>
+                                        <div
+                                            onClick={() => audioInputRef.current?.click()}
+                                            onDragOver={e => { e.preventDefault(); setAudioDrag(true); }}
+                                            onDragLeave={() => setAudioDrag(false)}
+                                            onDrop={e => { e.preventDefault(); setAudioDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f, "audio"); }}
+                                            className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                                audioDrag
+                                                    ? "border-indigo-400 bg-indigo-50"
+                                                    : pendingAudioFile.current
+                                                    ? "border-green-300 bg-green-50"
+                                                    : touched.audio && !audioOk
+                                                    ? "border-red-300 bg-red-50"
+                                                    : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            <FileAudio size={24} className={`mx-auto mb-2 ${
+                                                audioDrag ? "text-indigo-500"
+                                                    : pendingAudioFile.current ? "text-green-500"
+                                                    : touched.audio && !audioOk ? "text-red-400"
+                                                    : "text-gray-300"
+                                            }`} />
+                                            {pendingAudioFile.current ? (
+                                                <div>
+                                                    <p className="text-sm font-semibold text-green-700">{pendingAudioFile.current.name}</p>
+                                                    <p className="text-xs text-green-600 mt-0.5">
+                                                        {(pendingAudioFile.current.size / 1024 / 1024).toFixed(1)} MB
+                                                        {form.duration > 0 && ` · ${fmt(form.duration)}`}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 mt-1">Click để đổi file khác</p>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="text-sm text-gray-500">
+                                                        Kéo thả hoặc <span className="text-indigo-600 font-medium">chọn file</span>
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 mt-1">MP3, WAV, FLAC · tối đa 50MB</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {touched.audio && !audioOk && (
+                                            <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5">
+                                                <AlertCircle size={10} /> Vui lòng chọn file âm thanh
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Mini player */}
+                                    {audioPreview && (
+                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <button
+                                                    onClick={togglePlay}
+                                                    className="w-9 h-9 rounded-full bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer"
+                                                >
+                                                    {playing
+                                                        ? <Pause size={14} className="text-white" />
+                                                        : <Play size={14} className="text-white ml-0.5" />
+                                                    }
+                                                </button>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-medium text-gray-700 truncate">
+                                                        {pendingAudioFile.current?.name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 font-mono">
+                                                        {fmt(currentTime)} / {fmt(form.duration)}
+                                                    </p>
+                                                </div>
+                                                <button onClick={() => setMuted(m => !m)} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+                                                    {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                                </button>
+                                                <input
+                                                    type="range" min={0} max={100} value={muted ? 0 : volume}
+                                                    className="w-16 accent-indigo-600"
+                                                    onChange={e => { setVolume(+e.target.value); if (+e.target.value > 0) setMuted(false); }}
+                                                />
+                                            </div>
+                                            {/* Waveform */}
+                                            <div
+                                                className="relative h-8 cursor-pointer rounded overflow-hidden"
+                                                onClick={seek}
+                                            >
+                                                <div className="flex items-end gap-0.5 h-full">
+                                                    {WAVE.map((h, i) => {
+                                                        const filled = (i / WAVE.length) * 100 <= progress;
+                                                        return (
+                                                            <div
+                                                                key={i}
+                                                                className="flex-1 rounded-sm transition-colors"
+                                                                style={{
+                                                                    height: `${Math.min(h, 100)}%`,
+                                                                    background: filled ? "#6366f1" : "#e2e8f0",
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Section: ảnh bìa (upload mode only) */}
+                    {sourceMode === "upload" && (
+                        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+                                <div className="w-1 h-4 rounded-full bg-indigo-600 flex-shrink-0" />
+                                <h2 className="text-sm font-semibold text-gray-800">Ảnh bìa <span className="text-gray-400 text-xs font-normal">(tuỳ chọn)</span></h2>
+                            </div>
+                            <div className="px-6 py-6">
+                                <div className="grid grid-cols-2 gap-5 items-start">
+                                    {/* Drop zone */}
+                                    <div
+                                        onClick={() => coverInputRef.current?.click()}
+                                        onDragOver={e => { e.preventDefault(); setCoverDrag(true); }}
+                                        onDragLeave={() => setCoverDrag(false)}
+                                        onDrop={e => { e.preventDefault(); setCoverDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f, "cover"); }}
+                                        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                            coverDrag ? "border-indigo-400 bg-indigo-50"
+                                                : pendingCoverFile.current ? "border-green-300 bg-green-50"
+                                                : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                                        }`}
+                                    >
+                                        <ImageIcon size={24} className={`mx-auto mb-2 ${coverDrag ? "text-indigo-500" : pendingCoverFile.current ? "text-green-500" : "text-gray-300"}`} />
+                                        {pendingCoverFile.current ? (
+                                            <div>
+                                                <p className="text-sm font-semibold text-green-700">{pendingCoverFile.current.name}</p>
+                                                <p className="text-xs text-gray-400 mt-1">Click để đổi ảnh</p>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <p className="text-sm text-gray-500">Kéo thả hoặc <span className="text-indigo-600 font-medium">chọn ảnh</span></p>
+                                                <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP · tối đa 5MB</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Cover preview */}
+                                    <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center border border-gray-200">
+                                        {coverPreview
+                                            ? <img src={coverPreview} alt="cover" className="w-full h-full object-cover" />
+                                            : <Music size={32} className="text-indigo-200" />
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ══════ Right: sidebar (1/3) ══════ */}
+                <div className="sticky top-4 space-y-4">
+
+                    {/* Progress */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-gray-300 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Tiến độ</h2>
+                            <span className="ml-auto text-xs font-bold text-indigo-600">
+                                {steps.filter(s => s.done).length}/{steps.length}
+                            </span>
+                        </div>
+                        <div className="px-5 py-4">
+                            {/* Progress bar */}
+                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+                                <div
+                                    className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${(steps.filter(s => s.done).length / steps.length) * 100}%` }}
+                                />
+                            </div>
+                            <div className="space-y-2.5">
+                                {steps.map(s => (
+                                    <div key={s.label} className="flex items-center gap-3">
+                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                                            s.done
+                                                ? "bg-green-100 border border-green-300"
+                                                : s.required ? "bg-red-50 border border-red-200" : "bg-gray-100 border border-gray-200"
+                                        }`}>
+                                            {s.done
+                                                ? <CheckCircle2 size={12} className="text-green-600" />
+                                                : <span className={`text-[9px] font-bold ${s.required ? "text-red-400" : "text-gray-300"}`}>
+                                                    {s.required ? "!" : "·"}
+                                                </span>
+                                            }
+                                        </div>
+                                        <span className={`text-xs transition-colors ${s.done ? "text-gray-700 font-medium" : s.required ? "text-red-400" : "text-gray-400"}`}>
+                                            {s.label}
+                                            {s.required && !s.done && <span className="text-red-400 ml-0.5">*</span>}
                                         </span>
                                     </div>
-                                )}
-                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                                    <button
-                                        onClick={togglePlay}
-                                        style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg,#16a34a,#4ade80)", border: "none", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-                                    >
-                                        {playing ? <Pause size={14} color="#0a1a0a" /> : <Play size={14} color="#0a1a0a" style={{ marginLeft: 2 }} />}
-                                    </button>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{ fontSize: 10, color: "rgba(255,255,255,.28)", marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
-                                            {fmt(currentTime)} / {fmt(form.duration)}
+                                ))}
+                            </div>
+                            {isValid && (
+                                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-100">
+                                    <CheckCircle2 size={13} className="text-green-500" />
+                                    <span className="text-xs text-green-600 font-medium">Sẵn sàng tạo bài hát</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-gray-300 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Trạng thái</h2>
+                        </div>
+                        <div className="px-5 py-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${form.isPublished ? "bg-indigo-50" : "bg-gray-100"}`}>
+                                        {form.isPublished
+                                            ? <Eye size={16} className="text-indigo-600" />
+                                            : <EyeOff size={16} className="text-gray-400" />
+                                        }
+                                    </div>
+                                    <div>
+                                        <p className={`text-sm font-semibold transition-colors ${form.isPublished ? "text-gray-900" : "text-gray-500"}`}>
+                                            {form.isPublished ? "Xuất bản ngay" : "Lưu nháp"}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {form.isPublished ? "Hiển thị với người dùng" : "Ẩn sau khi tạo"}
                                         </p>
                                     </div>
-                                    <button onClick={() => setMuted(m => !m)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.3)", padding: 0 }}>
-                                        {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
-                                    </button>
-                                    <input
-                                        type="range" min={0} max={100} value={muted ? 0 : volume}
-                                        className="tc-vol"
-                                        style={{ "--v": `${muted ? 0 : volume}%` } as any}
-                                        onChange={e => { setVolume(+e.target.value); if (+e.target.value > 0) setMuted(false); }}
-                                    />
                                 </div>
-                                {/* Waveform */}
-                                <div className="tc-progress" onClick={seek}>
-                                    <div style={{ display: "flex", alignItems: "flex-end", gap: 1.5, height: "100%" }}>
-                                        {WAVE.map((h, i) => {
-                                            const filled = (i / WAVE.length) * 100 <= progress;
-                                            return (
-                                                <div key={i} style={{
-                                                    flex: 1, height: `${Math.min(h, 100)}%`, borderRadius: 2,
-                                                    background: filled
-                                                        ? `rgba(74,222,128,${.45 + (h / 100) * .55})`
-                                                        : `rgba(255,255,255,${.05 + (h / 100) * .04})`,
-                                                    ...(playing && filled ? { animation: `ahEq ${.4 + (i % 5) * .1}s ease-in-out infinite`, animationDelay: `${i * .02}s` } : {}),
-                                                }} />
-                                            );
-                                        })}
-                                    </div>
-                                    <div className="tc-thumb" style={{ left: `${progress}%` }} />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Drop zone — chỉ hiện khi upload mode */}
-                        {sourceMode === "upload" && (
-                            <>
-                                <div
-                                    className={`tc-drop ${audioDrag ? "drag" : ""} ${touched.audio && !audioValid ? "err-drop" : ""}`}
-                                    onClick={() => audioInputRef.current?.click()}
-                                    onDragOver={e => { e.preventDefault(); setAudioDrag(true); }}
-                                    onDragLeave={() => setAudioDrag(false)}
-                                    onDrop={e => { e.preventDefault(); setAudioDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFileSelect(f, "audio"); }}
+                                <button
+                                    type="button"
+                                    onClick={() => set("isPublished", !form.isPublished)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 cursor-pointer border-0 ${form.isPublished ? "bg-indigo-600" : "bg-gray-200"}`}
                                 >
-                                    <FileAudio
-                                        size={22}
-                                        color={
-                                            audioDrag ? "#4ade80"
-                                                : pendingAudioFile.current ? "rgba(74,222,128,.6)"
-                                                    : touched.audio && !audioValid ? "rgba(248,113,113,.5)"
-                                                        : "rgba(255,255,255,.2)"
-                                        }
-                                        style={{ margin: "0 auto 10px", display: "block", transition: "color .2s" }}
-                                    />
-                                    <p style={{ fontSize: 13, color: audioDrag ? "#4ade80" : touched.audio && !audioValid ? "rgba(248,113,113,.6)" : "rgba(255,255,255,.3)", fontWeight: 500, transition: "color .2s" }}>
-                                        {pendingAudioFile.current
-                                            ? <span style={{ color: "rgba(255,255,255,.4)" }}>Đổi file khác</span>
-                                            : <>Kéo thả hoặc <span style={{ color: touched.audio && !audioValid ? "#f87171" : "#4ade80" }}>chọn file audio</span></>
-                                        }
-                                    </p>
-                                    <p style={{ fontSize: 11, color: "rgba(255,255,255,.18)", marginTop: 5 }}>MP3, WAV, FLAC · tối đa 50MB · Tự động upload lên Cloudinary</p>
-                                </div>
-                                {touched.audio && !audioValid && (
-                                    <p className="tc-field-err" style={{ marginTop: 8 }}>
-                                        <AlertCircle size={10} /> Vui lòng chọn file âm thanh
-                                    </p>
-                                )}
-                            </>
-                        )}
+                                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${form.isPublished ? "translate-x-5" : "translate-x-0"}`} />
+                                </button>
+                            </div>
+                            <div className={`flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-100 text-xs ${form.isPublished ? "text-indigo-500" : "text-gray-400"}`}>
+                                {form.isPublished
+                                    ? <><CheckCircle2 size={12} /> Sẽ xuất bản ngay sau khi tạo</>
+                                    : <><XCircle size={12} /> Lưu dưới dạng bản nháp</>
+                                }
+                            </div>
+                        </div>
+                    </div>
 
-                        {/* Duration */}
-                        <div className="tc-field" style={{ marginTop: 16, marginBottom: 0 }}>
-                            <label className="tc-label"><Music size={10} /> Thời lượng (giây)</label>
-                            <div style={{ position: "relative" }}>
-                                <input
-                                    className="tc-input"
-                                    type="number"
-                                    value={form.duration || ""}
-                                    onChange={e => set("duration", Number(e.target.value))}
-                                    placeholder="Tự động khi chọn file..."
-                                    min={1}
-                                />
-                                {form.duration > 0 && (
-                                    <span style={{ position: "absolute", right: 12, bottom: 11, fontSize: 10, color: "rgba(74,222,128,.6)", pointerEvents: "none", fontWeight: 600 }}>
-                                        {fmt(form.duration)}
-                                    </span>
-                                )}
+                    {/* Preview */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-gray-300 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Xem trước</h2>
+                        </div>
+                        <div className="p-5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center flex-shrink-0 border border-gray-100">
+                                    {coverPreview
+                                        ? <img src={coverPreview} alt="cover" className="w-full h-full object-cover" />
+                                        : <Music size={18} className="text-indigo-300" />
+                                    }
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-bold text-gray-900 truncate">
+                                        {form.title || <span className="text-gray-300 font-normal italic">Tên bài hát</span>}
+                                    </p>
+                                    <p className="text-xs text-gray-400 truncate mt-0.5">
+                                        {artists.find(a => a._id === form.artistId)?.name || <span className="italic">Nghệ sĩ</span>}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {form.genre && (
+                                            <span className="text-[10px] bg-indigo-50 text-indigo-600 font-semibold px-2 py-0.5 rounded-full">
+                                                {form.genre}
+                                            </span>
+                                        )}
+                                        {form.duration > 0 && (
+                                            <span className="text-[10px] text-gray-400 font-mono">{fmt(form.duration)}</span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            )}
 
-            {/* ── Bottom bar ── */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,.06)", animation: "ahFadeUp .5s both", flexWrap: "wrap" }}>
-                <Link href="/admin/tracks" style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <ArrowLeft size={13} /> Quay lại danh sách
-                </Link>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                    {/* Dynamic missing hint */}
-                    {!isValid && missingFields.length > 0 && (
-                        <span style={{ fontSize: 12, color: "rgba(248,113,113,.6)", display: "flex", alignItems: "center", gap: 4 }}>
-                            <AlertCircle size={11} />
-                            Còn thiếu: {missingFields.join(", ")}
-                        </span>
-                    )}
-                    <Link href="/admin/tracks" className="tc-pill-btn"><X size={13} /> Huỷ</Link>
-                    <button
-                        className="tc-create-btn"
-                        onClick={handleCreate}
-                        disabled={saving || !isValid}
-                        title={!isValid ? `Vui lòng điền đủ: ${missingFields.join(", ")}` : ""}
-                    >
-                        <Plus size={15} /> Tạo bài hát
-                    </button>
-                </div>
             </div>
         </div>
     );

@@ -5,7 +5,8 @@ const artistSchema = new mongoose.Schema(
         name: { type: String, required: true, trim: true },
         avatar: { type: String },
         bio: { type: String },
-        genre: { type: String },
+        genre: { type: String },          // legacy – kept for backward compat
+        genres: [{ type: String }],
         followers: { type: Number, default: 0 },
         verified: { type: Boolean, default: false },
         socialLinks: {

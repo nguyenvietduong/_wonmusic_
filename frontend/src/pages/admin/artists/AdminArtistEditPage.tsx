@@ -1,24 +1,23 @@
 'use client';
-// src/pages/admin/AdminArtistEditPage.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-    ArrowLeft, Mic2, Save, X, Upload, Image as ImageIcon,
+    ChevronLeft, Mic2, Save, X, Upload, Image as ImageIcon,
     Tag, CheckCircle2, XCircle,
-    Loader2, AlertCircle, ChevronDown,
+    Loader2, AlertCircle,
     Facebook, Instagram, Youtube, Music,
     Users, BadgeCheck, FileText, Hash, Calendar,
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
 import { artistService } from "@/services/artistService";
+import { MultiSelect } from "@/components/admin/MultiSelect";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 interface ArtistForm {
     name:      string;
     bio:       string;
-    genre:     string;
+    genres:    string[];
     followers: string;
     verified:  boolean;
     socialLinks: {
@@ -29,10 +28,8 @@ interface ArtistForm {
     };
 }
 
-type Tab = "basic" | "social";
 type FieldErrors = Partial<{
     name: string;
-    genre: string;
     followers: string;
     bio: string;
     avatar: string;
@@ -47,25 +44,25 @@ const GENRES = [
 
 const API = "/api";
 
-// ─── Component ───────────────────────────────────────────────────────────────
+const inputCls = "w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-900 placeholder-gray-400 bg-white transition-shadow";
+
 export default function AdminArtistEditPage() {
     const params = useParams();
     const id = params?.id as string;
 
-    const [artist,         setArtist]         = useState<any>(null);
-    const [loading,        setLoading]        = useState(true);
-    const [saving,         setSaving]         = useState(false);
-    const [saved,          setSaved]          = useState(false);
-    const [error,          setError]          = useState<string | null>(null);
-    const [fieldErrors,    setFieldErrors]    = useState<FieldErrors>({});
-    const [activeTab,      setActiveTab]      = useState<Tab>("basic");
-    const [coverDrag,      setCoverDrag]      = useState(false);
-    const [uploadingAvatar,setUploadingAvatar]= useState(false);
+    const [artist,          setArtist]          = useState<any>(null);
+    const [loading,         setLoading]         = useState(true);
+    const [saving,          setSaving]          = useState(false);
+    const [saved,           setSaved]           = useState(false);
+    const [error,           setError]           = useState<string | null>(null);
+    const [fieldErrors,     setFieldErrors]     = useState<FieldErrors>({});
+    const [coverDrag,       setCoverDrag]       = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
     const [form, setForm] = useState<ArtistForm>({
-        name: "", bio: "", genre: "", followers: "0", verified: false,
+        name: "", bio: "", genres: [], followers: "0", verified: false,
         socialLinks: { facebook: "", instagram: "", youtube: "", tiktok: "" },
     });
 
@@ -91,7 +88,7 @@ export default function AdminArtistEditPage() {
                     setForm({
                         name:      data.name      ?? "",
                         bio:       data.bio       ?? "",
-                        genre:     data.genre     ?? "",
+                        genres:    data.genres?.length ? data.genres : (data.genre ? [data.genre] : []),
                         followers: String(data.followers ?? 0),
                         verified:  data.verified  ?? false,
                         socialLinks: {
@@ -158,7 +155,6 @@ export default function AdminArtistEditPage() {
         const next: FieldErrors = {};
 
         if (!form.name.trim()) next.name = "Tên nghệ sĩ là bắt buộc.";
-        if (!form.genre.trim()) next.genre = "Vui lòng chọn thể loại.";
 
         const followersNum = Number(form.followers);
         if (form.followers === "" || Number.isNaN(followersNum)) next.followers = "Số followers phải là số.";
@@ -180,7 +176,7 @@ export default function AdminArtistEditPage() {
 
     const isValid = useMemo(() => {
         const errs = validate();
-        return !errs.name && !errs.genre && !errs.followers && !errs.bio && !errs.avatar && !errs.socialLinks;
+        return !errs.name && !errs.followers && !errs.bio && !errs.avatar && !errs.socialLinks;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form, artist?.avatar]);
 
@@ -191,7 +187,6 @@ export default function AdminArtistEditPage() {
 
         const firstError =
             errs.name ||
-            errs.genre ||
             errs.followers ||
             errs.bio ||
             errs.avatar ||
@@ -203,8 +198,6 @@ export default function AdminArtistEditPage() {
 
         if (firstError) {
             setError(firstError);
-            if (errs.name || errs.genre || errs.followers || errs.bio) setActiveTab("basic");
-            else setActiveTab("social");
             return;
         }
 
@@ -214,7 +207,7 @@ export default function AdminArtistEditPage() {
             await artistService.update(id!, {
                 name:        form.name.trim(),
                 bio:         form.bio.trim()       || undefined,
-                genre:       form.genre            || undefined,
+                genres:      form.genres,
                 followers:   Number(form.followers) || 0,
                 verified:    form.verified,
                 socialLinks: {
@@ -234,548 +227,405 @@ export default function AdminArtistEditPage() {
         }
     };
 
+    const genreOptions = GENRES.map(g => ({ value: g, label: g }));
+
     // ── Loading skeleton ──
     if (loading) return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif" }}>
-            <style>{`@keyframes sk{0%,100%{opacity:.35}50%{opacity:.75}}`}</style>
-            <div style={{ animation: "sk 1.5s ease-in-out infinite" }}>
-                <div style={{ width: 130, height: 14, borderRadius: 6, background: "rgba(255,255,255,.07)", marginBottom: 28 }} />
-                {[1, 2, 3, 4].map(i => (
-                    <div key={i} style={{ height: 52, borderRadius: 12, background: "rgba(255,255,255,.04)", marginBottom: 12 }} />
-                ))}
+        <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded-xl w-48" />
+            <div className="h-4 bg-gray-100 rounded-xl w-32" />
+            <div className="grid grid-cols-3 gap-7 mt-6">
+                <div className="col-span-2 space-y-4">
+                    <div className="h-56 bg-gray-100 rounded-2xl" />
+                    <div className="h-40 bg-gray-100 rounded-2xl" />
+                </div>
+                <div className="space-y-4">
+                    <div className="h-48 bg-gray-100 rounded-2xl" />
+                    <div className="h-32 bg-gray-100 rounded-2xl" />
+                </div>
             </div>
         </div>
     );
 
     if (!artist && !loading) return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", padding: "60px 0", textAlign: "center" }}>
-            <AlertCircle size={36} color="rgba(248,113,113,.5)" style={{ margin: "0 auto 12px", display: "block" }} />
-            <p style={{ color: "rgba(255,255,255,.3)", fontSize: 14 }}>Không tìm thấy nghệ sĩ</p>
-            <Link href="/admin/artists" style={{ color: "#4ade80", fontSize: 13, textDecoration: "none", marginTop: 10, display: "inline-block" }}>
-                ← Quay lại
+        <div className="py-20 text-center">
+            <AlertCircle size={40} className="text-red-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm mb-4">Không tìm thấy nghệ sĩ</p>
+            <Link href="/admin/artists" className="text-indigo-600 text-sm hover:underline inline-flex items-center gap-1">
+                <ChevronLeft size={14} /> Quay lại danh sách
             </Link>
         </div>
     );
 
     return (
-        <div style={{ fontFamily: "'Be Vietnam Pro',sans-serif", maxWidth: 900, paddingBottom: 80 }}>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
-
-                @keyframes ahFadeUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes ahPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.35)} 50%{box-shadow:0 0 0 6px rgba(74,222,128,0)} }
-                @keyframes ahSpin    { to{transform:rotate(360deg)} }
-                @keyframes savedPop  { 0%{transform:scale(.8);opacity:0} 60%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
-                @keyframes shake     { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
-
-                .ae-card {
-                    border-radius:18px;
-                    border:1px solid rgba(255,255,255,.07);
-                    background:rgba(255,255,255,.025);
-                }
-                .ae-input, .ae-select, .ae-textarea {
-                    width:100%; box-sizing:border-box;
-                    background:rgba(255,255,255,.04);
-                    border:1px solid rgba(255,255,255,.08);
-                    border-radius:11px; padding:11px 14px;
-                    color:#fff; font-size:14px; font-weight:500;
-                    font-family:'Be Vietnam Pro',sans-serif; outline:none;
-                    transition:border-color .18s, background .18s, box-shadow .18s;
-                }
-                .ae-input:focus, .ae-select:focus, .ae-textarea:focus {
-                    border-color:rgba(74,222,128,.45);
-                    background:rgba(74,222,128,.04);
-                    box-shadow:0 0 0 3px rgba(74,222,128,.08);
-                }
-                .ae-textarea { resize:vertical; min-height:90px; line-height:1.6; }
-                .ae-input::placeholder,
-                .ae-textarea::placeholder { color:rgba(255,255,255,.22); font-weight:400; }
-                .ae-input.err { border-color:rgba(248,113,113,.5)!important; box-shadow:0 0 0 3px rgba(248,113,113,.08)!important; }
-                .ae-select { padding-right:38px; -webkit-appearance:none; appearance:none; cursor:pointer; }
-                .ae-select option { background:#141a14; }
-
-                .ae-label {
-                    display:flex; align-items:center; gap:5px;
-                    font-size:11px; font-weight:700; color:rgba(255,255,255,.3);
-                    letter-spacing:1.8px; text-transform:uppercase; margin-bottom:7px;
-                }
-                .ae-field { margin-bottom:18px; position:relative; }
-                .ae-req   { color:#f87171; }
-
-                .ae-pill-btn {
-                    display:inline-flex; align-items:center; gap:7px;
-                    padding:8px 15px; border-radius:100px;
-                    border:1px solid rgba(255,255,255,.09);
-                    background:rgba(255,255,255,.03);
-                    color:rgba(255,255,255,.5); font-size:13px; font-weight:500;
-                    text-decoration:none; cursor:pointer;
-                    font-family:'Be Vietnam Pro',sans-serif; transition:all .18s;
-                }
-                .ae-pill-btn:hover { background:rgba(255,255,255,.07); color:#fff; border-color:rgba(255,255,255,.15); }
-
-                .ae-tab {
-                    padding:8px 20px; border-radius:100px;
-                    font-size:13px; font-weight:600; cursor:pointer;
-                    border:1px solid transparent; transition:all .18s;
-                    font-family:'Be Vietnam Pro',sans-serif;
-                    color:rgba(255,255,255,.38); background:transparent;
-                }
-                .ae-tab:hover  { color:rgba(255,255,255,.7); }
-                .ae-tab.active { color:#4ade80; border-color:rgba(74,222,128,.22); background:rgba(74,222,128,.07); }
-
-                .ae-drop {
-                    border:2px dashed rgba(255,255,255,.1); border-radius:14px;
-                    padding:24px 20px; text-align:center; cursor:pointer;
-                    transition:all .2s; background:rgba(255,255,255,.02);
-                }
-                .ae-drop:hover, .ae-drop.drag {
-                    border-color:rgba(74,222,128,.45);
-                    background:rgba(74,222,128,.05);
-                }
-
-                .ae-toggle {
-                    position:relative; width:46px; height:26px;
-                    background:rgba(255,255,255,.1); border-radius:100px;
-                    cursor:pointer; transition:background .22s;
-                    flex-shrink:0; border:none; outline:none;
-                }
-                .ae-toggle::after {
-                    content:''; position:absolute; top:4px; left:4px;
-                    width:18px; height:18px; border-radius:50%;
-                    background:rgba(255,255,255,.45); transition:all .22s;
-                }
-                .ae-toggle.on { background:linear-gradient(135deg,#16a34a,#4ade80); animation:ahPulse 1.5s ease 1; }
-                .ae-toggle.on::after { left:24px; background:#fff; }
-
-                .ae-save {
-                    display:inline-flex; align-items:center; gap:8px;
-                    padding:11px 28px; border-radius:12px;
-                    font-size:14px; font-weight:700; cursor:pointer;
-                    font-family:'Be Vietnam Pro',sans-serif; border:none; transition:all .18s;
-                }
-                .ae-save:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.08); }
-                .ae-save:disabled { opacity:.55; cursor:not-allowed; }
-
-                .ae-stitle {
-                    font-size:11px; color:rgba(255,255,255,.28);
-                    letter-spacing:2px; text-transform:uppercase; font-weight:700;
-                    margin-bottom:20px; display:flex; align-items:center; gap:8px;
-                }
-                .ae-stitle::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.05); }
-
-                .ae-social-row { display:flex; align-items:center; gap:10px; }
-                .ae-social-icon-wrap {
-                    width:38px; height:38px; border-radius:10px; flex-shrink:0;
-                    display:flex; align-items:center; justify-content:center;
-                    border:1px solid rgba(255,255,255,.08);
-                    background:rgba(255,255,255,.04);
-                }
-
-                .ae-info-row {
-                    display:flex; align-items:center; gap:10px;
-                    padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04);
-                }
-                .ae-info-row:last-child { border-bottom:none; }
-            `}</style>
+        <div className="min-h-full pb-10">
 
             {/* Hidden file input */}
             <input
                 ref={avatarInputRef}
                 type="file"
                 accept="image/*"
-                style={{ display: "none" }}
+                className="hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadAvatar(f); e.target.value = ""; }}
             />
 
-            {/* ── Breadcrumb ── */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 22, animation: "ahFadeUp .3s both", flexWrap: "wrap" }}>
-                <Link href="/admin/artists" className="ae-pill-btn"><ArrowLeft size={13} /> Nghệ sĩ</Link>
-                <span style={{ color: "rgba(255,255,255,.18)", fontSize: 12 }}>/</span>
-                <Link href={`/admin/artists/${id}`} style={{ fontSize: 13, color: "rgba(255,255,255,.4)", textDecoration: "none", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {artist?.name ?? id}
-                </Link>
-                <span style={{ color: "rgba(255,255,255,.18)", fontSize: 12 }}>/</span>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,.4)" }}>Chỉnh sửa</span>
-            </div>
-
-            {/* ── Header ── */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, animation: "ahFadeUp .35s both", flexWrap: "wrap", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    {/* Avatar preview */}
-                    <div style={{ position: "relative", flexShrink: 0 }}>
-                        <div style={{ width: 54, height: 54, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg,#052e16,#14532d)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid rgba(74,222,128,.2)" }}>
-                            {artist?.avatar
-                                ? <img src={artist.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                : <Mic2 size={20} color="rgba(74,222,128,.3)" />
-                            }
-                        </div>
-                        {uploadingAvatar && (
-                            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Loader2 size={16} color="#4ade80" style={{ animation: "ahSpin .7s linear infinite" }} />
-                            </div>
-                        )}
-                    </div>
+            {/* ── Page header ── */}
+            <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/admin/artists"
+                        className="w-9 h-9 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-all shadow-sm"
+                    >
+                        <ChevronLeft size={18} />
+                    </Link>
                     <div>
-                        <p style={{ fontSize: 11, color: "#4ade80", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 4 }}>
-                            Chỉnh sửa nghệ sĩ
-                        </p>
-                        <h1 style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 30, color: "#fff", letterSpacing: 2, lineHeight: 1 }}>
-                            {form.name || artist?.name || "—"}
+                        <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+                            <Link href="/admin/artists" className="hover:text-indigo-600 transition-colors">Nghệ sĩ</Link>
+                            <span>/</span>
+                            <Link href={`/admin/artists/${id}`} className="hover:text-indigo-600 transition-colors truncate max-w-[160px]">
+                                {artist?.name ?? id}
+                            </Link>
+                            <span>/</span>
+                            <span className="text-gray-700 font-medium">Chỉnh sửa</span>
+                        </nav>
+                        <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+                            {form.name || <span className="text-gray-300 font-normal">Chưa có tên...</span>}
                         </h1>
                     </div>
                 </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <Link href={`/admin/artists/${id}`} className="ae-pill-btn"><X size={13} /> Huỷ</Link>
-                    <SaveBtn saving={saving} saved={saved} onClick={handleSave} disabled={!isValid || uploadingAvatar} />
+                <div className="flex items-center gap-3">
+                    <Link
+                        href={`/admin/artists/${id}`}
+                        className="px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                        Huỷ
+                    </Link>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving || !isValid || uploadingAvatar}
+                        className={`px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow-sm cursor-pointer disabled:cursor-not-allowed ${
+                            saved
+                                ? "bg-green-600 text-white"
+                                : isValid && !uploadingAvatar
+                                ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                : "bg-gray-100 text-gray-400"
+                        }`}
+                    >
+                        {saving
+                            ? <><Loader2 size={15} className="animate-spin" /> Đang lưu...</>
+                            : saved
+                            ? <><CheckCircle2 size={15} /> Đã lưu!</>
+                            : <><Save size={15} /> Lưu thay đổi</>
+                        }
+                    </button>
                 </div>
             </div>
 
             {/* ── Error ── */}
             {error && (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 12, background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", marginBottom: 18, animation: "shake .35s ease" }}>
-                    <AlertCircle size={15} color="#f87171" style={{ flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: "#f87171", flex: 1 }}>{error}</span>
-                    <button onClick={() => setError(null)} style={{ background: "none", border: "none", color: "rgba(248,113,113,.5)", cursor: "pointer", padding: 0 }}>
+                <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-6">
+                    <AlertCircle size={15} className="flex-shrink-0" />
+                    <span className="flex-1">{error}</span>
+                    <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 transition-colors cursor-pointer">
                         <X size={14} />
                     </button>
                 </div>
             )}
 
-            {/* ── Tabs ── */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 20, animation: "ahFadeUp .4s both" }}>
-                {(["basic", "social"] as Tab[]).map(tab => (
-                    <button key={tab} className={`ae-tab ${activeTab === tab ? "active" : ""}`} onClick={() => setActiveTab(tab)}>
-                        {{ basic: "Thông tin cơ bản", social: "Mạng xã hội & Ảnh" }[tab]}
-                    </button>
-                ))}
-            </div>
+            {/* ── Content grid ── */}
+            <div className="grid grid-cols-3 gap-7 items-start">
 
-            {/* ════════ Tab: Basic ════════ */}
-            {activeTab === "basic" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, animation: "ahFadeUp .3s both" }}>
+                {/* ══════ Left (2/3) ══════ */}
+                <div className="col-span-2 space-y-5">
 
-                    {/* Left */}
-                    <div className="ae-card" style={{ padding: "22px 24px" }}>
-                        <p className="ae-stitle">Thông tin nghệ sĩ</p>
-
-                        {/* Name */}
-                        <div className="ae-field">
-                            <label className="ae-label"><Mic2 size={10} /> Tên nghệ sĩ <span className="ae-req">*</span></label>
-                            <div style={{ position: "relative" }}>
-                                <input
-                                    className={`ae-input ${fieldErrors.name ? "err" : ""}`}
-                                    value={form.name}
-                                    onChange={e => {
-                                        set("name", e.target.value);
-                                        if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }));
-                                    }}
-                                    placeholder="Nhập tên nghệ sĩ..."
-                                    maxLength={100}
-                                />
-                                <span style={{ position: "absolute", right: 12, bottom: 11, fontSize: 10, color: "rgba(255,255,255,.18)", pointerEvents: "none" }}>
-                                    {form.name.length}/100
-                                </span>
-                            </div>
-                            {fieldErrors.name && (
-                                <div style={{ marginTop: 6, fontSize: 12, color: "#f87171", fontWeight: 600 }}>
-                                    {fieldErrors.name}
-                                </div>
-                            )}
+                    {/* Section: Thông tin cơ bản */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-indigo-600 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Thông tin cơ bản</h2>
                         </div>
+                        <div className="px-6 py-6 space-y-5">
 
-                        {/* Genre */}
-                        <div className="ae-field">
-                            <label className="ae-label"><Tag size={10} /> Thể loại <span className="ae-req">*</span></label>
-                            <div style={{ position: "relative" }}>
-                                <select
-                                    className={`ae-select ${fieldErrors.genre ? "err" : ""}`}
-                                    value={form.genre}
-                                    onChange={e => {
-                                        set("genre", e.target.value);
-                                        if (fieldErrors.genre) setFieldErrors(prev => ({ ...prev, genre: undefined }));
-                                    }}
-                                >
-                                    <option value="">-- Chọn thể loại --</option>
-                                    {!!form.genre && !GENRES.includes(form.genre) && (
-                                        <option value={form.genre}>{form.genre} (hiện tại)</option>
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tên nghệ sĩ <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={form.name}
+                                        onChange={e => {
+                                            set("name", e.target.value);
+                                            if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }));
+                                        }}
+                                        placeholder="Nhập tên nghệ sĩ..."
+                                        maxLength={100}
+                                        className={`${inputCls} ${fieldErrors.name ? "border-red-400 ring-2 ring-red-100" : ""}`}
+                                    />
+                                    <span className="absolute right-3 bottom-3 text-[10px] text-gray-300 pointer-events-none">
+                                        {form.name.length}/100
+                                    </span>
+                                </div>
+                                {fieldErrors.name && (
+                                    <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5">
+                                        <AlertCircle size={10} /> {fieldErrors.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Genre + Followers */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Thể loại <span className="text-gray-400 text-xs font-normal">(tuỳ chọn)</span>
+                                    </label>
+                                    <MultiSelect
+                                        options={genreOptions}
+                                        values={form.genres}
+                                        onChange={v => set("genres", v)}
+                                        placeholder="-- Chọn thể loại --"
+                                        searchPlaceholder="Tìm thể loại..."
+                                        theme="light"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Số followers</label>
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        value={form.followers}
+                                        onChange={e => {
+                                            set("followers", e.target.value);
+                                            if (fieldErrors.followers) setFieldErrors(prev => ({ ...prev, followers: undefined }));
+                                        }}
+                                        placeholder="0"
+                                        className={`${inputCls} ${fieldErrors.followers ? "border-red-400 ring-2 ring-red-100" : ""}`}
+                                    />
+                                    {fieldErrors.followers && (
+                                        <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5">
+                                            <AlertCircle size={10} /> {fieldErrors.followers}
+                                        </p>
                                     )}
-                                    {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                                </select>
-                                <ChevronDown size={13} color="rgba(255,255,255,.3)" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                                </div>
                             </div>
-                            {fieldErrors.genre && (
-                                <div style={{ marginTop: 6, fontSize: 12, color: "#f87171", fontWeight: 600 }}>
-                                    {fieldErrors.genre}
+
+                            {/* Bio */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Tiểu sử <span className="text-gray-400 text-xs font-normal">(tuỳ chọn)</span>
+                                </label>
+                                <textarea
+                                    rows={4}
+                                    value={form.bio}
+                                    onChange={e => {
+                                        set("bio", e.target.value);
+                                        if (fieldErrors.bio) setFieldErrors(prev => ({ ...prev, bio: undefined }));
+                                    }}
+                                    placeholder="Mô tả ngắn về nghệ sĩ..."
+                                    maxLength={500}
+                                    className={`${inputCls} resize-none ${fieldErrors.bio ? "border-red-400 ring-2 ring-red-100" : ""}`}
+                                />
+                                <div className="flex items-center justify-between mt-1">
+                                    {fieldErrors.bio
+                                        ? <p className="flex items-center gap-1 text-xs text-red-500"><AlertCircle size={10} /> {fieldErrors.bio}</p>
+                                        : <span />
+                                    }
+                                    <span className="text-xs text-gray-300 ml-auto">{form.bio.length}/500</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section: Mạng xã hội */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-indigo-600 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">
+                                Mạng xã hội <span className="text-gray-400 text-xs font-normal">(tuỳ chọn)</span>
+                            </h2>
+                        </div>
+                        <div className="px-6 py-6 space-y-4">
+                            {([
+                                { key: "facebook"  as const, label: "Facebook",  Icon: Facebook,  iconCls: "text-blue-400",  placeholder: "https://facebook.com/..."  },
+                                { key: "instagram" as const, label: "Instagram", Icon: Instagram, iconCls: "text-pink-400",  placeholder: "https://instagram.com/..." },
+                                { key: "youtube"   as const, label: "YouTube",   Icon: Youtube,   iconCls: "text-red-400",   placeholder: "https://youtube.com/..."   },
+                                { key: "tiktok"    as const, label: "TikTok",    Icon: Music,     iconCls: "text-gray-500",  placeholder: "https://tiktok.com/@..."   },
+                            ]).map(({ key, label, Icon, iconCls, placeholder }) => (
+                                <div key={key}>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                                            <Icon size={16} className={iconCls} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={form.socialLinks[key]}
+                                            onChange={e => {
+                                                setSocial(key, e.target.value);
+                                                if (fieldErrors.socialLinks?.[key]) {
+                                                    setFieldErrors(prev => ({
+                                                        ...prev,
+                                                        socialLinks: { ...(prev.socialLinks ?? {}), [key]: undefined },
+                                                    }));
+                                                }
+                                            }}
+                                            placeholder={placeholder}
+                                            className={`${inputCls} ${fieldErrors.socialLinks?.[key] ? "border-red-400 ring-2 ring-red-100" : ""}`}
+                                        />
+                                    </div>
+                                    {fieldErrors.socialLinks?.[key] && (
+                                        <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5 ml-12">
+                                            <AlertCircle size={10} /> {fieldErrors.socialLinks[key]}
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Social preview badges */}
+                            {Object.values(form.socialLinks).some(v => !!v.trim()) && (
+                                <div className="pt-4 border-t border-gray-100">
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Preview</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {form.socialLinks.facebook  && <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100"><Facebook  size={11} /> Facebook</span>}
+                                        {form.socialLinks.instagram && <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-pink-50 text-pink-600 border border-pink-100"><Instagram size={11} /> Instagram</span>}
+                                        {form.socialLinks.youtube   && <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-500 border border-red-100"><Youtube   size={11} /> YouTube</span>}
+                                        {form.socialLinks.tiktok    && <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200"><Music     size={11} /> TikTok</span>}
+                                    </div>
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
 
-                        {/* Followers */}
-                        <div className="ae-field">
-                            <label className="ae-label"><Users size={10} /> Số followers</label>
-                            <input
-                                className={`ae-input ${fieldErrors.followers ? "err" : ""}`}
-                                type="number"
-                                min={0}
-                                value={form.followers}
-                                onChange={e => {
-                                    set("followers", e.target.value);
-                                    if (fieldErrors.followers) setFieldErrors(prev => ({ ...prev, followers: undefined }));
-                                }}
-                                placeholder="0"
-                            />
-                            {fieldErrors.followers && (
-                                <div style={{ marginTop: 6, fontSize: 12, color: "#f87171", fontWeight: 600 }}>
-                                    {fieldErrors.followers}
-                                </div>
-                            )}
+                {/* ══════ Right sidebar (1/3) ══════ */}
+                <div className="sticky top-4 space-y-4">
+
+                    {/* Avatar card */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-gray-300 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Ảnh đại diện</h2>
                         </div>
+                        <div className="p-5 space-y-4">
+                            {/* Preview */}
+                            <div className="relative mx-auto w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-indigo-50 to-indigo-100 border-2 border-gray-200 flex items-center justify-center">
+                                {artist?.avatar
+                                    ? <img src={artist.avatar} alt="avatar" className="w-full h-full object-cover" />
+                                    : <Mic2 size={24} className="text-indigo-300" />
+                                }
+                                {uploadingAvatar && (
+                                    <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                                        <Loader2 size={18} className="text-white animate-spin" />
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* Bio */}
-                        <div className="ae-field" style={{ marginBottom: 0 }}>
-                            <label className="ae-label"><FileText size={10} /> Tiểu sử</label>
-                            <textarea
-                                className={`ae-textarea ${fieldErrors.bio ? "err" : ""}`}
-                                value={form.bio}
-                                onChange={e => {
-                                    set("bio", e.target.value);
-                                    if (fieldErrors.bio) setFieldErrors(prev => ({ ...prev, bio: undefined }));
-                                }}
-                                placeholder="Mô tả ngắn về nghệ sĩ..."
-                                maxLength={500}
-                            />
-                            <span style={{ fontSize: 10, color: "rgba(255,255,255,.18)", float: "right", marginTop: 4 }}>
-                                {form.bio.length}/500
-                            </span>
-                            {fieldErrors.bio && (
-                                <div style={{ marginTop: 6, fontSize: 12, color: "#f87171", fontWeight: 600, clear: "both" }}>
-                                    {fieldErrors.bio}
+                            {/* Drop zone */}
+                            <div
+                                onClick={() => avatarInputRef.current?.click()}
+                                onDragOver={e => { e.preventDefault(); setCoverDrag(true); }}
+                                onDragLeave={() => setCoverDrag(false)}
+                                onDrop={e => { e.preventDefault(); setCoverDrag(false); const f = e.dataTransfer.files[0]; if (f) handleUploadAvatar(f); }}
+                                className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
+                                    coverDrag ? "border-indigo-400 bg-indigo-50"
+                                        : uploadingAvatar ? "border-indigo-200 bg-indigo-50"
+                                        : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
+                                }`}
+                            >
+                                {uploadingAvatar ? (
+                                    <p className="text-xs text-indigo-500 font-medium">Đang upload...</p>
+                                ) : (
+                                    <>
+                                        <Upload size={16} className={`mx-auto mb-1.5 ${coverDrag ? "text-indigo-500" : "text-gray-300"}`} />
+                                        <p className="text-xs text-gray-500">
+                                            Kéo thả hoặc <span className="text-indigo-600 font-medium">chọn ảnh</span>
+                                        </p>
+                                        <p className="text-[10px] text-gray-400 mt-0.5">JPG, PNG, WEBP · tối đa 5MB</p>
+                                    </>
+                                )}
+                            </div>
+
+                            {fieldErrors.avatar && (
+                                <p className="flex items-center gap-1 text-xs text-red-500">
+                                    <AlertCircle size={10} /> {fieldErrors.avatar}
+                                </p>
+                            )}
+
+                            {/* Current URL */}
+                            {artist?.avatar && (
+                                <div className="bg-gray-50 rounded-lg border border-gray-100 px-3 py-2">
+                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">URL hiện tại</p>
+                                    <p className="text-xs text-indigo-500 truncate">{artist.avatar}</p>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Right */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-                        {/* Verified toggle */}
-                        <div className="ae-card" style={{ padding: "20px 22px" }}>
-                            <p className="ae-stitle">Xác minh</p>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    <div style={{ width: 40, height: 40, borderRadius: 11, flexShrink: 0, background: form.verified ? "rgba(74,222,128,.1)" : "rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .2s" }}>
+                    {/* Verified card */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-gray-300 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Xác minh</h2>
+                        </div>
+                        <div className="px-5 py-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${form.verified ? "bg-indigo-50" : "bg-gray-100"}`}>
                                         {form.verified
-                                            ? <BadgeCheck size={16} color="#4ade80" />
-                                            : <Mic2      size={16} color="rgba(255,255,255,.28)" />
+                                            ? <BadgeCheck size={16} className="text-indigo-600" />
+                                            : <Mic2      size={16} className="text-gray-400" />
                                         }
                                     </div>
                                     <div>
-                                        <p style={{ fontSize: 13, fontWeight: 700, color: form.verified ? "#fff" : "rgba(255,255,255,.45)", marginBottom: 3, transition: "color .2s" }}>
-                                            {form.verified ? "Nghệ sĩ xác minh" : "Chưa xác minh"}
+                                        <p className={`text-sm font-semibold transition-colors ${form.verified ? "text-gray-900" : "text-gray-500"}`}>
+                                            {form.verified ? "Đã xác minh" : "Chưa xác minh"}
                                         </p>
-                                        <p style={{ fontSize: 11, color: "rgba(255,255,255,.25)" }}>
-                                            {form.verified ? "Hiển thị badge xác minh" : "Tài khoản thông thường"}
+                                        <p className="text-xs text-gray-400">
+                                            {form.verified ? "Hiển thị badge ✓" : "Tài khoản thông thường"}
                                         </p>
                                     </div>
                                 </div>
-                                <button className={`ae-toggle ${form.verified ? "on" : ""}`} onClick={() => set("verified", !form.verified)} />
+                                <button
+                                    type="button"
+                                    onClick={() => set("verified", !form.verified)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 cursor-pointer border-0 ${form.verified ? "bg-indigo-600" : "bg-gray-200"}`}
+                                >
+                                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${form.verified ? "translate-x-5" : "translate-x-0"}`} />
+                                </button>
                             </div>
-                            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,.05)", display: "flex", alignItems: "center", gap: 6 }}>
+                            <div className={`flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-100 text-xs ${form.verified ? "text-indigo-500" : "text-gray-400"}`}>
                                 {form.verified
-                                    ? <><CheckCircle2 size={13} color="#4ade80" /><span style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>Badge: <span style={{ color: "#4ade80", fontWeight: 700 }}>Đã xác minh ✓</span></span></>
-                                    : <><XCircle size={13} color="#f87171" /><span style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>Badge: <span style={{ color: "rgba(255,255,255,.3)", fontWeight: 700 }}>Thường</span></span></>
+                                    ? <><CheckCircle2 size={12} /> Badge: Đã xác minh ✓</>
+                                    : <><XCircle      size={12} /> Badge: Thường</>
                                 }
                             </div>
                         </div>
+                    </div>
 
-                        {/* System info */}
-                        <div className="ae-card" style={{ padding: "20px 22px", flex: 1 }}>
-                            <p className="ae-stitle">Thông tin hệ thống</p>
+                    {/* System info card */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 bg-gray-50/60">
+                            <div className="w-1 h-4 rounded-full bg-gray-300 flex-shrink-0" />
+                            <h2 className="text-sm font-semibold text-gray-800">Thông tin hệ thống</h2>
+                        </div>
+                        <div className="px-5 py-4 space-y-2">
                             {[
-                                { label: "Artist ID",  value: id,                                                                               icon: Hash     },
-                                { label: "Ngày tạo",   value: artist?.createdAt ? new Date(artist.createdAt).toLocaleDateString("vi-VN") : "—", icon: Calendar },
-                                { label: "Cập nhật",   value: artist?.updatedAt ? new Date(artist.updatedAt).toLocaleDateString("vi-VN") : "—", icon: Calendar },
-                                { label: "Followers",  value: Number(form.followers).toLocaleString("vi"),                                      icon: Users    },
-                            ].map(({ label, value, icon: Icon }) => (
-                                <div key={label} className="ae-info-row">
-                                    <Icon size={12} color="rgba(74,222,128,.4)" style={{ flexShrink: 0 }} />
-                                    <span style={{ fontSize: 12, color: "rgba(255,255,255,.3)", width: 86, flexShrink: 0 }}>{label}</span>
-                                    <span style={{ fontSize: 12, color: "rgba(255,255,255,.6)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                        {value}
-                                    </span>
+                                { label: "Artist ID",  value: id,                                                                               Icon: Hash     },
+                                { label: "Ngày tạo",   value: artist?.createdAt ? new Date(artist.createdAt).toLocaleDateString("vi-VN") : "—", Icon: Calendar },
+                                { label: "Cập nhật",   value: artist?.updatedAt ? new Date(artist.updatedAt).toLocaleDateString("vi-VN") : "—", Icon: Calendar },
+                                { label: "Followers",  value: Number(form.followers).toLocaleString("vi"),                                      Icon: Users    },
+                            ].map(({ label, value, Icon }) => (
+                                <div key={label} className="flex items-center gap-2.5 py-1.5 border-b border-gray-50 last:border-0">
+                                    <Icon size={12} className="text-indigo-400 flex-shrink-0" />
+                                    <span className="text-xs text-gray-400 w-20 flex-shrink-0">{label}</span>
+                                    <span className="text-xs text-gray-700 font-semibold truncate">{value}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* ════════ Tab: Social & Avatar ════════ */}
-            {activeTab === "social" && (
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16, animation: "ahFadeUp .3s both" }}>
-
-                    {/* ── Avatar upload ── */}
-                    <div className="ae-card" style={{ padding: "22px 24px", minWidth: 0 }}>
-                        <p className="ae-stitle">Ảnh đại diện</p>
-
-                        {/* Preview */}
-                        <div style={{ position: "relative", marginBottom: 16, borderRadius: 14, overflow: "hidden", height: 200, background: "linear-gradient(135deg,#052e16,#14532d)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {artist?.avatar
-                                ? <>
-                                    <img src={artist.avatar} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    <button
-                                        onClick={() => avatarInputRef.current?.click()}
-                                        style={{ position: "absolute", bottom: 10, right: 10, display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 100, background: "rgba(0,0,0,.6)", border: "1px solid rgba(255,255,255,.15)", color: "rgba(255,255,255,.8)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Be Vietnam Pro',sans-serif", backdropFilter: "blur(4px)" }}
-                                    >
-                                        <Upload size={11} /> Đổi ảnh
-                                    </button>
-                                  </>
-                                : <div style={{ textAlign: "center" }}>
-                                    <ImageIcon size={36} color="rgba(74,222,128,.22)" style={{ margin: "0 auto 10px", display: "block" }} />
-                                    <p style={{ fontSize: 13, color: "rgba(255,255,255,.25)", marginBottom: 4 }}>Chưa có ảnh đại diện</p>
-                                  </div>
-                            }
-                            {uploadingAvatar && (
-                                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.65)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <Loader2 size={28} color="#4ade80" style={{ animation: "ahSpin .7s linear infinite" }} />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Drop zone */}
-                        <div
-                            className={`ae-drop ${coverDrag ? "drag" : ""}`}
-                            onClick={() => avatarInputRef.current?.click()}
-                            onDragOver={e => { e.preventDefault(); setCoverDrag(true); }}
-                            onDragLeave={() => setCoverDrag(false)}
-                            onDrop={e => {
-                                e.preventDefault(); setCoverDrag(false);
-                                const f = e.dataTransfer.files[0];
-                                if (f) handleUploadAvatar(f);
-                            }}
-                        >
-                            {uploadingAvatar ? (
-                                <><Loader2 size={20} color="#4ade80" style={{ margin: "0 auto 8px", display: "block", animation: "ahSpin .7s linear infinite" }} />
-                                <p style={{ fontSize: 13, color: "#4ade80" }}>Đang upload...</p></>
-                            ) : (
-                                <><Upload size={20} color={coverDrag ? "#4ade80" : "rgba(255,255,255,.2)"} style={{ margin: "0 auto 8px", display: "block", transition: "color .2s" }} />
-                                <p style={{ fontSize: 13, color: coverDrag ? "#4ade80" : "rgba(255,255,255,.3)", fontWeight: 500, transition: "color .2s" }}>
-                                    Kéo thả hoặc <span style={{ color: "#4ade80" }}>chọn file ảnh</span>
-                                </p>
-                                <p style={{ fontSize: 11, color: "rgba(255,255,255,.18)", marginTop: 4 }}>JPG, PNG, WEBP · tối đa 5MB</p></>
-                            )}
-                        </div>
-                        {fieldErrors.avatar && (
-                            <div style={{ marginTop: 10, fontSize: 12, color: "#f87171", fontWeight: 600 }}>
-                                {fieldErrors.avatar}
-                            </div>
-                        )}
-
-                        {/* URL hiện tại */}
-                        {artist?.avatar && (
-                            <div style={{ marginTop: 12, padding: "8px 12px", borderRadius: 9, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)" }}>
-                                <p style={{ fontSize: 10, color: "rgba(255,255,255,.25)", letterSpacing: "1px", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>URL hiện tại</p>
-                                <p style={{ fontSize: 11, color: "rgba(74,222,128,.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                    {artist.avatar}
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* ── Social links ── */}
-                    <div className="ae-card" style={{ padding: "22px 24px", minWidth: 0 }}>
-                        <p className="ae-stitle">Mạng xã hội</p>
-
-                        {[
-                            { key: "facebook"  as const, label: "Facebook",  icon: Facebook,  color: "#60a5fa", placeholder: "https://facebook.com/..."  },
-                            { key: "instagram" as const, label: "Instagram", icon: Instagram, color: "#f472b6", placeholder: "https://instagram.com/..." },
-                            { key: "youtube"   as const, label: "YouTube",   icon: Youtube,   color: "#f87171", placeholder: "https://youtube.com/..."   },
-                            { key: "tiktok"    as const, label: "TikTok",    icon: Music,     color: "rgba(255,255,255,.5)", placeholder: "https://tiktok.com/@..."    },
-                        ].map(({ key, label, icon: Icon, color, placeholder }) => (
-                            <div key={key} className="ae-field" style={{ marginBottom: key === "tiktok" ? 0 : 18 }}>
-                                <label className="ae-label"><Icon size={10} /> {label}</label>
-                                <div className="ae-social-row">
-                                    <div className="ae-social-icon-wrap">
-                                        <Icon size={16} color={color} />
-                                    </div>
-                                    <input
-                                        className={`ae-input ${fieldErrors.socialLinks?.[key] ? "err" : ""}`}
-                                        value={form.socialLinks[key]}
-                                        onChange={e => {
-                                            setSocial(key, e.target.value);
-                                            if (fieldErrors.socialLinks?.[key]) {
-                                                setFieldErrors(prev => ({
-                                                    ...prev,
-                                                    socialLinks: { ...(prev.socialLinks ?? {}), [key]: undefined },
-                                                }));
-                                            }
-                                        }}
-                                        placeholder={placeholder}
-                                    />
-                                </div>
-                                {fieldErrors.socialLinks?.[key] && (
-                                    <div style={{ marginTop: 6, fontSize: 12, color: "#f87171", fontWeight: 600 }}>
-                                        {fieldErrors.socialLinks[key]}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-
-                        {/* Social preview */}
-                        {Object.values(form.socialLinks).some(v => !!v.trim()) && (
-                            <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,.05)" }}>
-                                <p style={{ fontSize: 11, color: "rgba(255,255,255,.28)", letterSpacing: "1.5px", textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
-                                    Preview
-                                </p>
-                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                    {form.socialLinks.facebook  && <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 100, background: "rgba(96,165,250,.1)", border: "1px solid rgba(96,165,250,.2)" }}><Facebook size={11} color="#60a5fa" /><span style={{ fontSize: 11, color: "#60a5fa", fontWeight: 600 }}>Facebook</span></div>}
-                                    {form.socialLinks.instagram && <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 100, background: "rgba(244,114,182,.1)", border: "1px solid rgba(244,114,182,.2)" }}><Instagram size={11} color="#f472b6" /><span style={{ fontSize: 11, color: "#f472b6", fontWeight: 600 }}>Instagram</span></div>}
-                                    {form.socialLinks.youtube   && <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 100, background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.2)" }}><Youtube size={11} color="#f87171" /><span style={{ fontSize: 11, color: "#f87171", fontWeight: 600 }}>YouTube</span></div>}
-                                    {form.socialLinks.tiktok    && <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 100, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)" }}><Music size={11} color="rgba(255,255,255,.5)" /><span style={{ fontSize: 11, color: "rgba(255,255,255,.5)", fontWeight: 600 }}>TikTok</span></div>}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* ── Bottom bar ── */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,.06)", animation: "ahFadeUp .5s both", flexWrap: "wrap" }}>
-                <Link href={`/admin/artists/${id}`} style={{ fontSize: 13, color: "rgba(255,255,255,.3)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <ArrowLeft size={13} /> Quay lại chi tiết
-                </Link>
-                <div style={{ display: "flex", gap: 10 }}>
-                    <Link href={`/admin/artists/${id}`} className="ae-pill-btn"><X size={13} /> Huỷ thay đổi</Link>
-                    <SaveBtn saving={saving} saved={saved} onClick={handleSave} disabled={!isValid || uploadingAvatar} />
-                </div>
             </div>
         </div>
-    );
-}
-
-// ─── Save Button ─────────────────────────────────────────────────────────────
-function SaveBtn({ saving, saved, onClick, disabled }: { saving: boolean; saved: boolean; onClick: () => void; disabled?: boolean }) {
-    return (
-        <button
-            className="ae-save"
-            onClick={onClick}
-            disabled={saving || !!disabled}
-            style={{
-                background: saved
-                    ? "linear-gradient(135deg,#166534,#22c55e)"
-                    : "linear-gradient(135deg,#16a34a,#4ade80)",
-                color: "#0a1a0a",
-                boxShadow: "0 4px 18px rgba(74,222,128,.25)",
-                animation: saved ? "savedPop .35s ease" : undefined,
-            }}
-        >
-            {saving ? (
-                <><Loader2 size={15} style={{ animation: "ahSpin .7s linear infinite" }} /> Đang lưu...</>
-            ) : saved ? (
-                <><CheckCircle2 size={15} /> Đã lưu!</>
-            ) : (
-                <><Save size={15} /> Lưu thay đổi</>
-            )}
-        </button>
     );
 }

@@ -1,4 +1,6 @@
+'use client'
 import React, { useRef, useEffect, useState } from "react";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 import {
     motion,
     useScroll,
@@ -17,12 +19,12 @@ interface NoteProps {
     delay: number; duration: number;
     symbol: string; color: string;
 }
-const MusicNote: React.FC<NoteProps> = ({ x, size, delay, duration, symbol, color }) => (
+const MusicNote: React.FC<NoteProps> = ({ id, x, size, delay, duration, symbol, color }) => (
     <motion.span
         className="absolute bottom-0 pointer-events-none select-none font-black z-10"
         style={{ left: `${x}%`, fontSize: size, color, opacity: 0 }}
         animate={{ y: [0, -680], opacity: [0, 0.65, 0.4, 0], rotate: [0, 40], scale: [0.6, 1.1, 0.9] }}
-        transition={{ duration, delay, repeat: Infinity, repeatDelay: Math.random() * 4 + 2, ease: "easeOut" }}
+        transition={{ duration, delay, repeat: Infinity, repeatDelay: (id % 6) + 2, ease: "easeOut" }}
     >{symbol}</motion.span>
 );
 
@@ -70,6 +72,9 @@ const AppleIcon = () => (
 );
 
 const Slider: React.FC = () => {
+    const { sliderBoldLine, sliderSpotifyUrl, sliderSoundcloudUrl, sliderAppleUrl, loaded, fetch: fetchSettings } = useSettingsStore();
+    useEffect(() => { if (!loaded) fetchSettings(); }, [loaded, fetchSettings]);
+
     const containerRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(containerRef, { amount: 0.15, once: false });
     const [tick, setTick] = useState(0);
@@ -124,15 +129,15 @@ const Slider: React.FC = () => {
     const noteColors = ["#34D4B8","#00A98F","#6ee7b7","#ffffff66","#6366F144"];
     const notes: NoteProps[] = Array.from({ length: 14 }, (_, i) => ({
         id: i + tick * 100,
-        x: Math.random() * 96 + 2,
-        size: Math.random() * 18 + 12,
-        delay: Math.random() * 8,
-        duration: Math.random() * 5 + 6,
+        x: ((i * 37 + 13) % 94) + 2,
+        size: (i % 3) * 6 + 12,
+        delay: (i * 0.71) % 8,
+        duration: (i % 5) + 6,
         symbol: symbols[i % symbols.length],
         color: noteColors[i % noteColors.length],
     }));
 
-    const boldLine = "TO US DAILY";
+    const boldLine = sliderBoldLine || "TO US DAILY";
 
     const letterVariants : Variants = {
         hidden:  { y: "110%", opacity: 0, rotateX: -70, filter: "blur(10px)" },
@@ -318,9 +323,9 @@ const Slider: React.FC = () => {
 
                 {/* Platform buttons */}
                 <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-8 sm:mt-10">
-                    <PlatformBtn icon={<SoundCloudIcon />} label="SOUNDCLOUD" delay={0.9} />
-                    <PlatformBtn icon={<SpotifyIcon />}    label="SPOTIFY"    delay={1.05} />
-                    <PlatformBtn icon={<AppleIcon />}      label="APPLE"      delay={1.2} />
+                    <PlatformBtn icon={<SoundCloudIcon />} label="SOUNDCLOUD" delay={0.9}  href={sliderSoundcloudUrl || "#"} />
+                    <PlatformBtn icon={<SpotifyIcon />}    label="SPOTIFY"    delay={1.05} href={sliderSpotifyUrl    || "#"} />
+                    <PlatformBtn icon={<AppleIcon />}      label="APPLE"      delay={1.2}  href={sliderAppleUrl      || "#"} />
                 </div>
             </motion.div>
 
@@ -332,7 +337,7 @@ const Slider: React.FC = () => {
                 className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-end gap-[3px]"
             >
                 {Array.from({ length: 32 }, (_, i) => (
-                    <EqBar key={i} delay={i * 0.048} baseH={Math.random() * 16 + 7} hot={isHovered} />
+                    <EqBar key={i} delay={i * 0.048} baseH={((i * 7 + 3) % 16) + 7} hot={isHovered} />
                 ))}
             </motion.div>
         </motion.div>

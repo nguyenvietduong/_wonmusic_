@@ -1,7 +1,5 @@
-'use client'
-
-import AdminStatsPage from '@/pages/admin/AdminStatsPage'
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <AdminStatsPage />
+    redirect('/admin?tab=stats')
 }

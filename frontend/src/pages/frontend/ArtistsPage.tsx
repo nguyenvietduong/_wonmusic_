@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { artistService, type Artist } from "@/services/artistService";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 import { artistsText } from "@/locales/artists";
 import SEO from "@/components/frontend/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,6 +20,8 @@ const AVATAR_GRADIENTS = [
     "linear-gradient(135deg,#E8ECF8,#C8EDE8)",
 ];
 
+const EQ_H = [22,38,28,50,35,60,42,72,30,55,65,28,48,38,70,32,52,42,62,36];
+
 const getInitials = (name: string) =>
     name.split(" ").slice(-2).map(w => w[0]).join("").toUpperCase();
 
@@ -29,24 +32,26 @@ const formatFollowers = (num?: number) => {
     return num.toString();
 };
 
-// Skeleton card
 const SkeletonCard = ({ idx }: { idx: number }) => (
     <div style={{
-        background: "rgba(0,0,0,0.03)",
-        border: "1px solid rgba(0,0,0,0.06)",
-        borderRadius: 20, padding: "28px 20px 22px",
-        textAlign: "center",
+        background: "#fff",
+        border: "1px solid rgba(0,0,0,0.07)",
+        borderRadius: 16,
+        overflow: "hidden",
         animation: `apFadeUp 0.4s ${idx * 0.04}s both`,
     }}>
-        <div style={{ width: 96, height: 96, borderRadius: "50%", background: "rgba(0,169,143,0.06)", margin: "0 auto 18px", animation: "apPulse 1.5s ease-in-out infinite" }} />
-        <div style={{ height: 12, background: "rgba(0,0,0,0.07)", borderRadius: 6, width: "62%", margin: "0 auto 8px" }} />
-        <div style={{ height: 9, background: "rgba(0,0,0,0.05)", borderRadius: 6, width: "38%", margin: "0 auto" }} />
+        <div style={{ paddingTop: "70%", background: "rgba(0,169,143,0.05)", animation: "apPulse 1.5s ease-in-out infinite" }} />
+        <div style={{ padding: "14px 16px 16px" }}>
+            <div style={{ height: 11, background: "rgba(0,0,0,0.07)", borderRadius: 6, width: "65%", marginBottom: 8 }} />
+            <div style={{ height: 9, background: "rgba(0,0,0,0.05)", borderRadius: 6, width: "38%" }} />
+        </div>
     </div>
 );
 
 const ArtistsPage = () => {
     const isMobile = useIsMobile();
     const { lang } = useLanguageStore();
+    const { artistsSeoTitleVi, artistsSeoTitleEn, artistsSeoDescVi, artistsSeoDescEn } = useSettingsStore();
     const t = artistsText[lang];
     const GENRES = [t.all, ...GENRE_KEYS];
     const router = useRouter();
@@ -95,270 +100,274 @@ const ArtistsPage = () => {
     return (
         <>
         <SEO
-            title="Nghệ Sĩ – Won Music"
-            description="Khám phá danh sách nghệ sĩ tại Won Music – Pop, Indie, R&B, Hip-hop, Ballad, EDM và nhiều thể loại âm nhạc khác."
+            title={(lang === "en" ? artistsSeoTitleEn : artistsSeoTitleVi) || "Nghệ Sĩ – Won Music"}
+            description={(lang === "en" ? artistsSeoDescEn : artistsSeoDescVi) || "Khám phá danh sách nghệ sĩ tại Won Music – Pop, Indie, R&B, Hip-hop, Ballad, EDM và nhiều thể loại âm nhạc khác."}
             canonical="https://www.wonmusic.vn/artists"
         />
         <div style={{ minHeight: "100vh", background: "#F8F8FC", fontFamily: "'Be Vietnam Pro',sans-serif", color: "#0D0D1A" }}>
             <style>{`
                 @keyframes apFadeUp {
-                    from { opacity:0; transform:translateY(22px); }
+                    from { opacity:0; transform:translateY(18px); }
                     to   { opacity:1; transform:translateY(0); }
                 }
                 @keyframes apPulse { 0%,100%{opacity:.35} 50%{opacity:.75} }
-                @keyframes apEq { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
-                @keyframes apVinyl { to{transform:rotate(360deg)} }
-                @keyframes apShimmer {
-                    0%  {background-position:-200% center}
-                    100%{background-position: 200% center}
-                }
-                @keyframes apDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.55)} }
-                @keyframes apGlow { 0%,100%{opacity:.06} 50%{opacity:.14} }
 
-                /* ── card ── */
+                /* ── artist mesh card ── */
                 .ap-card {
-                    background: rgba(0,0,0,0.03);
-                    border: 1px solid rgba(0,0,0,0.07);
-                    border-radius: 20px;
-                    padding: 28px 18px 20px;
-                    text-align: center;
+                    background: #fff;
+                    border: 1px solid rgba(0,0,0,0.08);
+                    border-radius: 16px;
+                    overflow: hidden;
                     text-decoration: none;
                     color: #0D0D1A;
                     display: block;
-                    transition: all .3s cubic-bezier(.4,0,.2,1);
                     position: relative;
-                    overflow: hidden;
                     cursor: pointer;
                     touch-action: manipulation;
                     -webkit-tap-highlight-color: transparent;
+                    transition: transform 0.35s cubic-bezier(.4,0,.2,1), box-shadow 0.35s ease, border-color 0.4s ease;
                 }
-                .ap-card::before {
-                    content:'';
-                    position:absolute; inset:0; border-radius:20px;
-                    background: radial-gradient(ellipse at 50% 0%, rgba(0,169,143,0.12) 0%, transparent 65%);
-                    opacity:0; transition:opacity .35s;
-                    pointer-events: none;
+                .ap-card:hover {
+                    transform: translateY(-6px);
+                    box-shadow: 0 20px 48px rgba(0,169,143,0.10), 0 4px 16px rgba(0,0,0,0.06);
+                    border-color: transparent;
                 }
+
+                /* Yellow dot indicator */
                 .ap-card::after {
-                    content:'';
-                    position:absolute; bottom:0; left:0; right:0; height:2px;
-                    background:linear-gradient(90deg,#00A98F,#34D4B8,#6366F1);
-                    background-size:200%;
-                    transform:scaleX(0); transition:transform .3s;
-                    border-radius:0 0 20px 20px;
+                    content: '';
+                    position: absolute;
+                    top: 12px; right: 12px;
+                    width: 7px; height: 7px;
+                    border-radius: 50%;
+                    background: #fcd34d;
+                    box-shadow: 0 0 10px rgba(252,211,77,0.7);
+                    opacity: 0;
+                    transform: scale(0.4);
+                    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+                    z-index: 3;
                     pointer-events: none;
                 }
-                .ap-card:hover { border-color:rgba(0,169,143,.3); transform:translateY(-10px); box-shadow:0 24px 56px rgba(0,169,143,.12),0 8px 24px rgba(0,0,0,.4); }
-                .ap-card:hover::before { opacity:1; }
-                .ap-card:hover::after { transform:scaleX(1); animation:apShimmer 1.8s linear infinite; }
+                .ap-card:hover::after { opacity: 1; transform: scale(1); }
 
-                /* ── avatar ── */
-                .ap-avatar {
-                    width:100px; height:100px; border-radius:50%;
-                    margin:0 auto 18px;
-                    display:flex; align-items:center; justify-content:center;
-                    font-family:'Space Grotesk',sans-serif;
-                    font-size:30px; font-weight:700; color:#00A98F;
-                    border:2.5px solid rgba(0,0,0,0.1);
-                    position:relative; transition:all .35s; overflow:hidden;
+                /* Gradient border sweep */
+                .ap-card-border {
+                    position: absolute;
+                    inset: 0;
+                    border-radius: 16px;
+                    padding: 1.5px;
+                    background: linear-gradient(
+                        120deg,
+                        transparent 0%,
+                        #00A98F 20%,
+                        #34D4B8 50%,
+                        #00A98F 80%,
+                        transparent 100%
+                    );
+                    -webkit-mask:
+                        linear-gradient(#fff 0 0) content-box,
+                        linear-gradient(#fff 0 0);
+                    -webkit-mask-composite: xor;
+                    mask-composite: exclude;
+                    opacity: 0;
+                    transition: opacity 0.45s ease;
+                    pointer-events: none;
+                    z-index: 2;
                 }
-                .ap-card:hover .ap-avatar {
-                    border-color:rgba(0,169,143,.55);
-                    box-shadow:0 0 0 6px rgba(0,169,143,.1),0 8px 32px rgba(0,169,143,.25);
-                    transform:scale(1.07);
-                }
-                .ap-ring {
-                    position:absolute; inset:-4px; border-radius:50%;
-                    border:2px dashed rgba(52,212,184,.5);
-                    opacity:0; transition:opacity .3s;
-                }
-                .ap-card:hover .ap-ring { opacity:1; animation:apVinyl 5s linear infinite; }
+                .ap-card:hover .ap-card-border { opacity: 1; }
 
-                /* ── eq on hover ── */
-                .ap-eq {
-                    display:flex; align-items:flex-end; justify-content:center;
-                    gap:2px; height:18px; margin-top:12px;
-                    opacity:0; transition:opacity .3s;
+                /* Avatar area */
+                .ap-avatar-wrap {
+                    position: relative;
+                    width: 100%;
+                    padding-top: 72%;
+                    overflow: hidden;
+                    background: linear-gradient(135deg,#E8ECF8,#D8DFF0);
+                    transition: transform 0.4s ease;
                 }
-                .ap-card:hover .ap-eq { opacity:1; }
-                .ap-eq-bar {
-                    width:3px; background:linear-gradient(to top,#00A98F,#34D4B8);
-                    border-radius:2px; transform-origin:bottom;
-                    animation:apEq ease-in-out infinite;
+                .ap-card:hover .ap-avatar-wrap { transform: scale(1.04); }
+                .ap-avatar-img {
+                    position: absolute;
+                    inset: 0;
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+                .ap-avatar-initials {
+                    position: absolute;
+                    inset: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: #00A98F;
                 }
 
-                /* ── verified badge ── */
+                /* Verified badge */
                 .ap-verified {
-                    position:absolute; bottom:0; right:0;
-                    width:23px; height:23px; border-radius:50%;
-                    background:linear-gradient(135deg,#00A98F,#34D4B8);
-                    color:#F8F8FC; font-size:10px; font-weight:800;
-                    display:flex; align-items:center; justify-content:center;
-                    border:2.5px solid #F8F8FC;
-                    box-shadow:0 2px 10px rgba(0,169,143,.55);
+                    position: absolute;
+                    bottom: 10px; right: 10px;
+                    width: 22px; height: 22px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg,#00A98F,#34D4B8);
+                    color: #fff;
+                    font-size: 10px; font-weight: 800;
+                    display: flex; align-items: center; justify-content: center;
+                    border: 2px solid #fff;
+                    box-shadow: 0 2px 8px rgba(0,169,143,.4);
+                    z-index: 2;
                 }
 
-                /* ── filter bar ── */
-                .ap-genre-btn {
-                    padding:6px 14px; border-radius:100px;
-                    border:1px solid rgba(0,0,0,0.1);
-                    background:transparent; color:rgba(0,0,0,.5);
-                    font-family:'Space Grotesk',sans-serif;
-                    font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
-                    cursor:pointer; transition:all .2s; white-space:nowrap;
+                /* Card body */
+                .ap-card-body {
+                    padding: 14px 16px 16px;
+                    position: relative;
+                    z-index: 1;
                 }
-                .ap-genre-btn:hover { border-color:rgba(0,169,143,.4); color:#34D4B8; background:rgba(0,169,143,.07); }
-                .ap-genre-btn.active { background:rgba(0,169,143,.14); border-color:rgba(0,169,143,.5); color:#34D4B8; }
+
+                /* ── filter bar inputs ── */
+                .ap-genre-btn {
+                    padding: 6px 13px;
+                    border-radius: 100px;
+                    border: 1px solid rgba(0,0,0,0.12);
+                    background: transparent;
+                    color: rgba(0,0,0,.65);
+                    font-family: 'Space Grotesk', sans-serif;
+                    font-size: 10px; font-weight: 700;
+                    letter-spacing: 1.2px; text-transform: uppercase;
+                    cursor: pointer; transition: all .2s; white-space: nowrap;
+                }
+                .ap-genre-btn:hover { border-color: rgba(0,169,143,.4); color: #00A98F; background: rgba(0,169,143,.07); }
+                .ap-genre-btn.active { background: rgba(0,169,143,.12); border-color: rgba(0,169,143,.45); color: #00A98F; }
 
                 .ap-search {
-                    width:100%; padding:10px 16px 10px 42px;
-                    background:rgba(0,0,0,0.05);
-                    border:1px solid rgba(0,0,0,0.1); border-radius:10px;
-                    font-size:13px; outline:none; color:#0D0D1A;
-                    font-family:'Be Vietnam Pro',sans-serif; transition:all .2s;
+                    width: 100%;
+                    padding: 9px 16px 9px 40px;
+                    background: rgba(0,0,0,0.04);
+                    border: 1px solid rgba(0,0,0,0.10);
+                    border-radius: 10px;
+                    font-size: 13px; outline: none;
+                    color: #0D0D1A;
+                    font-family: 'Be Vietnam Pro', sans-serif;
+                    transition: all .2s;
                 }
-                .ap-search:focus { border-color:rgba(0,169,143,.5); background:rgba(0,0,0,.04); }
-                .ap-search::placeholder { color:rgba(0,0,0,.35); }
+                .ap-search:focus { border-color: rgba(0,169,143,.5); background: rgba(0,0,0,.03); }
+                .ap-search::placeholder { color: rgba(0,0,0,.5); }
 
                 .ap-genre-select {
-                    flex:1 1 auto;
-                    padding:9px 36px 9px 14px;
-                    background:rgba(0,0,0,0.05);
-                    border:1px solid rgba(0,0,0,0.1);
-                    border-radius:10px;
-                    font-size:12px; font-weight:700; letter-spacing:.5px;
-                    color:#0D0D1A;
-                    font-family:'Space Grotesk',sans-serif;
-                    outline:none; cursor:pointer;
-                    appearance:none; -webkit-appearance:none;
-                    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2334D4B8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
-                    background-repeat:no-repeat;
-                    background-position:right 12px center;
-                    transition:border-color .2s;
+                    flex: 1 1 auto;
+                    padding: 9px 34px 9px 13px;
+                    background: rgba(0,0,0,0.04);
+                    border: 1px solid rgba(0,0,0,0.10);
+                    border-radius: 10px;
+                    font-size: 12px; font-weight: 700; letter-spacing: .5px;
+                    color: #0D0D1A;
+                    font-family: 'Space Grotesk', sans-serif;
+                    outline: none; cursor: pointer;
+                    appearance: none; -webkit-appearance: none;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2334D4B8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 12px center;
+                    transition: border-color .2s;
                 }
-                .ap-genre-select:focus { border-color:rgba(0,169,143,.5); background-color:rgba(0,0,0,.04); }
+                .ap-genre-select:focus { border-color: rgba(0,169,143,.5); }
 
                 .ap-page-btn {
-                    width:34px; height:34px; border-radius:9px;
-                    border:1px solid rgba(0,0,0,.1); background:rgba(0,0,0,.04);
-                    font-size:13px; cursor:pointer; transition:all .2s;
-                    display:flex; align-items:center; justify-content:center; color:rgba(0,0,0,.5);
-                    font-family:'Space Grotesk',sans-serif;
+                    width: 34px; height: 34px;
+                    border-radius: 9px;
+                    border: 1px solid rgba(0,0,0,.10);
+                    background: rgba(0,0,0,.04);
+                    font-size: 13px; cursor: pointer;
+                    transition: all .2s;
+                    display: flex; align-items: center; justify-content: center;
+                    color: rgba(0,0,0,.5);
+                    font-family: 'Space Grotesk', sans-serif;
                 }
-                .ap-page-btn:hover:not(:disabled) { border-color:rgba(0,169,143,.4); color:#34D4B8; background:rgba(0,169,143,.08); }
-                .ap-page-btn.active { background:rgba(0,169,143,.18); border-color:rgba(0,169,143,.55); color:#34D4B8; font-weight:700; }
-                .ap-page-btn:disabled { opacity:.28; cursor:default; }
+                .ap-page-btn:hover:not(:disabled) { border-color: rgba(0,169,143,.4); color: #00A98F; background: rgba(0,169,143,.08); }
+                .ap-page-btn.active { background: rgba(0,169,143,.15); border-color: rgba(0,169,143,.5); color: #00A98F; font-weight: 700; }
+                .ap-page-btn:disabled { opacity: .28; cursor: default; }
             `}</style>
 
             {/* ══════════ HERO ══════════ */}
             <div style={{
-                padding: "120px 0 64px",
-                background: "linear-gradient(145deg, #F0F2FA 0%, #E8ECF8 35%, #EAE8F8 60%, #ECF0FA 100%)",
-                position: "relative", overflow: "hidden",
+                position: "relative",
+                overflow: "hidden",
+                height: isMobile ? 220 : 300,
+                backgroundImage: "url('/partner-bg.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
             }}>
-                {/* Subtle grid */}
-                <div style={{ position:"absolute", inset:0, opacity:.03, pointerEvents:"none" }}>
-                    {[0,1,2,3,4,5,6].map(i => (
-                        <div key={i} style={{ position:"absolute", left:`${i*16.5}%`, top:0, bottom:0, width:1, background:"#34D4B8" }} />
-                    ))}
-                </div>
+                {/* Subtle teal glow */}
+                <div style={{ position:"absolute", top:"-20%", right:"-5%", width:460, height:460, borderRadius:"50%", background:"radial-gradient(circle,rgba(0,169,143,0.10),transparent 65%)", pointerEvents:"none" }} />
 
-                {/* Ambient glows */}
-                <div style={{ position:"absolute", top:"20%", left:"15%", width:480, height:480, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,.07) 0%,transparent 65%)", pointerEvents:"none" }} />
-                <div style={{ position:"absolute", top:"40%", left:"55%", width:360, height:360, borderRadius:"50%", background:"radial-gradient(circle,rgba(0,169,143,.07) 0%,transparent 65%)", pointerEvents:"none" }} />
-
-                {/* Vinyl decoration — right side */}
-                <div style={{ position:"absolute", right:-120, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}>
-                    {/* Outer rings */}
-                    <div style={{ position:"absolute", inset:-32, borderRadius:"50%", border:"1px dashed rgba(0,169,143,.1)", animation:"apVinyl 25s linear infinite" }} />
-                    <div style={{ position:"absolute", inset:-16, borderRadius:"50%", border:"1px dashed rgba(0,169,143,.06)", animation:"apVinyl 18s linear infinite reverse" }} />
-                    {/* Disc */}
-                    <div style={{
-                        width:480, height:480, borderRadius:"50%",
-                        background:"conic-gradient(from 0deg,#D8DCF0,rgba(0,169,143,.2),#C8CEE8,#D8DCF0,#D0D4EC,rgba(52,212,184,.15),#D8DCF0)",
-                        opacity:.35, animation:"apVinyl 30s linear infinite",
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                        boxShadow:"0 0 80px rgba(0,169,143,.08) inset",
-                    }}>
-                        <div style={{ width:160, height:160, borderRadius:"50%", background:"rgba(0,169,143,.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                            <div style={{ width:44, height:44, borderRadius:"50%", background:"#030710", opacity:.8 }} />
-                        </div>
-                    </div>
-                    {/* Groove rings */}
-                    {[0.58, 0.68, 0.78, 0.88].map((r, i) => (
-                        <div key={i} style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:`${r*480}px`, height:`${r*480}px`, borderRadius:"50%", border:"1px solid rgba(0,0,0,.07)" }} />
+                {/* EQ bars */}
+                <div style={{ position:"absolute", bottom:0, left:0, right:0, display:"flex", alignItems:"flex-end", gap:2, height: isMobile ? 28 : 40, opacity:.13, pointerEvents:"none" }}>
+                    {EQ_H.map((h, i) => (
+                        <div key={i} style={{ flex:1, height:`${h}%`, background:"#00A98F", borderRadius:"2px 2px 0 0" }} />
                     ))}
                 </div>
 
                 {/* Content */}
-                <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px", position:"relative", zIndex:2 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:18, animation:"apFadeUp .4s both" }}>
-                        <span style={{ width:6, height:6, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"apDot 1.6s ease-in-out infinite" }} />
-                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, letterSpacing:"2.5px", textTransform:"uppercase", color:"#34D4B8", fontWeight:700 }}>
+                <div style={{ maxWidth:1440, margin:"0 auto", padding:`${isMobile ? 76 : 82}px 32px ${isMobile ? 24 : 28}px`, position:"relative", zIndex:2 }}>
+                    {/* Eyebrow */}
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                        <span style={{ width:24, height:2, background:"#00A98F", borderRadius:2, display:"block" }} />
+                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase", color:"#00A98F" }}>
                             {t.label}
                         </span>
                     </div>
 
+                    {/* Heading */}
                     <h1 style={{
-                        fontFamily:"'Be Vietnam Pro',sans-serif",
-                        fontSize:"clamp(52px,9vw,104px)",
-                        lineHeight:.96, letterSpacing:-1,
-                        color:"#0D0D1A", marginBottom:18,
-                        animation:"apFadeUp .4s .06s both",
-                        maxWidth:700,
+                        fontFamily: "'Be Vietnam Pro', sans-serif",
+                        fontSize: isMobile ? "clamp(22px,6vw,28px)" : "clamp(24px,2.8vw,36px)",
+                        fontWeight: 900,
+                        lineHeight: 1.15,
+                        letterSpacing: "-0.5px",
+                        color: "#0D0D1A",
+                        margin: 0,
                     }}>
-                        {t.heading}<br />
-                        <span style={{ color:"#34D4B8" }}>{t.highlight}</span>
+                        {t.heading}{" "}
+                        <span style={{ color:"#00A98F" }}>{t.highlight}</span>
                     </h1>
 
-                    <p style={{ fontSize:15, color:"rgba(0,0,0,.55)", maxWidth:440, lineHeight:1.8, animation:"apFadeUp .4s .12s both" }}>
-                        {t.subtitle}
-                    </p>
-
-                    {/* Stats row */}
-                    <div style={{ display:"flex", alignItems:"center", gap:24, marginTop:28, animation:"apFadeUp .4s .18s both" }}>
-                        <div>
-                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:22, fontWeight:700, color:"#0D0D1A" }}>{total}</span>
-                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.4)", marginLeft:6, textTransform:"uppercase", letterSpacing:"1.5px" }}>{t.artistCount}</span>
-                        </div>
-                        <span style={{ width:1, height:20, background:"rgba(0,0,0,.1)" }} />
-                        <div style={{ display:"flex", alignItems:"flex-end", gap:2.5, height:28 }}>
-                            {[35,62,48,80,42,70,55,88,45,60,75,38,65,50,44].map((h, i) => (
-                                <div key={i} style={{
-                                    width:3.5, height:`${h}%`,
-                                    background:`rgba(0,169,143,${.25+(i%3)*.1})`,
-                                    borderRadius:2, transformOrigin:"bottom",
-                                    animation:`apEq ${.38+(i%5)*.14}s ease-in-out infinite`,
-                                    animationDelay:`${i*.06}s`,
-                                }} />
-                            ))}
-                        </div>
+                    {/* Stats + divider */}
+                    <div style={{ display:"flex", alignItems:"center", gap:16, marginTop:14 }}>
+                        <div style={{ width:48, height:2, background:"linear-gradient(90deg,#00A98F,#34D4B8)", borderRadius:2 }} />
+                        {total > 0 && (
+                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.45)", letterSpacing:"1px" }}>
+                                <span style={{ color:"#00A98F", fontWeight:700 }}>{total}</span> {t.artistCount}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* ══════════ STICKY FILTER BAR ══════════ */}
             <div style={{
-                position:"sticky", top:60, zIndex:30,
-                background:"rgba(248,248,252,0.96)",
-                backdropFilter:"blur(20px)",
-                borderBottom:"1px solid rgba(0,169,143,.1)",
-                padding:"10px 0",
+                position: "sticky", top: 60, zIndex: 30,
+                background: "rgba(248,248,252,0.96)",
+                backdropFilter: "blur(20px)",
+                borderBottom: "1px solid rgba(0,169,143,.08)",
+                padding: "10px 0",
             }}>
                 <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "0 16px" : "0 32px", display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
                     {/* Search */}
-                    <div style={{ position:"relative", flex: isMobile ? "1 1 auto" : "0 0 220px", minWidth: isMobile ? 0 : undefined }}>
-                        <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"rgba(0,0,0,.35)", fontSize:12 }}>🔍</span>
+                    <div style={{ position:"relative", flex: isMobile ? "1 1 auto" : "0 0 210px" }}>
+                        <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", color:"rgba(0,0,0,.35)", fontSize:12 }}>🔍</span>
                         <input className="ap-search" placeholder={t.searchPlaceholder} value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
 
-                    {/* Genre filter — select on mobile, buttons on desktop */}
+                    {/* Genre filter */}
                     {isMobile ? (
                         <select
                             className="ap-genre-select"
                             value={activeGenre}
                             onChange={e => setActiveGenre(e.target.value)}
-                            style={{ color: activeGenre !== t.all ? "#34D4B8" : "#0D0D1A", borderColor: activeGenre !== t.all ? "rgba(0,169,143,.5)" : undefined }}
+                            style={{ color: activeGenre !== t.all ? "#00A98F" : "#0D0D1A", borderColor: activeGenre !== t.all ? "rgba(0,169,143,.5)" : undefined }}
                         >
                             {GENRES.map(g => (
                                 <option key={g} value={g}>{g}</option>
@@ -374,8 +383,8 @@ const ArtistsPage = () => {
                         </div>
                     )}
 
-                    <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.4)", flexShrink:0 }}>
-                        <span style={{ color:"#34D4B8", fontWeight:700 }}>{filtered.length}</span> {t.artistCount}
+                    <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.6)", flexShrink:0 }}>
+                        <span style={{ color:"#00A98F", fontWeight:700 }}>{filtered.length}</span> {t.artistCount}
                     </span>
                 </div>
             </div>
@@ -388,19 +397,19 @@ const ArtistsPage = () => {
                     </div>
                 ) : fetchError ? (
                     <div style={{ textAlign:"center", padding:"80px 0" }}>
-                        <div style={{ fontSize:52, marginBottom:16, opacity:.2 }}>⚠</div>
-                        <p style={{ fontSize:14, color:"rgba(0,0,0,.4)", marginBottom:16 }}>Không thể tải danh sách nghệ sĩ</p>
+                        <div style={{ fontSize:48, marginBottom:16, opacity:.2 }}>⚠</div>
+                        <p style={{ fontSize:14, color:"rgba(0,0,0,.4)", marginBottom:16 }}>{t.error}</p>
                         <button
                             className="btn-outline-music"
                             onClick={() => setRetryCount(c => c + 1)}
                             style={{ cursor:"pointer" }}
                         >
-                            Thử lại
+                            {t.retry}
                         </button>
                     </div>
                 ) : filtered.length === 0 ? (
                     <div style={{ textAlign:"center", padding:"80px 0" }}>
-                        <div style={{ fontSize:52, marginBottom:16, opacity:.2 }}>♪</div>
+                        <div style={{ fontSize:48, marginBottom:16, opacity:.2 }}>♪</div>
                         <p style={{ fontSize:14, color:"rgba(0,0,0,.4)" }}>{t.noArtists}</p>
                     </div>
                 ) : (
@@ -425,69 +434,74 @@ const ArtistsPage = () => {
                                     }
                                 }}
                             >
+                                <span className="ap-card-border" />
+
                                 {/* Avatar */}
-                                <div style={{ position:"relative", width:100, margin:"0 auto 18px" }}>
-                                    <div className="ap-avatar" style={{ background:AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length] }}>
-                                        {artist.avatar ? (
-                                            <img
-                                                src={artist.avatar} alt={artist.name}
-                                                style={{ width:"100%", height:"100%", objectFit:"cover" }}
-                                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                            />
-                                        ) : getInitials(artist.name)}
-                                        <div className="ap-ring" />
-                                        {artist.verified && <div className="ap-verified">✓</div>}
+                                <div className="ap-avatar-wrap" style={{ background: AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length] }}>
+                                    {artist.avatar ? (
+                                        <img
+                                            src={artist.avatar}
+                                            alt={artist.name}
+                                            className="ap-avatar-img"
+                                            onError={e => {
+                                                (e.currentTarget as HTMLImageElement).style.display = "none";
+                                                const parent = e.currentTarget.parentElement;
+                                                if (parent) {
+                                                    const initials = document.createElement("div");
+                                                    initials.className = "ap-avatar-initials";
+                                                    initials.textContent = getInitials(artist.name);
+                                                    parent.appendChild(initials);
+                                                }
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="ap-avatar-initials">{getInitials(artist.name)}</div>
+                                    )}
+                                    {artist.verified && (
+                                        <div className="ap-verified">✓</div>
+                                    )}
+                                </div>
+
+                                {/* Body */}
+                                <div className="ap-card-body">
+                                    {/* Name */}
+                                    <p style={{ fontSize:14, fontWeight:700, color:"#0D0D1A", margin:"0 0 6px", lineHeight:1.3, letterSpacing:"-.1px" }}>
+                                        {artist.name}
+                                    </p>
+
+                                    {/* Genre tag */}
+                                    <span style={{
+                                        display: "inline-block",
+                                        fontFamily: "'Space Grotesk',sans-serif",
+                                        fontSize: 9, fontWeight: 700,
+                                        letterSpacing: "1.4px", textTransform: "uppercase",
+                                        color: "#00A98F",
+                                        background: "rgba(0,169,143,.08)",
+                                        border: "1px solid rgba(0,169,143,.20)",
+                                        padding: "3px 9px",
+                                        borderRadius: 100,
+                                        marginBottom: 10,
+                                    }}>
+                                        {artist.genre ?? "—"}
+                                    </span>
+
+                                    {/* Followers row */}
+                                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                                        <div>
+                                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:16, fontWeight:700, color:"#0D0D1A", letterSpacing:"-.4px" }}>
+                                                {formatFollowers(artist.followers)}
+                                            </span>
+                                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.38)", textTransform:"uppercase", letterSpacing:"1.4px", marginLeft:5 }}>
+                                                Followers
+                                            </span>
+                                        </div>
+
+                                        {/* Arrow */}
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="#00A98F" strokeWidth="2.5" width="14" height="14" strokeLinecap="round" strokeLinejoin="round" style={{ opacity:.6, flexShrink:0 }}>
+                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                            <polyline points="12 5 19 12 12 19" />
+                                        </svg>
                                     </div>
-                                </div>
-
-                                {/* Name */}
-                                <p style={{ fontSize:14, fontWeight:600, color:"#0D0D1A", marginBottom:6, letterSpacing:"-.1px", lineHeight:1.3 }}>
-                                    {artist.name}
-                                </p>
-
-                                {/* Genre tag */}
-                                <div style={{
-                                    display:"inline-block",
-                                    fontFamily:"'Space Grotesk',sans-serif",
-                                    fontSize:9, fontWeight:700, letterSpacing:"1.5px", textTransform:"uppercase",
-                                    color:"#34D4B8", background:"rgba(0,169,143,.1)",
-                                    border:"1px solid rgba(0,169,143,.22)",
-                                    padding:"3px 10px", borderRadius:100, marginBottom:14,
-                                }}>
-                                    {artist.genre ?? "—"}
-                                </div>
-
-                                {/* Followers */}
-                                <div>
-                                    <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:17, fontWeight:700, color:"#0D0D1A", letterSpacing:"-.5px" }}>
-                                        {formatFollowers(artist.followers)}
-                                    </span>
-                                    <br />
-                                    <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"1.5px" }}>
-                                        Followers
-                                    </span>
-                                </div>
-
-                                {/* EQ on hover */}
-                                <div className="ap-eq">
-                                    {[38,72,52,88,44,78,58,92,48].map((h, i) => (
-                                        <div key={i} className="ap-eq-bar" style={{
-                                            height:`${h}%`,
-                                            animationDuration:`${.38+(i%4)*.14}s`,
-                                            animationDelay:`${i*.055}s`,
-                                        }} />
-                                    ))}
-                                </div>
-
-                                {/* Hover hint */}
-                                <div style={{
-                                    fontSize:11, fontWeight:600, color:"#34D4B8",
-                                    marginTop:12, opacity:0, transform:"translateY(6px)",
-                                    transition:"all .25s",
-                                    display:"flex", alignItems:"center", justifyContent:"center", gap:6,
-                                    fontFamily:"'Space Grotesk',sans-serif",
-                                }} className="ap-hint">
-                                    {t.viewArtist}
                                 </div>
                             </Link>
                         ))}

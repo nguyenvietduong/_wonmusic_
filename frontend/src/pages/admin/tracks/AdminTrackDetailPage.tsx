@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
     ArrowLeft, Play, Pause, Volume2, VolumeX,
     Edit2, Trash2, Music, Clock, Calendar, Mic2, Tag,
@@ -27,7 +27,7 @@ const WAVE = Array.from({ length: 52 }, (_, i) =>
 
 type Tab = "info" | "stats";
 
-export default function AdminTrackDetailPage() {
+function AdminTrackDetailPageInner() {
     const params = useParams();
     const id = params?.id as string | undefined;
     if (!id) return null;
@@ -40,7 +40,8 @@ export default function AdminTrackDetailPage() {
     const [progress,    setProgress]    = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [volume,      setVolume]      = useState(80);
-    const [tab,         setTab]         = useState<Tab>("info");
+    const searchParams  = useSearchParams();
+    const tab           = (searchParams?.get('tab') as Tab) ?? 'info';
     const [delModal,    setDelModal]    = useState(false);
     const [deleting,    setDeleting]    = useState(false);
 
@@ -363,7 +364,7 @@ export default function AdminTrackDetailPage() {
                 {(["info", "stats"] as Tab[]).map(t => (
                     <button
                         key={t}
-                        onClick={() => setTab(t)}
+                        onClick={() => router.replace(`?tab=${t}`, { scroll: false })}
                         className={`px-5 py-2 rounded-full text-sm font-semibold border transition-all cursor-pointer ${tab === t
                             ? "bg-indigo-50 border-indigo-200 text-indigo-600"
                             : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-100"
@@ -524,5 +525,13 @@ export default function AdminTrackDetailPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function AdminTrackDetailPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center py-24"><div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /></div>}>
+            <AdminTrackDetailPageInner />
+        </Suspense>
     );
 }

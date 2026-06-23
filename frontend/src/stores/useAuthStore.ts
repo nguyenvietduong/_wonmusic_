@@ -108,8 +108,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 await fetchMe();
             }
         } catch (error) {
-            console.error(error);
-            // toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
+            // 401 = chưa đăng nhập, không cần log
+            if (!axios.isAxiosError(error) || error.response?.status !== 401) {
+                console.error(error);
+            }
             get().clearState();
         } finally {
             set({ loading: false });

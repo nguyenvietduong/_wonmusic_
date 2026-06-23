@@ -1,4 +1,8 @@
 import mongoose from 'mongoose'
+import dns from 'dns'
+
+// Node.js 18+ defaults to IPv6-first DNS which breaks MongoDB Atlas SRV lookups
+dns.setDefaultResultOrder('ipv4first')
 
 declare global {
     // eslint-disable-next-line no-var

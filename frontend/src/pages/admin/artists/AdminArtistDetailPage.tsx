@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
     ArrowLeft, Mic2, Edit2, Trash2, BadgeCheck,
     Users, Music, Clock, Play, TrendingUp,
@@ -23,11 +23,20 @@ const fTime = (s: number) =>
 
 const EQ_H = [30, 60, 45, 75, 35, 68, 52, 82, 40, 58, 70, 42];
 
-export default function AdminArtistDetailPage() {
+const TABS = [
+    { key: 'info',   label: 'Thông tin', Icon: Mic2       },
+    { key: 'tracks', label: 'Bài hát',   Icon: Music      },
+    { key: 'stats',  label: 'Thống kê',  Icon: TrendingUp },
+] as const;
+type TabKey = typeof TABS[number]['key'];
+
+function AdminArtistDetailPageInner() {
     const params = useParams();
     const id = params?.id as string | undefined;
     if (!id) return null;
-    const router  = useRouter();
+    const router       = useRouter();
+    const searchParams = useSearchParams();
+    const tab          = (searchParams?.get('tab') ?? 'info') as TabKey;
 
     const [artist,        setArtist]        = useState<any>(null);
     const [tracks,        setTracks]        = useState<any[]>([]);
@@ -137,187 +146,131 @@ export default function AdminArtistDetailPage() {
                 <span className="text-xs text-gray-400 max-w-[220px] truncate">{artist.name}</span>
             </div>
 
-            {/* ══════ HERO CARD ══════ */}
-            <div
-                className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5 relative overflow-hidden"
-                style={{ animation: "adUp .35s both" }}
-            >
-                {/* subtle top-left glow */}
-                <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-indigo-50 opacity-60 pointer-events-none" />
-
-                <div className="relative flex items-start gap-6 flex-wrap">
-
-                    {/* Avatar */}
-                    <div className="relative flex-shrink-0">
-                        <div className={`w-28 h-28 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-100 to-indigo-200 ${artist.verified ? "ring-4 ring-indigo-400 ring-offset-2" : "ring-2 ring-gray-200"}`}>
-                            {artist.avatar
-                                ? <img src={artist.avatar} alt={artist.name} className="w-full h-full object-cover" />
-                                : <Mic2 size={38} className="text-indigo-300" />
-                            }
-                        </div>
-                        {artist.verified && (
-                            <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-indigo-600 border-2 border-white flex items-center justify-center shadow">
-                                <BadgeCheck size={14} className="text-white" />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                        {/* badges */}
-                        <div className="flex items-center gap-2 flex-wrap mb-2">
-                            {artist.verified && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                                    <BadgeCheck size={10} /> XÁC MINH
-                                </span>
-                            )}
-                            {artist.genre && (
-                                <span className="inline-flex items-center text-[11px] font-semibold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
-                                    {artist.genre}
-                                </span>
-                            )}
-                        </div>
-
-                        <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-2 break-words">
-                            {artist.name}
-                        </h1>
-
-                        {artist.bio && (
-                            <p className="text-sm text-gray-500 leading-relaxed max-w-xl mb-4">
-                                {artist.bio}
-                            </p>
-                        )}
-
-                        {/* Socials */}
-                        {(socials.facebook || socials.instagram || socials.youtube || socials.tiktok) && (
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {socials.facebook  && (
-                                    <a href={socials.facebook} target="_blank" rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors no-underline">
-                                        <Facebook size={12} /> Facebook <ExternalLink size={9} className="opacity-50" />
-                                    </a>
-                                )}
-                                {socials.instagram && (
-                                    <a href={socials.instagram} target="_blank" rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-600 bg-pink-50 border border-pink-200 px-3 py-1.5 rounded-lg hover:bg-pink-100 transition-colors no-underline">
-                                        <Instagram size={12} /> Instagram <ExternalLink size={9} className="opacity-50" />
-                                    </a>
-                                )}
-                                {socials.youtube   && (
-                                    <a href={socials.youtube} target="_blank" rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors no-underline">
-                                        <Youtube size={12} /> YouTube <ExternalLink size={9} className="opacity-50" />
-                                    </a>
-                                )}
-                                {socials.tiktok    && (
-                                    <a href={socials.tiktok} target="_blank" rel="noreferrer"
-                                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors no-underline">
-                                        <Music size={12} /> TikTok <ExternalLink size={9} className="opacity-50" />
-                                    </a>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
-                        <Link
-                            href={`/admin/artists/${id}/edit`}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors no-underline"
-                        >
-                            <Edit2 size={13} /> Chỉnh sửa
-                        </Link>
-                        <button
-                            onClick={() => setDelModal(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-100 transition-colors cursor-pointer"
-                        >
-                            <Trash2 size={13} /> Xoá
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* ══════ STAT CARDS ══════ */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5" style={{ animation: "adUp .4s both" }}>
-                {[
-                    { label: "Followers",       value: fNum(artist.followers ?? 0),                     Icon: Users,      iconCls: "text-indigo-500", bgCls: "bg-indigo-50"  },
-                    { label: "Bài hát",         value: loadingTracks ? "—" : String(tracks.length),     Icon: Music,      iconCls: "text-blue-500",   bgCls: "bg-blue-50"    },
-                    { label: "Tổng lượt nghe",  value: loadingTracks ? "—" : fNum(totalPlays),          Icon: TrendingUp, iconCls: "text-pink-500",   bgCls: "bg-pink-50"    },
-                    { label: "Tổng thời lượng", value: loadingTracks ? "—" : fTime(totalDuration),      Icon: Clock,      iconCls: "text-orange-500", bgCls: "bg-orange-50"  },
-                ].map(({ label, value, Icon, iconCls, bgCls }, i) => (
-                    <div
-                        key={label}
-                        className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all"
-                        style={{ animation: `adUp .4s ${i * .07}s both` }}
+            {/* ── Tab bar ── */}
+            <div className="flex gap-1.5 mb-5" style={{ animation: "adUp .33s both" }}>
+                {TABS.map(({ key, label, Icon }) => (
+                    <button
+                        key={key}
+                        onClick={() => router.replace(`?tab=${key}`, { scroll: false })}
+                        className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold border transition-all cursor-pointer ${
+                            tab === key
+                                ? "bg-indigo-50 border-indigo-200 text-indigo-600"
+                                : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                        }`}
                     >
-                        <div className={`w-10 h-10 rounded-xl ${bgCls} flex items-center justify-center mb-3`}>
-                            <Icon size={18} className={iconCls} />
-                        </div>
-                        <div className="text-2xl font-bold text-gray-900 leading-none mb-1">{value}</div>
-                        <p className="text-xs text-gray-500 font-medium">{label}</p>
-                    </div>
+                        <Icon size={14} />{label}
+                    </button>
                 ))}
             </div>
 
-            {/* ══════ BOTTOM GRID ══════ */}
-            <div className="grid gap-4" style={{ gridTemplateColumns: "280px 1fr", animation: "adUp .45s both" }}>
+            {/* ════ Tab: Thông tin ════ */}
+            {tab === 'info' && (
+                <div
+                    className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-5 relative overflow-hidden"
+                    style={{ animation: "adUp .35s both" }}
+                >
+                    {/* subtle top-left glow */}
+                    <div className="absolute -top-16 -left-16 w-64 h-64 rounded-full bg-indigo-50 opacity-60 pointer-events-none" />
 
-                {/* ── Info sidebar ── */}
-                <div className="flex flex-col gap-4">
+                    <div className="relative flex items-start gap-6 flex-wrap">
 
-                    {/* System info */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                        <p className="text-[10px] font-bold tracking-[2px] uppercase text-gray-400 mb-4">
-                            Thông tin hệ thống
-                        </p>
-                        <div className="space-y-0.5">
-                            {[
-                                { Icon: Hash,      label: "Artist ID",  value: id.slice(-8) + "...",                                          mono: true  },
-                                { Icon: Calendar,  label: "Ngày tạo",   value: artist.createdAt ? new Date(artist.createdAt).toLocaleDateString("vi-VN") : "—" },
-                                { Icon: Calendar,  label: "Cập nhật",   value: artist.updatedAt ? new Date(artist.updatedAt).toLocaleDateString("vi-VN") : "—" },
-                                { Icon: Users,     label: "Followers",  value: fNum(artist.followers ?? 0)                                                 },
-                                { Icon: artist.verified ? BadgeCheck : Star, label: "Trạng thái", value: artist.verified ? "Đã xác minh" : "Thường",
-                                  valueColor: artist.verified ? "text-indigo-600" : "text-gray-500" },
-                            ].map(({ Icon, label, value, mono, valueColor }) => (
-                                <div key={label} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
-                                    <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
-                                        <Icon size={12} className="text-gray-400" />
-                                    </div>
-                                    <span className="text-xs text-gray-400 w-20 flex-shrink-0">{label}</span>
-                                    <span className={`text-xs font-semibold truncate ${valueColor ?? "text-gray-700"} ${mono ? "font-mono" : ""}`}>
-                                        {value}
-                                    </span>
+                        {/* Avatar */}
+                        <div className="relative flex-shrink-0">
+                            <div className={`w-28 h-28 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-100 to-indigo-200 ${artist.verified ? "ring-4 ring-indigo-400 ring-offset-2" : "ring-2 ring-gray-200"}`}>
+                                {artist.avatar
+                                    ? <img src={artist.avatar} alt={artist.name} className="w-full h-full object-cover" />
+                                    : <Mic2 size={38} className="text-indigo-300" />
+                                }
+                            </div>
+                            {artist.verified && (
+                                <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-indigo-600 border-2 border-white flex items-center justify-center shadow">
+                                    <BadgeCheck size={14} className="text-white" />
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    </div>
 
-                    {/* EQ visualizer */}
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                        <p className="text-[10px] font-bold tracking-[2px] uppercase text-gray-400 mb-3">Visualizer</p>
-                        <div className="flex items-end gap-[3px] h-12">
-                            {EQ_H.map((h, i) => (
-                                <div
-                                    key={i}
-                                    className="flex-1 rounded-t-[3px] bg-indigo-400"
-                                    style={{
-                                        height: `${h}%`,
-                                        opacity: 0.3 + (h / 100) * 0.5,
-                                        transformOrigin: "bottom",
-                                        animation: `adEq ${.4 + (i % 5) * .12}s ease-in-out infinite`,
-                                        animationDelay: `${i * .06}s`,
-                                    }}
-                                />
-                            ))}
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                            {/* badges */}
+                            <div className="flex items-center gap-2 flex-wrap mb-2">
+                                {artist.verified && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                                        <BadgeCheck size={10} /> XÁC MINH
+                                    </span>
+                                )}
+                                {(() => {
+                                    const gs: string[] = artist.genres?.length ? artist.genres : (artist.genre ? [artist.genre] : []);
+                                    return gs.map((g: string) => (
+                                        <span key={g} className="inline-flex items-center text-[11px] font-semibold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                                            {g}
+                                        </span>
+                                    ));
+                                })()}
+                            </div>
+
+                            <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-2 break-words">
+                                {artist.name}
+                            </h1>
+
+                            {artist.bio && (
+                                <p className="text-sm text-gray-500 leading-relaxed max-w-xl mb-4">
+                                    {artist.bio}
+                                </p>
+                            )}
+
+                            {/* Socials */}
+                            {(socials.facebook || socials.instagram || socials.youtube || socials.tiktok) && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {socials.facebook  && (
+                                        <a href={socials.facebook} target="_blank" rel="noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors no-underline">
+                                            <Facebook size={12} /> Facebook <ExternalLink size={9} className="opacity-50" />
+                                        </a>
+                                    )}
+                                    {socials.instagram && (
+                                        <a href={socials.instagram} target="_blank" rel="noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-pink-600 bg-pink-50 border border-pink-200 px-3 py-1.5 rounded-lg hover:bg-pink-100 transition-colors no-underline">
+                                            <Instagram size={12} /> Instagram <ExternalLink size={9} className="opacity-50" />
+                                        </a>
+                                    )}
+                                    {socials.youtube   && (
+                                        <a href={socials.youtube} target="_blank" rel="noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors no-underline">
+                                            <Youtube size={12} /> YouTube <ExternalLink size={9} className="opacity-50" />
+                                        </a>
+                                    )}
+                                    {socials.tiktok    && (
+                                        <a href={socials.tiktok} target="_blank" rel="noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors no-underline">
+                                            <Music size={12} /> TikTok <ExternalLink size={9} className="opacity-50" />
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                        <p className="text-[11px] text-gray-400 text-center mt-3">
-                            {tracks.length} bài · {fTime(totalDuration)} tổng
-                        </p>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
+                            <Link
+                                href={`/admin/artists/${id}/edit`}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors no-underline"
+                            >
+                                <Edit2 size={13} /> Chỉnh sửa
+                            </Link>
+                            <button
+                                onClick={() => setDelModal(true)}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-100 transition-colors cursor-pointer"
+                            >
+                                <Trash2 size={13} /> Xoá
+                            </button>
+                        </div>
                     </div>
                 </div>
+            )}
 
-                {/* ── Track list ── */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* ════ Tab: Bài hát ════ */}
+            {tab === 'tracks' && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" style={{ animation: "adUp .3s both" }}>
                     <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                         <p className="text-[10px] font-bold tracking-[2px] uppercase text-gray-400">Danh sách bài hát</p>
                         {!loadingTracks && tracks.length > 0 && (
@@ -415,7 +368,87 @@ export default function AdminArtistDetailPage() {
                         </div>
                     )}
                 </div>
-            </div>
+            )}
+
+            {/* ════ Tab: Thống kê ════ */}
+            {tab === 'stats' && (
+                <div style={{ animation: "adUp .3s both" }}>
+                    {/* Stat cards */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                        {[
+                            { label: "Followers",       value: fNum(artist.followers ?? 0),                     Icon: Users,      iconCls: "text-indigo-500", bgCls: "bg-indigo-50"  },
+                            { label: "Bài hát",         value: loadingTracks ? "—" : String(tracks.length),     Icon: Music,      iconCls: "text-blue-500",   bgCls: "bg-blue-50"    },
+                            { label: "Tổng lượt nghe",  value: loadingTracks ? "—" : fNum(totalPlays),          Icon: TrendingUp, iconCls: "text-pink-500",   bgCls: "bg-pink-50"    },
+                            { label: "Tổng thời lượng", value: loadingTracks ? "—" : fTime(totalDuration),      Icon: Clock,      iconCls: "text-orange-500", bgCls: "bg-orange-50"  },
+                        ].map(({ label, value, Icon, iconCls, bgCls }, i) => (
+                            <div
+                                key={label}
+                                className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md transition-all"
+                                style={{ animation: `adUp .4s ${i * .07}s both` }}
+                            >
+                                <div className={`w-10 h-10 rounded-xl ${bgCls} flex items-center justify-center mb-3`}>
+                                    <Icon size={18} className={iconCls} />
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900 leading-none mb-1">{value}</div>
+                                <p className="text-xs text-gray-500 font-medium">{label}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Info sidebar */}
+                    <div className="flex flex-col gap-4 max-w-sm">
+                        {/* System info */}
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                            <p className="text-[10px] font-bold tracking-[2px] uppercase text-gray-400 mb-4">
+                                Thông tin hệ thống
+                            </p>
+                            <div className="space-y-0.5">
+                                {[
+                                    { Icon: Hash,      label: "Artist ID",  value: id.slice(-8) + "...",                                          mono: true  },
+                                    { Icon: Calendar,  label: "Ngày tạo",   value: artist.createdAt ? new Date(artist.createdAt).toLocaleDateString("vi-VN") : "—" },
+                                    { Icon: Calendar,  label: "Cập nhật",   value: artist.updatedAt ? new Date(artist.updatedAt).toLocaleDateString("vi-VN") : "—" },
+                                    { Icon: Users,     label: "Followers",  value: fNum(artist.followers ?? 0)                                                 },
+                                    { Icon: artist.verified ? BadgeCheck : Star, label: "Trạng thái", value: artist.verified ? "Đã xác minh" : "Thường",
+                                      valueColor: artist.verified ? "text-indigo-600" : "text-gray-500" },
+                                ].map(({ Icon, label, value, mono, valueColor }) => (
+                                    <div key={label} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
+                                        <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <Icon size={12} className="text-gray-400" />
+                                        </div>
+                                        <span className="text-xs text-gray-400 w-20 flex-shrink-0">{label}</span>
+                                        <span className={`text-xs font-semibold truncate ${valueColor ?? "text-gray-700"} ${mono ? "font-mono" : ""}`}>
+                                            {value}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* EQ visualizer */}
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                            <p className="text-[10px] font-bold tracking-[2px] uppercase text-gray-400 mb-3">Visualizer</p>
+                            <div className="flex items-end gap-[3px] h-12">
+                                {EQ_H.map((h, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex-1 rounded-t-[3px] bg-indigo-400"
+                                        style={{
+                                            height: `${h}%`,
+                                            opacity: 0.3 + (h / 100) * 0.5,
+                                            transformOrigin: "bottom",
+                                            animation: `adEq ${.4 + (i % 5) * .12}s ease-in-out infinite`,
+                                            animationDelay: `${i * .06}s`,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                            <p className="text-[11px] text-gray-400 text-center mt-3">
+                                {tracks.length} bài · {fTime(totalDuration)} tổng
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Delete modal ── */}
             {delModal && (
@@ -461,5 +494,17 @@ export default function AdminArtistDetailPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function AdminArtistDetailPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center py-24">
+                <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
+            <AdminArtistDetailPageInner />
+        </Suspense>
     );
 }

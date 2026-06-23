@@ -26,10 +26,92 @@ interface SiteSettings {
     aboutCtaSubtitleEn:   string;
     aboutStats:           string;
     aboutTeam:            string;
+    // About page — Mission section
+    aboutMissionHeadingVi:   string;
+    aboutMissionHighlightVi: string;
+    aboutMissionHeadingEn:   string;
+    aboutMissionHighlightEn: string;
+    // About page — Services section
+    aboutServicesVi: string;
+    aboutServicesEn: string;
+    // About page — CTA section
+    aboutCtaHeadingVi:   string;
+    aboutCtaHighlightVi: string;
+    aboutCtaHeadingEn:   string;
+    aboutCtaHighlightEn: string;
     emailjsServiceId:     string;
     emailjsTemplateId:    string;
     emailjsPublicKey:     string;
     emailjsToEmail:       string;
+    // Homepage — Slider
+    sliderBoldLine:       string;
+    sliderSpotifyUrl:     string;
+    sliderSoundcloudUrl:  string;
+    sliderAppleUrl:       string;
+    // Homepage — Services
+    homepageSvcLabelVi:     string;
+    homepageSvcHeadingVi:   string;
+    homepageSvcHighlightVi: string;
+    homepageSvcDescVi:      string;
+    homepageSvcLabelEn:     string;
+    homepageSvcHeadingEn:   string;
+    homepageSvcHighlightEn: string;
+    homepageSvcDescEn:      string;
+    homepageServicesVi:     string;
+    homepageServicesEn:     string;
+    // Homepage — Artists section
+    artistsHeadingVi:    string;
+    artistsHighlightVi:  string;
+    artistsHeadingEn:    string;
+    artistsHighlightEn:  string;
+    // Homepage — Charts section
+    chartsHighlightVi:   string;
+    chartsHeadingVi:     string;
+    chartsHighlightEn:   string;
+    chartsHeadingEn:     string;
+    chartsLimitDay:      number;
+    chartsLimitWeek:     number;
+    chartsLimitMonth:    number;
+    // Contact page — Banner
+    contactBannerSubtitleVi: string;
+    contactBannerSubtitleEn: string;
+    contactBannerTitleVi:    string;
+    contactBannerTitleEn:    string;
+    // Contact page — Info
+    contactAddressEn:    string;
+    contactMapUrl:       string;
+    contactWorkingHours: string;
+    // Contact page — SEO
+    contactSeoTitleVi: string;
+    contactSeoTitleEn: string;
+    contactSeoDescVi:  string;
+    contactSeoDescEn:  string;
+    // Contact page — Location section headings
+    contactLocationLabelVi:     string;
+    contactLocationLabelEn:     string;
+    contactLocationHeadingVi:   string;
+    contactLocationHeadingEn:   string;
+    contactLocationHighlightVi: string;
+    contactLocationHighlightEn: string;
+    // Contact page — Form section headings
+    contactFormLabelVi:     string;
+    contactFormLabelEn:     string;
+    contactFormHeadingVi:   string;
+    contactFormHeadingEn:   string;
+    contactFormHighlightVi: string;
+    contactFormHighlightEn: string;
+    // Artists page — SEO
+    artistsSeoTitleVi: string;
+    artistsSeoTitleEn: string;
+    artistsSeoDescVi:  string;
+    artistsSeoDescEn:  string;
+    // Charts page — SEO
+    chartsSeoTitleVi: string;
+    chartsSeoTitleEn: string;
+    chartsSeoDescVi:  string;
+    chartsSeoDescEn:  string;
+    // Floating phone button — Wonmedia link
+    wonmediaUrl: string;
 }
 
 interface SettingsState extends SiteSettings {
@@ -64,10 +146,77 @@ const DEFAULTS: SiteSettings = {
     aboutCtaSubtitleEn:   "",
     aboutStats:           "",
     aboutTeam:            "",
+    aboutMissionHeadingVi:   "",
+    aboutMissionHighlightVi: "",
+    aboutMissionHeadingEn:   "",
+    aboutMissionHighlightEn: "",
+    aboutServicesVi: "",
+    aboutServicesEn: "",
+    aboutCtaHeadingVi:   "",
+    aboutCtaHighlightVi: "",
+    aboutCtaHeadingEn:   "",
+    aboutCtaHighlightEn: "",
     emailjsServiceId:     "",
     emailjsTemplateId:    "",
     emailjsPublicKey:     "",
     emailjsToEmail:       "",
+    sliderBoldLine:       "TO US DAILY",
+    sliderSpotifyUrl:     "",
+    sliderSoundcloudUrl:  "",
+    sliderAppleUrl:       "",
+    homepageSvcLabelVi:     "",
+    homepageSvcHeadingVi:   "",
+    homepageSvcHighlightVi: "",
+    homepageSvcDescVi:      "",
+    homepageSvcLabelEn:     "",
+    homepageSvcHeadingEn:   "",
+    homepageSvcHighlightEn: "",
+    homepageSvcDescEn:      "",
+    homepageServicesVi:     "",
+    homepageServicesEn:     "",
+    artistsHeadingVi:    "",
+    artistsHighlightVi:  "",
+    artistsHeadingEn:    "",
+    artistsHighlightEn:  "",
+    chartsHighlightVi:   "",
+    chartsHeadingVi:     "",
+    chartsHighlightEn:   "",
+    chartsHeadingEn:     "",
+    chartsLimitDay:      5,
+    chartsLimitWeek:     8,
+    chartsLimitMonth:    6,
+    contactBannerSubtitleVi: "",
+    contactBannerSubtitleEn: "",
+    contactBannerTitleVi:    "",
+    contactBannerTitleEn:    "",
+    contactAddressEn:    "",
+    contactMapUrl:       "",
+    contactWorkingHours: "",
+    contactSeoTitleVi: "",
+    contactSeoTitleEn: "",
+    contactSeoDescVi:  "",
+    contactSeoDescEn:  "",
+    contactLocationLabelVi:     "",
+    contactLocationLabelEn:     "",
+    contactLocationHeadingVi:   "",
+    contactLocationHeadingEn:   "",
+    contactLocationHighlightVi: "",
+    contactLocationHighlightEn: "",
+    contactFormLabelVi:     "",
+    contactFormLabelEn:     "",
+    contactFormHeadingVi:   "",
+    contactFormHeadingEn:   "",
+    contactFormHighlightVi: "",
+    contactFormHighlightEn: "",
+    artistsSeoTitleVi: "",
+    artistsSeoTitleEn: "",
+    artistsSeoDescVi:  "",
+    artistsSeoDescEn:  "",
+    chartsSeoTitleVi: "",
+    chartsSeoTitleEn: "",
+    chartsSeoDescVi:  "",
+    chartsSeoDescEn:  "",
+    wonmediaUrl:            "",
 };
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

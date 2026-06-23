@@ -9,6 +9,7 @@ export interface Artist {
     avatar?:     string;
     bio?:        string;
     genre?:      string;
+    genres?:     string[];
     followers?:  number;
     verified:    boolean;
     socialLinks?: {
@@ -51,9 +52,10 @@ export const artistService = {
 
     // Lấy danh sách nghệ sĩ
     getAll: async (params?: {
-        page?:  number;
-        limit?: number;
-        genre?: string;
+        page?:   number;
+        limit?:  number;
+        genre?:  string;
+        search?: string;
     }): Promise<PaginatedResponse<Artist>> => {
         const res = await axios.get(`${api}/artists`, { params });
         return res.data;

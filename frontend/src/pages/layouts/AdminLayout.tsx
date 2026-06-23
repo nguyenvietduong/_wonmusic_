@@ -5,15 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     LayoutDashboard, Music, Users,
-    BarChart2, ChevronLeft,
-    ChevronRight, Bell, Search, Settings,
+    ChevronLeft,
+    ChevronRight, Bell, Search, Settings, Home, Info, Phone, Tag, ExternalLink,
 } from "lucide-react";
 
 const NAV_ITEMS = [
     { to:"/admin",           icon:LayoutDashboard, label:"Dashboard"   },
     { to:"/admin/tracks",    icon:Music,           label:"Bài hát"     },
     { to:"/admin/artists",   icon:Users,           label:"Nghệ sĩ"     },
-    { to:"/admin/charts",    icon:BarChart2,       label:"Thống kê"    },
+    { to:"/admin/genres",    icon:Tag,             label:"Thể loại"    },
+    { to:"/admin/homepage",  icon:Home,            label:"Trang chủ"   },
+    { to:"/admin/about",     icon:Info,            label:"Giới thiệu"  },
+    { to:"/admin/contact",   icon:Phone,           label:"Liên hệ"     },
     { to:"/admin/settings",  icon:Settings,        label:"Cài đặt"     },
 ];
 
@@ -63,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 <div className="font-['Barlow_Condensed'] text-[18px] text-white tracking-widest leading-none">
                                     Won <span className="text-green-400">Music</span>
                                 </div>
-                                <div className="text-[10px] text-white/30 tracking-[1.5px] uppercase mt-0.5">
+                                <div className="text-[10px] text-white/55 tracking-[1.5px] uppercase mt-0.5">
                                     Admin Panel
                                 </div>
                             </div>
@@ -91,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {/* Nav */}
                 <nav className="flex-1 px-2.5 py-3 overflow-y-auto overflow-x-hidden">
                     {!collapsed && (
-                        <div className="text-[10px] text-white/20 tracking-[2px] uppercase px-1.5 pb-2 font-semibold">
+                        <div className="text-[10px] text-white/50 tracking-[2px] uppercase px-1.5 pb-2 font-semibold">
                             Quản lý
                         </div>
                     )}
@@ -107,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     transition-all duration-200 cursor-pointer text-sm whitespace-nowrap overflow-hidden
                                     ${isActive
                                         ? "bg-indigo-600 text-white"
-                                        : "text-white/60 hover:bg-white/10 hover:text-white"
+                                        : "text-white/85 hover:bg-white/10 hover:text-white"
                                     }
                                     ${collapsed ? "justify-center" : ""}
                                 `}
@@ -120,11 +123,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         ${isActive ? "bg-white/20" : "bg-white/[0.065]"}
                                     `}
                                 >
-                                    <Icon size={15} className={isActive ? "text-white" : "text-white/55"} />
+                                    <Icon size={15} className={isActive ? "text-white" : "text-white/75"} />
                                 </div>
 
                                 {!collapsed && (
-                                    <span className={`text-[13.5px] ${isActive ? "font-semibold" : "font-normal"}`}>
+                                    <span className={`text-[13.5px] ${isActive ? "font-semibold" : "font-medium"}`}>
                                         {label}
                                     </span>
                                 )}
@@ -178,6 +181,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
 
                     <div className="ml-auto flex items-center gap-3">
+                        {/* Về trang client */}
+                        <Link
+                            href="/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black text-white text-[12px] font-semibold hover:bg-gray-800 transition-colors"
+                        >
+                            <ExternalLink size={13} />
+                            Xem trang web
+                        </Link>
+
                         {/* Bell */}
                         <button className="relative w-9 h-9 rounded-full bg-gray-100 border border-gray-200 text-gray-500 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
                             <Bell size={15} />
