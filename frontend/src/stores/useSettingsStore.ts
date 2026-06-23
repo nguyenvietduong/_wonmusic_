@@ -25,6 +25,7 @@ interface SiteSettings {
     aboutMissionP2En:     string;
     aboutCtaSubtitleEn:   string;
     aboutStats:           string;
+    aboutStatsEn:         string;
     aboutTeam:            string;
     // About page — Mission section
     aboutMissionHeadingVi:   string;
@@ -145,6 +146,7 @@ const DEFAULTS: SiteSettings = {
     aboutMissionP2En:     "",
     aboutCtaSubtitleEn:   "",
     aboutStats:           "",
+    aboutStatsEn:         "",
     aboutTeam:            "",
     aboutMissionHeadingVi:   "",
     aboutMissionHighlightVi: "",

@@ -39,7 +39,7 @@ export default function AboutPage() {
     const {
         aboutHeroSubtitle, aboutMissionP1, aboutMissionP2, aboutCtaSubtitle,
         aboutHeroSubtitleEn, aboutMissionP1En, aboutMissionP2En, aboutCtaSubtitleEn,
-        aboutStats, aboutTeam,
+        aboutStats, aboutStatsEn, aboutTeam,
         aboutMissionHeadingVi, aboutMissionHighlightVi, aboutMissionHeadingEn, aboutMissionHighlightEn,
         aboutServicesVi, aboutServicesEn,
         aboutCtaHeadingVi, aboutCtaHighlightVi, aboutCtaHeadingEn, aboutCtaHighlightEn,
@@ -58,8 +58,9 @@ export default function AboutPage() {
     const ctaHighlight    = (isEn ? (aboutCtaHighlightEn    || aboutCtaHighlightVi)   : (aboutCtaHighlightVi   || aboutCtaHighlightEn))   || t.cta.highlight;
     const ctaSubtitle     = (isEn ? (aboutCtaSubtitleEn     || aboutCtaSubtitle)      : (aboutCtaSubtitle      || aboutCtaSubtitleEn))     || t.cta.subtitle;
 
+    const rawStats = isEn ? (aboutStatsEn || aboutStats) : (aboutStats || aboutStatsEn);
     let parsedStats: Array<{ value: string; label: string; icon: string }> = [];
-    try { parsedStats = aboutStats ? JSON.parse(aboutStats) : []; } catch { parsedStats = []; }
+    try { parsedStats = rawStats ? JSON.parse(rawStats) : []; } catch { parsedStats = []; }
     const displayStats = parsedStats.length > 0 ? parsedStats : t.stats;
 
     const rawSvc = isEn ? aboutServicesEn : aboutServicesVi;

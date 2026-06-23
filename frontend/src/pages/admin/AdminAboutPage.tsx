@@ -147,42 +147,67 @@ function HeroTab({ onSave, data }: { onSave: (f: Record<string, string>) => Prom
     );
 }
 
-const DEFAULT_STATS: StatItem[] = [
+const DEFAULT_STATS_VI: StatItem[] = [
     { value: "500+",  label: "Nghệ sĩ hợp tác",    icon: "🎤" },
     { value: "10M+",  label: "Lượt nghe mỗi tháng", icon: "🎧" },
     { value: "5000+", label: "Bài hát phát hành",    icon: "🎵" },
     { value: "50+",   label: "Giải thưởng âm nhạc",  icon: "🏆" },
 ];
+const DEFAULT_STATS_EN: StatItem[] = [
+    { value: "500+",  label: "Artists Partnered",  icon: "🎤" },
+    { value: "10M+",  label: "Monthly Plays",       icon: "🎧" },
+    { value: "5000+", label: "Songs Released",      icon: "🎵" },
+    { value: "50+",   label: "Music Awards",        icon: "🏆" },
+];
 
 // ─── Tab: Stats ───────────────────────────────────────────────────────────────
 function StatsTab({ onSave, data }: { onSave: (f: Record<string, string>) => Promise<void>; data: Record<string, string> }) {
-    const parseStats = (d: Record<string, string>) => {
-        try { return d.aboutStats ? JSON.parse(d.aboutStats) : DEFAULT_STATS; } catch { return DEFAULT_STATS; }
+    const [lang, setLang] = useState<"vi" | "en">("vi");
+
+    const parseStatsVi = (d: Record<string, string>) => {
+        try { return d.aboutStats ? JSON.parse(d.aboutStats) : DEFAULT_STATS_VI; } catch { return DEFAULT_STATS_VI; }
     };
-    const [stats, setStats] = useState<StatItem[]>(() => parseStats(data));
+    const parseStatsEn = (d: Record<string, string>) => {
+        try { return d.aboutStatsEn ? JSON.parse(d.aboutStatsEn) : DEFAULT_STATS_EN; } catch { return DEFAULT_STATS_EN; }
+    };
+
+    const [statsVi, setStatsVi] = useState<StatItem[]>(() => parseStatsVi(data));
+    const [statsEn, setStatsEn] = useState<StatItem[]>(() => parseStatsEn(data));
     const { saving, saved, submit } = useSave(onSave);
 
-    useEffect(() => { setStats(parseStats(data)); }, [data]);
+    useEffect(() => {
+        setStatsVi(parseStatsVi(data));
+        setStatsEn(parseStatsEn(data));
+    }, [data]);
+
+    const stats    = lang === "vi" ? statsVi : statsEn;
+    const setStats = lang === "vi" ? setStatsVi : setStatsEn;
 
     const setField = (idx: number, field: keyof StatItem, value: string) =>
         setStats(s => s.map((item, i) => i === idx ? { ...item, [field]: value } : item));
 
-    const addStat = () => setStats(s => [...s, { value: "", label: "", icon: "⭐" }]);
+    const addStat    = () => setStats(s => [...s, { value: "", label: "", icon: "⭐" }]);
     const removeStat = (idx: number) => setStats(s => s.filter((_, i) => i !== idx));
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        submit({ aboutStats: JSON.stringify(stats) });
+        submit({ aboutStats: JSON.stringify(statsVi), aboutStatsEn: JSON.stringify(statsEn) });
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Số liệu nổi bật (hiển thị dưới banner)</h3>
-                <button type="button" onClick={addStat}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer">
-                    <Plus size={12} /> Thêm
-                </button>
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Số liệu nổi bật (hiển thị dưới banner)</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Mỗi ngôn ngữ có nhãn riêng — giá trị và icon dùng chung</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <LangToggle lang={lang} setLang={setLang} />
+                    <button type="button" onClick={addStat}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer">
+                        <Plus size={12} /> Thêm
+                    </button>
+                </div>
             </div>
             {stats.map((stat, idx) => (
                 <div key={idx} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
@@ -201,8 +226,12 @@ function StatsTab({ onSave, data }: { onSave: (f: Record<string, string>) => Pro
                             <Input value={stat.value} onChange={v => setField(idx, "value", v)} placeholder="500+" />
                         </Field>
                         <div className="col-span-1 md:col-span-3">
-                            <Field label="Nhãn">
-                                <Input value={stat.label} onChange={v => setField(idx, "label", v)} placeholder="Nghệ sĩ hợp tác" />
+                            <Field label={lang === "vi" ? "Nhãn (Tiếng Việt)" : "Label (English)"}>
+                                <Input
+                                    value={stat.label}
+                                    onChange={v => setField(idx, "label", v)}
+                                    placeholder={lang === "vi" ? "Nghệ sĩ hợp tác" : "Artists Partnered"}
+                                />
                             </Field>
                         </div>
                     </div>
@@ -211,7 +240,7 @@ function StatsTab({ onSave, data }: { onSave: (f: Record<string, string>) => Pro
                         <span className="text-2xl">{stat.icon || "⭐"}</span>
                         <div>
                             <div className="text-lg font-bold text-teal-700">{stat.value || "—"}</div>
-                            <div className="text-xs text-gray-500">{stat.label || "Nhãn"}</div>
+                            <div className="text-xs text-gray-500">{stat.label || (lang === "vi" ? "Nhãn" : "Label")}</div>
                         </div>
                     </div>
                 </div>

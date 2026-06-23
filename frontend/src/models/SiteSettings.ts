@@ -27,6 +27,7 @@ export interface ISiteSettings extends Document {
     aboutCtaSubtitleEn:   string;
     // About page — shared
     aboutStats:           string; // JSON string — [{value,label,icon}]
+    aboutStatsEn:         string; // JSON string — [{value,label,icon}] (English)
     aboutTeam:            string; // JSON string — [{name,role,initials}]
     // About page — Mission section
     aboutMissionHeadingVi:   string;
@@ -145,6 +146,7 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
         aboutCtaSubtitleEn:  { type: String, default: "" },
         // About page — shared
         aboutStats:          { type: String, default: "" },
+        aboutStatsEn:        { type: String, default: "" },
         aboutTeam:           { type: String, default: "" },
         // About page — Mission section
         aboutMissionHeadingVi:   { type: String, default: "" },
