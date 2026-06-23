@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { connectDB } from "@/lib/mongodb";
 import { uploadToBlob } from "@/lib/blob";
 import SiteSettings from "@/models/SiteSettings";
@@ -56,6 +57,7 @@ export async function PATCH(req: NextRequest) {
             { $set: fields },
             { new: true, upsert: true }
         );
+        revalidatePath("/api/settings");
         return Response.json({ success: true, data: settings });
     } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Lỗi server";

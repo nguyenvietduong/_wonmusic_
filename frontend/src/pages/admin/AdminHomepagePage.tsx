@@ -141,7 +141,7 @@ function SliderTab({ onSave }: { onSave: (fields: Record<string, string | number
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
-        axios.get("/api/settings").then(r => {
+        axios.get("/api/settings", { headers: { "Cache-Control": "no-store" } }).then(r => {
             if (r.data.success) {
                 const d = r.data.data;
                 setForm({
@@ -209,7 +209,7 @@ function ServicesTab({ onSave }: { onSave: (fields: Record<string, string | numb
     });
 
     useEffect(() => {
-        axios.get("/api/settings").then(r => {
+        axios.get("/api/settings", { headers: { "Cache-Control": "no-store" } }).then(r => {
             if (!r.data.success) return;
             const d = r.data.data;
             let svi = DEFAULT_SERVICES_VI;
@@ -380,7 +380,7 @@ function ArtistsTab({ onSave }: { onSave: (fields: Record<string, string | numbe
     });
 
     useEffect(() => {
-        axios.get("/api/settings").then(r => {
+        axios.get("/api/settings", { headers: { "Cache-Control": "no-store" } }).then(r => {
             if (!r.data.success) return;
             const d = r.data.data;
             setForm({
@@ -459,7 +459,7 @@ function ChartsTab({ onSave }: { onSave: (fields: Record<string, string | number
     });
 
     useEffect(() => {
-        axios.get("/api/settings").then(r => {
+        axios.get("/api/settings", { headers: { "Cache-Control": "no-store" } }).then(r => {
             if (!r.data.success) return;
             const d = r.data.data;
             setForm({
