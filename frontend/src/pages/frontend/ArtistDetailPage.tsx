@@ -8,6 +8,8 @@ import { usePlayerStore } from "@/stores/usePlayerStore";
 import { FaFacebookF, FaInstagram, FaYoutube, FaTiktok } from "react-icons/fa";
 import SEO from "@/components/frontend/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguageStore } from "@/stores/useLanguageStore";
+import { artistDetailText } from "@/locales/artists";
 
 const fmt = {
     followers: (n?: number) => {
@@ -30,6 +32,8 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
     const isMobile = useIsMobile();
+    const { lang } = useLanguageStore();
+    const t = artistDetailText[lang];
     const params = useParams();
     const id = artistId || (params?.id as string | undefined);
 
@@ -123,11 +127,11 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
         <div style={{ minHeight:"100vh", background:"#F8F8FC", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Be Vietnam Pro',sans-serif" }}>
             <div style={{ textAlign:"center" }}>
                 <div style={{ fontSize:56, marginBottom:14, opacity:.18 }}>⚠</div>
-                <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:15, color:"rgba(0,0,0,.45)", marginBottom:8 }}>Không thể tải thông tin nghệ sĩ</p>
-                <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:"rgba(0,0,0,.3)", marginBottom:20 }}>Vui lòng thử lại sau</p>
+                <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:15, color:"rgba(0,0,0,.45)", marginBottom:8 }}>{t.errorTitle}</p>
+                <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:"rgba(0,0,0,.3)", marginBottom:20 }}>{t.errorSub}</p>
                 <div style={{ display:"flex", gap:12, justifyContent:"center" }}>
-                    <button onClick={() => setRetryCount(c => c+1)} style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:"#00A98F", background:"rgba(0,169,143,.08)", border:"1px solid rgba(0,169,143,.3)", borderRadius:10, padding:"8px 18px", cursor:"pointer" }}>Thử lại</button>
-                    <Link href="/artists" style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:"rgba(0,0,0,.45)", textDecoration:"none", lineHeight:"36px" }}>← Quay lại</Link>
+                    <button onClick={() => setRetryCount(c => c+1)} style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:"#00A98F", background:"rgba(0,169,143,.08)", border:"1px solid rgba(0,169,143,.3)", borderRadius:10, padding:"8px 18px", cursor:"pointer" }}>{t.retry}</button>
+                    <Link href="/artists" style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:"rgba(0,0,0,.45)", textDecoration:"none", lineHeight:"36px" }}>{t.backLink}</Link>
                 </div>
             </div>
         </div>
@@ -137,8 +141,8 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
         <div style={{ minHeight:"100vh", background:"#F8F8FC", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Be Vietnam Pro',sans-serif" }}>
             <div style={{ textAlign:"center" }}>
                 <div style={{ fontSize:56, marginBottom:14, opacity:.18 }}>♪</div>
-                <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:15, color:"rgba(0,0,0,.45)", marginBottom:16 }}>Không tìm thấy nghệ sĩ</p>
-                <Link href="/artists" style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:"#00A98F", textDecoration:"none" }}>← Quay lại nghệ sĩ</Link>
+                <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:15, color:"rgba(0,0,0,.45)", marginBottom:16 }}>{t.notFound}</p>
+                <Link href="/artists" style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, color:"#00A98F", textDecoration:"none" }}>{t.backToList}</Link>
             </div>
         </div>
     );
@@ -301,14 +305,14 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                         fontFamily:"'Space Grotesk',sans-serif", fontSize:11, fontWeight:700, letterSpacing:"0.8px",
                         color:"rgba(0,0,0,.5)", textDecoration:"none", marginBottom:14,
                     }}>
-                        ← Nghệ sĩ
+                        {t.back}
                     </Link>
 
                     {/* Eyebrow */}
                     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
                         <span style={{ width:28, height:2, background:"linear-gradient(90deg,#00A98F,#34D4B8)", borderRadius:2, display:"block" }} />
                         <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:12, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"#00A98F" }}>
-                            {artist.verified ? "Nghệ sĩ xác minh" : "Nghệ sĩ"}
+                            {artist.verified ? t.verifiedLabel : t.artistLabel}
                         </span>
                     </div>
 
@@ -337,9 +341,9 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                         <div style={{ width:48, height:2, background:"linear-gradient(90deg,#00A98F,#34D4B8)", borderRadius:2, flexShrink:0 }} />
                         <div style={{ display:"flex", gap: isMobile ? 16 : 28, alignItems:"center" }}>
                             {[
-                                { label:"Followers",  value: fmt.followers(artist.followers) },
-                                { label:"Bài hát",    value: tracks.length },
-                                { label:"Lượt nghe",  value: fmt.plays(totalPlays) },
+                                { label: t.statFollowers, value: fmt.followers(artist.followers) },
+                                { label: t.statTracks,    value: tracks.length },
+                                { label: t.statPlays,     value: fmt.plays(totalPlays) },
                             ].map(({ label, value }) => (
                                 <div key={label} style={{ display:"flex", alignItems:"baseline", gap:5 }}>
                                     <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize: isMobile ? 14 : 17, fontWeight:800, color:"#0D0D1A", letterSpacing:"-0.3px" }}>{value}</span>
@@ -396,7 +400,7 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                     {/* Actions */}
                     <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
                         <button className="adp-play-all" onClick={() => tracks.length && handlePlay(tracks[0])}>
-                            ▶ Phát tất cả
+                            ▶ {t.playAll}
                         </button>
                         {hasSocial && (
                             <div style={{ display:"flex", gap:7 }}>
@@ -416,10 +420,10 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                 {/* Tabs */}
                 <div style={{ display:"flex", gap:8, marginBottom:32 }}>
                     <button className={`adp-tab ${activeTab === "tracks" ? "active" : ""}`} onClick={() => setActiveTab("tracks")}>
-                        ♪ Bài hát ({tracks.length})
+                        ♪ {t.tabTracks} ({tracks.length})
                     </button>
                     <button className={`adp-tab ${activeTab === "about" ? "active" : ""}`} onClick={() => setActiveTab("about")}>
-                        Giới thiệu
+                        {t.tabAbout}
                     </button>
                 </div>
 
@@ -428,7 +432,7 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                     tracks.length === 0 ? (
                         <div style={{ textAlign:"center", padding:"80px 0" }}>
                             <div style={{ fontSize:52, marginBottom:14, opacity:.18 }}>♪</div>
-                            <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:15, color:"rgba(0,0,0,.4)" }}>Chưa có bài hát nào</p>
+                            <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:15, color:"rgba(0,0,0,.4)" }}>{t.noTracks}</p>
                         </div>
                     ) : (
                         <div style={{ display:"flex", flexDirection:"column", gap:36 }}>
@@ -437,7 +441,7 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                             {topTracks.length > 0 && (
                                 <div>
                                     <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-                                        <span className="adp-section-label">Bài hát nổi bật</span>
+                                        <span className="adp-section-label">{t.featuredTracks}</span>
                                         <span style={{ flex:1, height:1, background:"rgba(0,0,0,.07)" }} />
                                     </div>
                                     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -489,7 +493,7 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                                                                 </span>
                                                             )}
                                                             <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, fontWeight:600, color:"rgba(0,0,0,.4)", flexShrink:0 }}>
-                                                                {fmt.plays(track.plays)} plays
+                                                                {fmt.plays(track.plays)} {t.plays}
                                                             </span>
                                                         </div>
                                                         <div style={{ height:3, background:"rgba(0,0,0,.06)", borderRadius:2, overflow:"hidden" }}>
@@ -515,7 +519,7 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                             {tracks.length > 3 && (
                                 <div>
                                     <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
-                                        <span className="adp-section-label">Tất cả bài hát</span>
+                                        <span className="adp-section-label">{t.allTracks}</span>
                                         <span style={{ flex:1, height:1, background:"rgba(0,0,0,.07)" }} />
                                     </div>
 
@@ -523,9 +527,9 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                                     <div style={{ display:"flex", alignItems:"center", gap:14, padding:"0 14px 10px", borderBottom:"1px solid rgba(0,0,0,.07)", marginBottom:4 }}>
                                         <div style={{ width:28 }} />
                                         <div style={{ width:42 }} />
-                                        <div style={{ flex:1, fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.35)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Tên bài</div>
-                                        {!isMobile && <div style={{ width:76, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.35)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>Plays</div>}
-                                        <div style={{ width:46, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.35)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>TG</div>
+                                        <div style={{ flex:1, fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.35)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>{t.colTitle}</div>
+                                        {!isMobile && <div style={{ width:76, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.35)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>{t.colPlays}</div>}
+                                        <div style={{ width:46, textAlign:"right", fontFamily:"'Space Grotesk',sans-serif", fontSize:9, color:"rgba(0,0,0,.35)", textTransform:"uppercase", letterSpacing:"2px", fontWeight:700 }}>{t.colDuration}</div>
                                     </div>
 
                                     <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
@@ -625,13 +629,13 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                             ) : (
                                 <div style={{ padding:"40px 32px", borderRadius:20, border:"1px dashed rgba(0,0,0,.1)", textAlign:"center", background:"#fff" }}>
                                     <div style={{ fontSize:36, marginBottom:10, opacity:.2 }}>🎵</div>
-                                    <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:14, color:"rgba(0,0,0,.35)" }}>Chưa có thông tin giới thiệu</p>
+                                    <p style={{ fontFamily:"'Be Vietnam Pro',sans-serif", fontSize:14, color:"rgba(0,0,0,.35)" }}>{t.noBio}</p>
                                 </div>
                             )}
 
                             {hasSocial && (
                                 <div>
-                                    <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"rgba(0,0,0,.35)", marginBottom:14 }}>Mạng xã hội</p>
+                                    <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"rgba(0,0,0,.35)", marginBottom:14 }}>{t.socialTitle}</p>
                                     <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                                         {artist.socialLinks?.facebook  && <a href={artist.socialLinks.facebook}  target="_blank" rel="noreferrer" className="adp-social-pill"><FaFacebookF  size={12}/> Facebook</a>}
                                         {artist.socialLinks?.instagram && <a href={artist.socialLinks.instagram} target="_blank" rel="noreferrer" className="adp-social-pill"><FaInstagram size={12}/> Instagram</a>}
@@ -644,14 +648,14 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
 
                         {/* Right: stat chips */}
                         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"rgba(0,0,0,.35)", marginBottom:6 }}>Thông tin</p>
+                            <p style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"rgba(0,0,0,.35)", marginBottom:6 }}>{t.infoTitle}</p>
 
                             {[
-                                { label:"Thể loại",       value: artist.genre ?? "—",                                    icon:"🎵" },
-                                { label:"Followers",       value: fmt.followers(artist.followers),                        icon:"👥" },
-                                { label:"Tổng lượt nghe", value: fmt.plays(totalPlays),                                  icon:"🎧" },
-                                { label:"Bài hát",        value: `${tracks.length} bài`,                                 icon:"🎶" },
-                                { label:"Trạng thái",     value: artist.verified ? "✓ Đã xác minh" : "Chưa xác minh",  icon:"🏅" },
+                                { label: t.infoGenre,      value: artist.genre ?? "—",                                            icon:"🎵" },
+                                { label: t.infoFollowers,  value: fmt.followers(artist.followers),                                icon:"👥" },
+                                { label: t.infoTotalPlays, value: fmt.plays(totalPlays),                                          icon:"🎧" },
+                                { label: t.infoTracks,     value: `${tracks.length} ${t.tracksUnit}`,                             icon:"🎶" },
+                                { label: t.infoStatus,     value: artist.verified ? t.verified : t.notVerified,                   icon:"🏅" },
                             ].map(({ label, value, icon }) => (
                                 <div key={label} className="adp-stat-chip">
                                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -659,7 +663,7 @@ export default function ArtistDetailPage({ artistId }: { artistId?: string }) {
                                             <span style={{ fontSize:15 }}>{icon}</span>
                                             <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, color:"rgba(0,0,0,.4)", textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:700 }}>{label}</span>
                                         </div>
-                                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700, color: label==="Trạng thái" && artist.verified ? "#00A98F" : "#0D0D1A" }}>
+                                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700, color: label===t.infoStatus && artist.verified ? "#00A98F" : "#0D0D1A" }}>
                                             {value}
                                         </span>
                                     </div>
