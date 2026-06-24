@@ -21,6 +21,7 @@ type Period = "day" | "week" | "month";
 
 const EQ_H = [22, 38, 28, 50, 35, 60, 42, 72, 30, 55, 65, 28, 48, 38, 70, 32, 52, 42, 62, 36];
 const MEDAL: Record<number, string> = { 0: "🥇", 1: "🥈", 2: "🥉" };
+const PAGE_SIZE_OPTIONS = [5, 10, 20];
 
 const SkeletonRow = ({ idx }: { idx: number }) => (
     <div style={{
@@ -59,6 +60,8 @@ const ChartsPage = () => {
     const [tracks,    setTracks]    = useState<Track[]>([]);
     const [loading,   setLoading]   = useState(true);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const [chartPage, setChartPage] = useState(1);
+    const [pageSize,  setPageSize]  = useState(10);
 
     const { play, togglePlay, currentTrack, isPlaying } = usePlayerStore();
     const currentLimit = PERIOD_LIMITS[period];
@@ -69,13 +72,16 @@ const ChartsPage = () => {
         (async () => {
             try {
                 setLoading(true);
+                setChartPage(1);
                 const data = await trackService.getTop(currentLimit);
                 setTracks(data);
             } finally { setLoading(false); }
         })();
     }, [period, currentLimit]);
 
-    const maxPlays = tracks.length > 0 ? tracks[0].plays : 1;
+    const maxPlays        = tracks.length > 0 ? tracks[0].plays : 1;
+    const totalChartPages = Math.ceil(tracks.length / pageSize);
+    const pagedTracks     = tracks.slice((chartPage - 1) * pageSize, chartPage * pageSize);
 
     const handlePlay = (track: Track) => {
         if (currentTrack?.id === track._id) { togglePlay(); return; }
@@ -96,6 +102,7 @@ const ChartsPage = () => {
             <style>{`
                 @keyframes cpPulse  { 0%,100%{opacity:.4} 50%{opacity:.8} }
                 @keyframes eqBar    { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
+                @keyframes waveform-anim { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
                 @keyframes cpFadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
                 @keyframes barGrow  { from{width:0} to{width:var(--w)} }
                 @keyframes rankPop  { 0%{transform:scale(.6);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
@@ -153,6 +160,32 @@ const ChartsPage = () => {
                     font-size:10px; color:rgba(0,0,0,.4);
                     text-transform:uppercase; letter-spacing:2px; font-weight:700;
                 }
+                .cp-page-btn {
+                    width:34px; height:34px; border-radius:9px;
+                    border:1px solid rgba(0,0,0,.10);
+                    background:rgba(0,0,0,.04);
+                    font-size:13px; cursor:pointer; transition:all .2s;
+                    display:flex; align-items:center; justify-content:center;
+                    color:rgba(0,0,0,.5);
+                    font-family:'Space Grotesk',sans-serif;
+                }
+                .cp-page-btn:hover:not(:disabled) { border-color:rgba(0,169,143,.4); color:#00A98F; background:rgba(0,169,143,.08); }
+                .cp-page-btn.active { background:rgba(0,169,143,.15); border-color:rgba(0,169,143,.5); color:#00A98F; font-weight:700; }
+                .cp-page-btn:disabled { opacity:.28; cursor:default; }
+                .cp-page-select {
+                    padding:6px 28px 6px 10px; border-radius:8px;
+                    border:1px solid rgba(0,0,0,.10);
+                    background:rgba(0,0,0,.04);
+                    font-size:12px; font-weight:700;
+                    color:#0D0D1A;
+                    font-family:'Space Grotesk',sans-serif;
+                    outline:none; cursor:pointer;
+                    appearance:none; -webkit-appearance:none;
+                    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2334D4B8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+                    background-repeat:no-repeat; background-position:right 9px center;
+                    transition:border-color .2s;
+                }
+                .cp-page-select:focus { border-color:rgba(0,169,143,.5); }
             `}</style>
 
             {/* ══ Hero ══ */}
@@ -171,7 +204,7 @@ const ChartsPage = () => {
                 {/* EQ bars */}
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", gap: 2, height: isMobile ? 28 : 40, opacity: .13, pointerEvents: "none" }}>
                     {EQ_H.map((h, i) => (
-                        <div key={i} style={{ flex: 1, height: `${h}%`, background: "#00A98F", borderRadius: "2px 2px 0 0" }} />
+                        <div key={i} style={{ flex: 1, height: `${h}%`, background: "#00A98F", borderRadius: "2px 2px 0 0", transformOrigin: "bottom", animation: `waveform-anim ${.4+(i%6)*.13}s ease-in-out infinite`, animationDelay: `${i*.04}s` }} />
                     ))}
                 </div>
 
@@ -231,12 +264,30 @@ const ChartsPage = () => {
                             {loading ? t.loading : `${tracks.length} ${t.songs}`}
                         </p>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         {(["day", "week", "month"] as Period[]).map(p => (
                             <button key={p} className={`cp-period-tab ${period === p ? "active" : ""}`} onClick={() => setPeriod(p)}>
                                 {t.periods[p]}
                             </button>
                         ))}
+                        <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.1)", margin: "0 4px" }} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: "rgba(0,0,0,.4)", whiteSpace: "nowrap" }}>
+                                {lang === "vi" ? "Hiển thị" : "Show"}
+                            </span>
+                            <select
+                                className="cp-page-select"
+                                value={pageSize}
+                                onChange={e => { setPageSize(Number(e.target.value)); setChartPage(1); }}
+                            >
+                                {PAGE_SIZE_OPTIONS.map(n => (
+                                    <option key={n} value={n}>{n}</option>
+                                ))}
+                            </select>
+                            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 11, color: "rgba(0,0,0,.4)", whiteSpace: "nowrap" }}>
+                                {lang === "vi" ? "bài/trang" : "per page"}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -255,12 +306,13 @@ const ChartsPage = () => {
                 {/* Track list */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {loading
-                        ? Array.from({ length: currentLimit }).map((_, i) => <SkeletonRow key={i} idx={i} />)
-                        : tracks.map((track, idx) => {
+                        ? Array.from({ length: Math.min(pageSize, currentLimit) }).map((_, i) => <SkeletonRow key={i} idx={i} />)
+                        : pagedTracks.map((track, idx) => {
+                            const globalIdx     = (chartPage - 1) * pageSize + idx;
                             const isThis        = currentTrack?.id === track._id;
                             const isThisPlaying = isThis && isPlaying;
                             const pct           = Math.round((track.plays / maxPlays) * 100);
-                            const isTop3        = idx < 3;
+                            const isTop3        = globalIdx < 3;
 
                             return (
                                 <div
@@ -286,7 +338,7 @@ const ChartsPage = () => {
                                                 ))}
                                             </div>
                                         ) : isTop3 ? (
-                                            <div style={{ fontSize: 20, textAlign: "center", lineHeight: 1 }}>{MEDAL[idx]}</div>
+                                            <div style={{ fontSize: 20, textAlign: "center", lineHeight: 1 }}>{MEDAL[globalIdx]}</div>
                                         ) : (
                                             <div style={{
                                                 fontFamily: "'Space Grotesk',sans-serif",
@@ -294,7 +346,7 @@ const ChartsPage = () => {
                                                 color: hoveredId === track._id ? "#00A98F" : "rgba(0,0,0,.25)",
                                                 textAlign: "center", lineHeight: 1, transition: "color .2s",
                                             }}>
-                                                {String(idx + 1).padStart(2, "0")}
+                                                {String(globalIdx + 1).padStart(2, "0")}
                                             </div>
                                         )}
                                     </div>
@@ -402,9 +454,22 @@ const ChartsPage = () => {
                     </div>
                 )}
 
+                {/* Pagination */}
+                {!loading && totalChartPages > 1 && (
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 36 }}>
+                        <button className="cp-page-btn" onClick={() => setChartPage(p => p - 1)} disabled={chartPage === 1}>‹</button>
+                        {Array.from({ length: totalChartPages }).map((_, i) => (
+                            <button key={i} className={`cp-page-btn ${chartPage === i + 1 ? "active" : ""}`} onClick={() => setChartPage(i + 1)}>
+                                {i + 1}
+                            </button>
+                        ))}
+                        <button className="cp-page-btn" onClick={() => setChartPage(p => p + 1)} disabled={chartPage === totalChartPages}>›</button>
+                    </div>
+                )}
+
                 {/* Back button */}
                 {!loading && tracks.length > 0 && (
-                    <div style={{ textAlign: "center", marginTop: 48 }}>
+                    <div style={{ textAlign: "center", marginTop: 36 }}>
                         <Link
                             href="/"
                             style={{

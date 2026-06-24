@@ -10,6 +10,7 @@ import SEO from "@/components/frontend/SEO";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const GENRE_KEYS = ["Pop", "Indie", "R&B", "Hip-hop", "Ballad", "EDM", "Folk"];
+const LIMIT_OPTIONS = [6, 12, 24];
 
 const AVATAR_GRADIENTS = [
     "linear-gradient(135deg,#E8ECF8,#D8DFF0)",
@@ -66,7 +67,7 @@ const ArtistsPage = () => {
     const [search,      setSearch]      = useState("");
     const [page,        setPage]        = useState(1);
     const [total,       setTotal]       = useState(0);
-    const LIMIT = 12;
+    const [limit,       setLimit]       = useState(12);
 
     useEffect(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, []);
 
@@ -75,14 +76,14 @@ const ArtistsPage = () => {
             try {
                 setLoading(true);
                 setFetchError(false);
-                const res = await artistService.getAll({ page, limit: LIMIT });
+                const res = await artistService.getAll({ page, limit });
                 setArtists(res.data);
                 setTotal(res.pagination.total);
             } catch {
                 setFetchError(true);
             } finally { setLoading(false); }
         })();
-    }, [page, retryCount]);
+    }, [page, limit, retryCount]);
 
     useEffect(() => { setActiveGenre(t.all); }, [lang]);
 
@@ -95,7 +96,7 @@ const ArtistsPage = () => {
         setFiltered(result);
     }, [artists, activeGenre, search, t.all]);
 
-    const totalPages = Math.ceil(total / LIMIT);
+    const totalPages = Math.ceil(total / limit);
 
     return (
         <>
@@ -111,6 +112,7 @@ const ArtistsPage = () => {
                     to   { opacity:1; transform:translateY(0); }
                 }
                 @keyframes apPulse { 0%,100%{opacity:.35} 50%{opacity:.75} }
+                @keyframes waveform-anim { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
 
                 /* ── artist mesh card ── */
                 .ap-card {
@@ -274,6 +276,21 @@ const ArtistsPage = () => {
                 }
                 .ap-genre-select:focus { border-color: rgba(0,169,143,.5); }
 
+                .ap-limit-select {
+                    padding:6px 26px 6px 10px; border-radius:8px;
+                    border:1px solid rgba(0,0,0,.10);
+                    background:rgba(0,0,0,.04);
+                    font-size:12px; font-weight:700;
+                    color:#0D0D1A;
+                    font-family:'Space Grotesk',sans-serif;
+                    outline:none; cursor:pointer;
+                    appearance:none; -webkit-appearance:none;
+                    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%2334D4B8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+                    background-repeat:no-repeat; background-position:right 8px center;
+                    transition:border-color .2s;
+                }
+                .ap-limit-select:focus { border-color:rgba(0,169,143,.5); }
+
                 .ap-page-btn {
                     width: 34px; height: 34px;
                     border-radius: 9px;
@@ -306,7 +323,7 @@ const ArtistsPage = () => {
                 {/* EQ bars */}
                 <div style={{ position:"absolute", bottom:0, left:0, right:0, display:"flex", alignItems:"flex-end", gap:2, height: isMobile ? 28 : 40, opacity:.13, pointerEvents:"none" }}>
                     {EQ_H.map((h, i) => (
-                        <div key={i} style={{ flex:1, height:`${h}%`, background:"#00A98F", borderRadius:"2px 2px 0 0" }} />
+                        <div key={i} style={{ flex:1, height:`${h}%`, background:"#00A98F", borderRadius:"2px 2px 0 0", transformOrigin:"bottom", animation:`waveform-anim ${.4+(i%6)*.13}s ease-in-out infinite`, animationDelay:`${i*.04}s` }} />
                     ))}
                 </div>
 
@@ -388,6 +405,26 @@ const ArtistsPage = () => {
                     <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.6)", flexShrink:0 }}>
                         <span style={{ color:"#00A98F", fontWeight:700 }}>{filtered.length}</span> {t.artistCount}
                     </span>
+
+                    {/* Divider + limit selector */}
+                    <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                        <span style={{ width:1, height:18, background:"rgba(0,0,0,0.1)" }} />
+                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.4)", whiteSpace:"nowrap" }}>
+                            {lang === "vi" ? "Hiển thị" : "Show"}
+                        </span>
+                        <select
+                            className="ap-limit-select"
+                            value={limit}
+                            onChange={e => { setLimit(Number(e.target.value)); setPage(1); }}
+                        >
+                            {LIMIT_OPTIONS.map(n => (
+                                <option key={n} value={n}>{n}</option>
+                            ))}
+                        </select>
+                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.4)", whiteSpace:"nowrap" }}>
+                            {lang === "vi" ? "nghệ sĩ/trang" : "per page"}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -395,7 +432,7 @@ const ArtistsPage = () => {
             <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "24px 16px 60px" : "44px 32px 80px" }}>
                 {loading ? (
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:16 }}>
-                        {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} idx={i} />)}
+                        {Array.from({ length: limit }).map((_, i) => <SkeletonCard key={i} idx={i} />)}
                     </div>
                 ) : fetchError ? (
                     <div style={{ textAlign:"center", padding:"80px 0" }}>
