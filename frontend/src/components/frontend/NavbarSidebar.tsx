@@ -16,6 +16,8 @@ import type { NavbarSidebarProps } from "@/types/navbar";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { navbarText } from "@/locales/navbar";
 import { usePlayerStore } from "@/stores/usePlayerStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { LogOut, User } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const NOTES = ["♩","♪","♫","♬","𝄞","♭","♮"];
@@ -36,6 +38,8 @@ const NavbarSidebar = ({ open, onOpenChange }: NavbarSidebarProps) => {
     const t                            = navbarText[lang];
     const notesBgRef                   = useRef<HTMLDivElement>(null);
     const { currentTrack, isPlaying }  = usePlayerStore();
+    const user                         = useAuthStore((s) => s.user);
+    const signOut                      = useAuthStore((s) => s.signOut);
 
     useEffect(() => {
         if (!open) return;
@@ -264,6 +268,49 @@ const NavbarSidebar = ({ open, onOpenChange }: NavbarSidebarProps) => {
                     {/* Footer */}
                     <div style={{ padding:"16px 20px 24px", marginTop:8 }}>
                         <div style={{ height:1, background:"rgba(255,255,255,.08)", marginBottom:16 }} />
+
+                        {/* Admin / Logout buttons */}
+                        {user && (
+                            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:14 }}>
+                                <a
+                                    href="/admin"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => onOpenChange(false)}
+                                    style={{
+                                        display:"flex", alignItems:"center", gap:8,
+                                        padding:"10px 14px", borderRadius:10,
+                                        background:"linear-gradient(135deg,#00A98F,#34D4B8)",
+                                        color:"#fff", textDecoration:"none",
+                                        fontFamily:"'Space Grotesk',sans-serif",
+                                        fontSize:12, fontWeight:700, letterSpacing:"0.5px",
+                                        transition:"opacity .2s",
+                                    }}
+                                    onMouseEnter={e => (e.currentTarget.style.opacity = "0.88")}
+                                    onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+                                >
+                                    <User size={13} />
+                                    {user.displayName ?? t.member}
+                                </a>
+                                <button
+                                    onClick={() => { signOut(); onOpenChange(false); }}
+                                    style={{
+                                        display:"flex", alignItems:"center", gap:8,
+                                        padding:"10px 14px", borderRadius:10,
+                                        background:"#ef4444",
+                                        color:"#fff", border:"none", cursor:"pointer",
+                                        fontFamily:"'Space Grotesk',sans-serif",
+                                        fontSize:12, fontWeight:700, letterSpacing:"0.5px",
+                                        transition:"background .2s", width:"100%",
+                                    }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = "#dc2626")}
+                                    onMouseLeave={e => (e.currentTarget.style.background = "#ef4444")}
+                                >
+                                    <LogOut size={13} />
+                                    {t.logout}
+                                </button>
+                            </div>
+                        )}
 
                         <div style={{ marginBottom:14 }}>
                             <LanguageSwitcher />

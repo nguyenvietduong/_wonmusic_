@@ -133,12 +133,9 @@ export default function SearchPage() {
         />
         <div style={{ minHeight:"100vh", background:"#F8F8FC", fontFamily:"'Be Vietnam Pro',sans-serif", color:"#0D0D1A" }}>
             <style>{`
-                @keyframes spPulse    { 0%,100%{opacity:.35} 50%{opacity:.75} }
-                @keyframes spFadeUp   { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-                @keyframes spEq       { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
-                @keyframes spDotBlink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.5)} }
-                @keyframes spVinyl    { to{transform:translateY(-50%) rotate(360deg)} }
-                @keyframes spPulseGlow{ 0%,100%{opacity:.55} 50%{opacity:.9} }
+                @keyframes spPulse  { 0%,100%{opacity:.35} 50%{opacity:.75} }
+                @keyframes spFadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+                @keyframes spEq     { 0%,100%{transform:scaleY(.2)} 50%{transform:scaleY(1)} }
 
                 .sp-input {
                     width:100%; background:rgba(0,0,0,.05);
@@ -164,8 +161,8 @@ export default function SearchPage() {
                     font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
                     cursor:pointer; transition:all .2s; white-space:nowrap;
                 }
-                .sp-tab:hover  { border-color:rgba(0,169,143,.4); color:#34D4B8; }
-                .sp-tab.active { background:rgba(0,169,143,.13); border-color:rgba(0,169,143,.5); color:#34D4B8; }
+                .sp-tab:hover  { border-color:rgba(0,169,143,.4); color:#00A98F; }
+                .sp-tab.active { background:rgba(0,169,143,.13); border-color:rgba(0,169,143,.5); color:#00A98F; }
 
                 .sp-track-row {
                     display:flex; align-items:center; gap:16px;
@@ -207,123 +204,96 @@ export default function SearchPage() {
                 .sp-artist-card:hover { border-color:rgba(0,169,143,.32); transform:translateY(-8px); box-shadow:0 20px 48px rgba(0,169,143,.1); }
                 .sp-artist-card:hover::before { opacity:1; }
                 .sp-artist-card:hover::after  { transform:scaleX(1); }
-
-                .sp-section-title {
-                    font-family:'Be Vietnam Pro',sans-serif;
-                    font-size:17px; font-weight:700; color:#0D0D1A;
-                    display:flex; align-items:center; gap:10; margin-bottom:14px;
-                }
             `}</style>
 
             {/* ══ HERO ══ */}
             <div style={{
-                background:"#F0F2FA",
-                padding:"120px 0 52px",
                 position:"relative", overflow:"hidden",
+                height: isMobile ? 220 : 300,
+                backgroundImage:"url('/partner-bg.png')",
+                backgroundSize:"cover",
+                backgroundPosition:"center",
+                backgroundRepeat:"no-repeat",
             }}>
-                {/* Ambient glows */}
-                <div style={{ position:"absolute", top:"30%", left:"10%", width:500, height:500, borderRadius:"50%", background:"radial-gradient(circle,rgba(0,169,143,.07) 0%,transparent 65%)", pointerEvents:"none" }} />
-                <div style={{ position:"absolute", top:"20%", right:"20%", width:360, height:360, borderRadius:"50%", background:"radial-gradient(circle,rgba(99,102,241,.05) 0%,transparent 65%)", pointerEvents:"none" }} />
+                {/* Teal glow */}
+                <div style={{ position:"absolute", top:"-20%", right:"-5%", width:460, height:460, borderRadius:"50%", background:"radial-gradient(circle,rgba(0,169,143,0.10),transparent 65%)", pointerEvents:"none" }} />
 
-                {/* Vinyl — right side */}
-                <div style={{
-                    position:"absolute", right:-80, top:"50%",
-                    width:440, height:440, borderRadius:"50%",
-                    animation:"spVinyl 24s linear infinite",
-                    background:"conic-gradient(from 0deg,#D8DCF0,#C8CEE8 5%,#D8DCF0 10%,#C8CEE8 15%,#D8DCF0 20%,#C8CEE8 25%,#D8DCF0 30%,#C8CEE8 35%,#D8DCF0 40%,#C8CEE8 45%,#D8DCF0 50%,#C8CEE8 55%,#D8DCF0 60%,#C8CEE8 65%,#D8DCF0 70%,#C8CEE8 75%,#D8DCF0 80%,#C8CEE8 85%,#D8DCF0 90%,#C8CEE8 95%,#D8DCF0)",
-                    boxShadow:"inset 0 0 80px rgba(0,0,0,.06), 0 0 0 1px rgba(0,169,143,.1)",
-                    opacity:.6, pointerEvents:"none",
-                }}>
-                    {[58, 90, 122, 155, 188].map(r => (
-                        <div key={r} style={{
-                            position:"absolute", top:"50%", left:"50%",
-                            transform:"translate(-50%,-50%)",
-                            width:r*2, height:r*2, borderRadius:"50%",
-                            border:"1px solid rgba(0,0,0,.08)",
-                        }} />
+                {/* EQ bars */}
+                <div style={{ position:"absolute", bottom:0, left:0, right:0, display:"flex", alignItems:"flex-end", gap:2, height: isMobile ? 28 : 40, opacity:.13, pointerEvents:"none" }}>
+                    {EQ_HEIGHTS.map((h, i) => (
+                        <div key={i} style={{ flex:1, height:`${h}%`, background:"#00A98F", borderRadius:"2px 2px 0 0" }} />
                     ))}
-                    <div style={{
-                        position:"absolute", top:"50%", left:"50%",
-                        transform:"translate(-50%,-50%)",
-                        width:120, height:120, borderRadius:"50%",
-                        background:"linear-gradient(135deg,#E8EEF8,#F0F4FC)",
-                        border:"1px solid rgba(0,169,143,.25)",
-                        boxShadow:"0 0 36px rgba(0,169,143,.12)",
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                        animation:"spPulseGlow 4s ease-in-out infinite",
-                    }}>
-                        <div style={{ width:18, height:18, borderRadius:"50%", background:"#F0F2FA", border:"2px solid rgba(0,169,143,.4)" }} />
+                </div>
+
+                {/* Content */}
+                <div style={{ maxWidth:1440, margin:"0 auto", padding:`${isMobile ? 76 : 82}px 32px ${isMobile ? 24 : 28}px`, position:"relative", zIndex:2 }}>
+                    {/* Eyebrow */}
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                        <span style={{ width:24, height:2, background:"#00A98F", borderRadius:2, display:"block" }} />
+                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase", color:"#00A98F" }}>
+                            {t.label}
+                        </span>
                     </div>
-                </div>
 
-                {/* EQ bars at bottom */}
-                <div style={{ position:"absolute", bottom:0, left:0, right:0, display:"flex", alignItems:"flex-end", height:44, opacity:.12, pointerEvents:"none" }}>
-                    {EQ_HEIGHTS.concat(EQ_HEIGHTS).concat(EQ_HEIGHTS).concat(EQ_HEIGHTS).map((h, i) => (
-                        <div key={i} style={{ flex:1, height:`${h}%`, background:"#34D4B8", borderRadius:"2px 2px 0 0", transformOrigin:"bottom", animation:`spEq ${.4+(i%5)*.12}s ease-in-out infinite`, animationDelay:`${i*.035}s` }} />
-                    ))}
-                </div>
+                    {/* Heading */}
+                    <h1 style={{
+                        fontFamily:"'Be Vietnam Pro', sans-serif",
+                        fontSize: isMobile ? "clamp(22px,6vw,28px)" : "clamp(24px,2.8vw,36px)",
+                        lineHeight:1.15, letterSpacing:"-0.5px",
+                        color:"#0D0D1A", margin:0, textTransform:"uppercase",
+                    }}>
+                        <b>
+                            {t.heading}{" "}
+                            <span style={{ color:"#00A98F" }}>{t.highlight}</span>
+                        </b>
+                    </h1>
 
-                {/* Content — centered search area */}
-                <div style={{ maxWidth:1440, margin:"0 auto", padding:"0 32px", position:"relative", zIndex:2 }}>
-                    <div style={{ maxWidth:680, margin:"0 auto" }}>
-                        {/* Label */}
-                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, justifyContent:"center", animation:"spFadeUp .35s both" }}>
-                            <span style={{ width:6, height:6, borderRadius:"50%", background:"#34D4B8", display:"inline-block", animation:"spDotBlink 1.5s ease-in-out infinite" }} />
-                            <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, color:"#34D4B8", letterSpacing:"2.5px", textTransform:"uppercase", fontWeight:700 }}>
-                                {t.label}
-                            </span>
-                        </div>
-
-                        {/* Heading */}
-                        <h1 style={{
-                            fontFamily:"'Be Vietnam Pro',sans-serif",
-                            fontSize:"clamp(36px,6vw,64px)", color:"#0D0D1A",
-                            lineHeight:.95, letterSpacing:-1,
-                            textAlign:"center", marginBottom:28,
-                            animation:"spFadeUp .4s .06s both",
-                        }}>
-                            {t.heading} <span style={{ color:"#34D4B8" }}>{t.highlight}</span>
-                        </h1>
-
-                        {/* Search input */}
-                        <div style={{ position:"relative", animation:"spFadeUp .4s .1s both" }}>
-                            <span style={{ position:"absolute", left:18, top:"50%", transform:"translateY(-50%)", fontSize:16, pointerEvents:"none", color:"#34D4B8" }}>🔍</span>
-                            <input
-                                className="sp-input"
-                                placeholder={t.placeholder}
-                                value={inputVal}
-                                onChange={e => handleInput(e.target.value)}
-                                autoFocus
-                            />
-                            {inputVal && (
-                                <button
-                                    onClick={() => { setInputVal(""); router.push("/search"); setTracks([]); setArtists([]); }}
-                                    style={{ position:"absolute", right:16, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"rgba(0,0,0,.35)", fontSize:16, cursor:"pointer", padding:4, transition:"color .2s" }}
-                                    onMouseEnter={e => (e.currentTarget.style.color="#34D4B8")}
-                                    onMouseLeave={e => (e.currentTarget.style.color="rgba(0,0,0,.35)")}
-                                >✕</button>
-                            )}
-                        </div>
-
-                        {/* Result count */}
-                        {query && !loading && (
-                            <p style={{ textAlign:"center", marginTop:14, fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:"rgba(0,0,0,.45)", animation:"spFadeUp .3s both" }}>
-                                {hasResults
-                                    ? <><span style={{ color:"#34D4B8", fontWeight:700 }}>{totalResults}</span> {t.resultsSuffix} "<span style={{ color:"#0D0D1A" }}>{query}</span>"</>
-                                    : <>{t.noResultsPrefix} "<span style={{ color:"#0D0D1A" }}>{query}</span>"</>
-                                }
-                            </p>
-                        )}
+                    {/* Divider */}
+                    <div style={{ display:"flex", alignItems:"center", gap:16, marginTop:14 }}>
+                        <div style={{ width:48, height:2, background:"linear-gradient(90deg,#00A98F,#34D4B8)", borderRadius:2 }} />
+                        <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:11, color:"rgba(0,0,0,.45)", letterSpacing:"0.5px" }}>
+                            {t.placeholder}
+                        </span>
                     </div>
                 </div>
             </div>
 
             {/* ══ CONTENT ══ */}
-            <div style={{ maxWidth:1440, margin:"0 auto", padding:"40px 32px 80px" }}>
+            <div style={{ maxWidth:1440, margin:"0 auto", padding: isMobile ? "24px 16px 60px" : "40px 32px 80px" }}>
+
+                {/* Search input */}
+                <div style={{ marginBottom:24, position:"relative" }}>
+                    <span style={{ position:"absolute", left:18, top:"50%", transform:"translateY(-50%)", fontSize:16, pointerEvents:"none", color:"#00A98F" }}>🔍</span>
+                    <input
+                        className="sp-input"
+                        placeholder={t.placeholder}
+                        value={inputVal}
+                        onChange={e => handleInput(e.target.value)}
+                        autoFocus
+                    />
+                    {inputVal && (
+                        <button
+                            onClick={() => { setInputVal(""); router.push("/search"); setTracks([]); setArtists([]); }}
+                            style={{ position:"absolute", right:16, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"rgba(0,0,0,.35)", fontSize:16, cursor:"pointer", padding:4, transition:"color .2s" }}
+                            onMouseEnter={e => (e.currentTarget.style.color="#00A98F")}
+                            onMouseLeave={e => (e.currentTarget.style.color="rgba(0,0,0,.35)")}
+                        >✕</button>
+                    )}
+                </div>
+
+                {/* Result count */}
+                {query && !loading && (
+                    <p style={{ marginBottom:24, fontFamily:"'Space Grotesk',sans-serif", fontSize:12, color:"rgba(0,0,0,.45)" }}>
+                        {hasResults
+                            ? <><span style={{ color:"#00A98F", fontWeight:700 }}>{totalResults}</span> {t.resultsSuffix} "<span style={{ color:"#0D0D1A" }}>{query}</span>"</>
+                            : <>{t.noResultsPrefix} "<span style={{ color:"#0D0D1A" }}>{query}</span>"</>
+                        }
+                    </p>
+                )}
 
                 {/* Empty state — no query */}
                 {!query && (
-                    <div style={{ textAlign:"center", padding:"96px 0", animation:"spFadeUp .4s both" }}>
+                    <div style={{ textAlign:"center", padding:"80px 0", animation:"spFadeUp .4s both" }}>
                         <div style={{ fontSize:64, marginBottom:18, opacity:.15 }}>♪</div>
                         <p style={{ fontSize:17, fontWeight:500, color:"rgba(0,0,0,.55)", marginBottom:8 }}>{t.emptyTitle}</p>
                         <p style={{ fontSize:13, color:"rgba(0,0,0,.38)" }}>{t.emptyHint}</p>

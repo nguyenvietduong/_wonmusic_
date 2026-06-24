@@ -59,17 +59,19 @@ const PageBannerSection = () => {
                 <h1 style={{
                     fontFamily: "'Be Vietnam Pro', sans-serif",
                     fontSize: isMobile ? "clamp(22px,6vw,28px)" : "clamp(24px,2.8vw,36px)",
-                    fontWeight: 900,
                     lineHeight: 1.15,
                     letterSpacing: "-0.5px",
                     color: "#0D0D1A",
                     margin: 0,
+                    textTransform: "uppercase"
                 }}>
-                    {t.title.split(" ").map((word, i, arr) =>
-                        i === arr.length - 1
-                            ? <span key={i} style={{ color:"#00A98F" }}>{word}</span>
-                            : <span key={i}>{word}{" "}</span>
-                    )}
+                    <b>
+                        {t.title.split(" ").map((word, i, arr) =>
+                            i === arr.length - 1
+                                ? <span key={i} style={{ color:"#00A98F" }}>{word}</span>
+                                : <span key={i}>{word}{" "}</span>
+                        )}
+                    </b>
                 </h1>
 
                 {/* Divider */}

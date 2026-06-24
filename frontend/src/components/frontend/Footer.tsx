@@ -1,6 +1,7 @@
 'use client'
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { footerText } from "@/locales/footer";
@@ -10,9 +11,13 @@ const Footer = () => {
     const t = footerText[lang].footer;
 
     const {
+        siteName, logoUrl,
         facebook, instagram, youtube, tiktok, sliderSoundcloudUrl,
         contactPhone, contactAddress, contactAddressEn, contactEmail,
+        fetch: fetchSettings, loaded: settingsLoaded,
     } = useSettingsStore();
+
+    useEffect(() => { if (!settingsLoaded) fetchSettings(); }, [settingsLoaded, fetchSettings]);
 
     const navLinks = [
         { to: "/",           label: lang === "vi" ? "Trang chủ"   : "Home"       },
@@ -147,16 +152,16 @@ const Footer = () => {
                     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                         {/* Logo */}
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{
-                                width: 40, height: 40, borderRadius: 10,
-                                background: "linear-gradient(135deg, #4ade80, #34d399)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                fontWeight: 800, fontSize: 18, color: "#0a1220",
-                                flexShrink: 0,
-                            }}>W</div>
+                            <div style={{ background: "#fff", borderRadius: 10, padding: 6, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <img
+                                    src={logoUrl || "/icon.png"}
+                                    alt={siteName || "Won Music"}
+                                    style={{ height: 36, width: "auto", objectFit: "contain", maxWidth: 100, display: "block" }}
+                                />
+                            </div>
                             <div>
                                 <div style={{ fontWeight: 800, fontSize: 15, color: "#fff", letterSpacing: "-0.3px", lineHeight: 1.2 }}>
-                                    WON MUSIC
+                                    {siteName || "WON MUSIC"}
                                 </div>
                                 <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", letterSpacing: "1.8px", textTransform: "uppercase", marginTop: 2 }}>
                                     MUSIC PLATFORM
@@ -164,7 +169,7 @@ const Footer = () => {
                             </div>
                         </div>
 
-                        <p style={{ fontSize: 13, lineHeight: 1.75, color: "rgba(255,255,255,0.5)", maxWidth: 280, margin: 0 }}>
+                        <p style={{ fontFamily:"var(--m-font-body)", fontSize: 13, lineHeight: 1.75, color: "rgba(255,255,255,0.5)", maxWidth: 280, margin: 0 }}>
                             {t.description}
                         </p>
 

@@ -231,14 +231,16 @@ export default function AboutPage() {
                         <h1 style={{
                             fontFamily: "var(--m-font-body)",
                             fontSize: isMobile ? "clamp(22px,6vw,28px)" : "clamp(24px,2.8vw,36px)",
-                            fontWeight: 900,
                             lineHeight: 1.15,
                             letterSpacing: "-0.5px",
                             color: "#0D0D1A",
                             margin: 0,
+                            textTransform: "uppercase"
                         }}>
-                            {t.hero.line1} <span style={{ color:"#00A98F" }}>{t.hero.highlight}</span>
-                            {t.hero.line2 && <> {t.hero.line2}</>}
+                            <b>
+                                {t.hero.line1} <span style={{ color:"#00A98F" }}>{t.hero.highlight}</span>
+                                {t.hero.line2 && <> {t.hero.line2}</>}
+                            </b>
                         </h1>
                         {!isMobile && (
                             <p style={{ marginTop:10, fontSize:13, color:"rgba(0,0,0,0.5)", lineHeight:1.65, maxWidth:480 }}>{heroSubtitle}</p>
@@ -358,7 +360,7 @@ export default function AboutPage() {
                         <div style={{ marginBottom: isMobile ? 36 : 56 }}>
                             <div className="section-label">
                                 <span className="section-line" />
-                                <span className="section-tag">{t.services.sectionLabel}</span>
+                                <span className="section-tag" style={{ fontFamily:"var(--m-font-body)" }}>{t.services.sectionLabel}</span>
                             </div>
                             <h2 className="section-title" style={{ fontSize:"clamp(20px,2.5vw,30px)" }}>
                                 {t.services.heading} <span className="text-green">{t.services.highlight}</span>
@@ -395,7 +397,7 @@ export default function AboutPage() {
                             <div style={{ position: isMobile ? "static" : "sticky", top:120 }}>
                                 <div className="section-label">
                                     <span className="section-line" />
-                                    <span className="section-tag">{t.timeline.sectionLabel}</span>
+                                    <span className="section-tag" style={{ fontFamily:"var(--m-font-body)" }}>{t.timeline.sectionLabel}</span>
                                 </div>
                                 <h2 className="section-title" style={{ fontSize:"clamp(20px,2.5vw,30px)" }}>
                                     {t.timeline.heading}<br />
@@ -496,17 +498,17 @@ export default function AboutPage() {
                             <div>
                                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
                                     <span style={{ width:24, height:2, background:"#34D4B8", borderRadius:2, display:"block" }} />
-                                    <span style={{ fontFamily:"var(--m-font-display)", fontSize:10, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase", color:"#34D4B8" }}>
+                                    <span style={{ fontFamily:"var(--m-font-body)", fontSize:10, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase", color:"#34D4B8" }}>
                                         {lang === "en" ? "Get in touch" : "Hợp tác cùng chúng tôi"}
                                     </span>
                                 </div>
 
-                                <h2 style={{ fontFamily:"var(--m-font-body)", fontSize:"clamp(22px,2.8vw,34px)", fontWeight:800, color:"#fff", lineHeight:1.2, letterSpacing:"-0.5px", margin:"0 0 16px" }}>
+                                <h2 className="section-title" style={{ fontSize:"clamp(20px,2.5vw,30px)", color:"#fff", lineHeight:1.2, letterSpacing:"-0.5px", margin:"0 0 16px" }}>
                                     {ctaHeading}<br />
-                                    <span style={{ color:"#34D4B8" }}>{ctaHighlight}</span>
+                                    <span className="text-green">{ctaHighlight}</span>
                                 </h2>
 
-                                <p style={{ fontSize:14, color:"rgba(255,255,255,0.5)", lineHeight:1.8, marginBottom:32, maxWidth:400 }}>
+                                <p style={{ fontFamily:"var(--m-font-body)", fontSize:14, color:"rgba(255,255,255,0.5)", lineHeight:1.8, marginBottom:32, maxWidth:400 }}>
                                     {ctaSubtitle}
                                 </p>
 

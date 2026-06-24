@@ -254,7 +254,7 @@ const Navbar = () => {
                     position: relative;
                     padding: 6px 10px;
                     font-family: 'Space Grotesk', sans-serif;
-                    font-size: 11px;
+                    font-size: 12px;
                     font-weight: 700;
                     text-transform: uppercase;
                     letter-spacing: 1.5px;
@@ -373,33 +373,33 @@ const Navbar = () => {
                 .nic-user-badge {
                     display: flex; align-items: center; gap: 6px;
                     padding: 6px 14px; border-radius: 6px;
-                    background: rgba(0,0,0,0.06);
-                    border: 1px solid rgba(0,0,0,0.1);
+                    background: linear-gradient(135deg, #00A98F, #34D4B8);
+                    border: 1px solid transparent;
                     font-family: 'Space Grotesk', sans-serif;
                     font-size: 11px; font-weight: 700;
-                    color: rgba(0,0,0,0.85);
+                    color: #fff;
                     text-decoration: none;
                     transition: all 0.2s;
                     letter-spacing: 0.5px;
                 }
-                .nic-user-badge:hover { border-color: rgba(0,169,143,0.4); color: #34D4B8; }
+                .nic-user-badge:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,169,143,0.35); }
 
                 /* ── Logout button ── */
                 .nic-logout-btn {
                     display: flex; align-items: center; gap: 6px;
                     padding: 6px 14px; border-radius: 6px;
-                    background: rgba(239,68,68,0.08);
-                    border: 1px solid rgba(239,68,68,0.2);
+                    background: #ef4444;
+                    border: 1px solid transparent;
                     font-family: 'Space Grotesk', sans-serif;
                     font-size: 11px; font-weight: 700;
-                    color: rgba(239,68,68,0.8);
+                    color: #fff;
                     letter-spacing: 0.5px;
                     cursor: pointer; transition: all 0.2s;
                 }
                 .nic-logout-btn:hover {
-                    background: rgba(239,68,68,0.14);
-                    border-color: rgba(239,68,68,0.45);
-                    color: rgb(239,68,68);
+                    background: #dc2626;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 14px rgba(239,68,68,0.35);
                 }
             `}</style>
 

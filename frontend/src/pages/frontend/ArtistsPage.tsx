@@ -324,14 +324,16 @@ const ArtistsPage = () => {
                     <h1 style={{
                         fontFamily: "'Be Vietnam Pro', sans-serif",
                         fontSize: isMobile ? "clamp(22px,6vw,28px)" : "clamp(24px,2.8vw,36px)",
-                        fontWeight: 900,
                         lineHeight: 1.15,
                         letterSpacing: "-0.5px",
                         color: "#0D0D1A",
                         margin: 0,
+                        textTransform: "uppercase"
                     }}>
-                        {t.heading}{" "}
-                        <span style={{ color:"#00A98F" }}>{t.highlight}</span>
+                        <b>
+                            {t.heading}{" "}
+                            <span style={{ color:"#00A98F" }}>{t.highlight}</span>
+                        </b>
                     </h1>
 
                     {/* Stats + divider */}
