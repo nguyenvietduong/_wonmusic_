@@ -29,7 +29,7 @@ const PageBannerSection = () => {
         <div style={{
             position: "relative",
             overflow: "hidden",
-            height: isMobile ? 260 : 360,
+            height: isMobile ? 220 : 300,
             backgroundImage: "url('/partner-bg.png')",
             backgroundSize: "cover",
             backgroundPosition: "center",
@@ -46,11 +46,11 @@ const PageBannerSection = () => {
             </div>
 
             {/* Content */}
-            <div style={{ maxWidth:1440, margin:"0 auto", padding:`${isMobile ? 88 : 104}px 32px ${isMobile ? 28 : 36}px`, position:"relative", zIndex:2 }}>
+            <div style={{ maxWidth:1440, margin:"0 auto", padding:`${isMobile ? 76 : 82}px 32px ${isMobile ? 24 : 28}px`, position:"relative", zIndex:2 }}>
                 {/* Eyebrow */}
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-                    <span style={{ width:28, height:2, background:"#00A98F", borderRadius:2, display:"block" }} />
-                    <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:13, fontWeight:700, letterSpacing:"2.5px", textTransform:"uppercase", color:"#00A98F" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                    <span style={{ width:24, height:2, background:"#00A98F", borderRadius:2, display:"block" }} />
+                    <span style={{ fontFamily:"'Space Grotesk',sans-serif", fontSize:10, fontWeight:700, letterSpacing:"2px", textTransform:"uppercase", color:"#00A98F" }}>
                         {t.subtitle}
                     </span>
                 </div>
@@ -58,9 +58,9 @@ const PageBannerSection = () => {
                 {/* Heading */}
                 <h1 style={{
                     fontFamily: "'Be Vietnam Pro', sans-serif",
-                    fontSize: isMobile ? "clamp(30px,8vw,40px)" : "clamp(40px,4vw,56px)",
-                    lineHeight: 1.1,
-                    letterSpacing: "-1px",
+                    fontSize: isMobile ? "clamp(22px,6vw,28px)" : "clamp(24px,2.8vw,36px)",
+                    lineHeight: 1.15,
+                    letterSpacing: "-0.5px",
                     color: "#0D0D1A",
                     margin: 0,
                     textTransform: "uppercase"
