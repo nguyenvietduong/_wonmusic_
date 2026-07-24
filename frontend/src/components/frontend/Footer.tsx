@@ -273,7 +273,7 @@ const Footer = () => {
                     <span>© {year} <span style={{ color: "#4ade80" }}>WON MUSIC</span>. {t.copyright}</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                         <span style={{ color: "#f87171" }}>♥</span>
-                        Made by NguyenVietDuong
+                        Made by WonMedia
                     </span>
                 </div>
             </div>
